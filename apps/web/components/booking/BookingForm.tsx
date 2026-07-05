@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 interface BookingFormProps {
   consultantId: string;
   consultantName: string;
-  onSuccess: () => void;
+  onSuccess: (appointmentId: string) => void;
 }
 
 const DURATIONS = [
@@ -40,14 +40,14 @@ export function BookingForm({ consultantId, consultantName, onSuccess }: Booking
       const startTime = new Date(`${date}T${time}`);
       const endTime = new Date(startTime.getTime() + Number(duration) * 60 * 1000);
 
-      await createAppointment(token, {
+      const result = await createAppointment(token, {
         consultantId,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         title,
       });
 
-      onSuccess();
+      onSuccess(result.data.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to book appointment");
     } finally {

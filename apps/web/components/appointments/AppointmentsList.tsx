@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth/context";
 import { useAppointments, cancelAppointment } from "@/lib/hooks/useAppointments";
 import { Card } from "@/components/ui/card";
@@ -69,7 +70,7 @@ export function AppointmentsList({ userRole }: AppointmentsListProps) {
         return (
           <Card key={appointment.id} className="p-6">
             <div className="flex items-start justify-between gap-4">
-              <div>
+              <Link href={`/appointments/${appointment.id}`} className="flex-1 hover:opacity-80">
                 <h3 className="font-semibold text-slate-900 dark:text-white">
                   {appointment.title}
                 </h3>
@@ -84,12 +85,13 @@ export function AppointmentsList({ userRole }: AppointmentsListProps) {
                     href={appointment.meetingLink}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className="mt-2 inline-block text-sm text-blue-600 hover:underline"
                   >
                     Join meeting
                   </a>
                 )}
-              </div>
+              </Link>
               <div className="flex flex-col items-end gap-2">
                 <Badge variant={statusVariant[appointment.status] ?? "outline"}>
                   {appointment.status}

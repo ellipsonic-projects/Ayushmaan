@@ -14,7 +14,7 @@ interface Appointment {
   startTime: string;
   endTime: string;
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
-  consultant: { first_name: string; last_name: string };
+  consultant: { id: string; first_name: string; last_name: string };
   client: { first_name: string; last_name: string };
   meetingLink?: string;
   notes?: string;
@@ -167,9 +167,18 @@ export default function AppointmentDetail() {
             {/* Consultant */}
             <div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Consultant</p>
-              <p className="text-lg font-medium text-slate-900 dark:text-white">
-                {appointment.consultant.first_name} {appointment.consultant.last_name}
-              </p>
+              {isClient ? (
+                <Link
+                  href={`/consultant/${appointment.consultant.id}`}
+                  className="text-lg font-medium text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  {appointment.consultant.first_name} {appointment.consultant.last_name}
+                </Link>
+              ) : (
+                <p className="text-lg font-medium text-slate-900 dark:text-white">
+                  {appointment.consultant.first_name} {appointment.consultant.last_name}
+                </p>
+              )}
             </div>
 
             {/* Client */}

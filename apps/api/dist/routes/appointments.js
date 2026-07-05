@@ -71,7 +71,7 @@ exports.appointmentRouter.get("/:id", async (req, res) => {
             .from("appointments")
             .select(`
           *,
-          consultant:consultant_id(first_name, last_name),
+          consultant:consultant_id(id, first_name, last_name),
           client:client_id(first_name, last_name)
         `)
             .eq("id", id)

@@ -69,6 +69,30 @@ const faqs = [
   },
 ];
 
+const pricing = [
+  {
+    tier: "STANDARD",
+    description: "For solo consultants getting started.",
+    monthly: 20,
+    annual: 10,
+    featured: false,
+  },
+  {
+    tier: "PRO",
+    description: "For growing practices with multiple consultants.",
+    monthly: 40,
+    annual: 25,
+    featured: true,
+  },
+  {
+    tier: "ENTERPRISE",
+    description: "For large, multi-tenant organizations.",
+    monthly: 100,
+    annual: 75,
+    featured: false,
+  },
+] as const;
+
 const insights = [
   {
     tag: "PRODUCT",
@@ -109,11 +133,14 @@ export default function Home() {
             </a>
             <a href="#insights" className="hover:text-blue-600">
               Insights
+            </a> 
+           <a href="#pricing" className="hover:text-blue-600">
+            Pricing
             </a>
           </nav>
           <div className="flex items-center gap-3">
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-              <Link href="#contact">Get in touch</Link>
+              <Link href="/billing">Get in touch</Link>
             </Button>
             <Button variant="ghost" size="icon" aria-label="Open menu">
               <Menu className="h-4 w-4" />
@@ -232,6 +259,62 @@ export default function Home() {
         </div>
 
         <CapabilitiesSection />
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="mx-auto w-full max-w-6xl px-6 py-20">
+        <div className="grid gap-6 sm:grid-cols-2 sm:items-end">
+          <div>
+            <SectionLabel>PRICING</SectionLabel>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+              Simple plans for every practice
+            </h2>
+          </div>
+          <p className="text-sm leading-6 text-slate-500 sm:justify-self-end sm:max-w-sm">
+            Pay monthly or save by billing annually. Upgrade or downgrade
+            anytime as your practice grows.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 sm:grid-cols-3">
+          {pricing.map((plan) => (
+            <Card
+              key={plan.tier}
+              className={`flex flex-col border-blue-100 shadow-sm ${
+                plan.featured ? "border-blue-600 ring-1 ring-blue-600" : ""
+              }`}
+            >
+              <CardContent className="flex flex-1 flex-col p-6">
+                <p className="text-xs font-medium tracking-widest text-blue-600">
+                  {plan.tier}
+                </p>
+                <CardTitle className="mt-3">
+                  ${plan.monthly}
+                  <span className="text-sm font-normal text-slate-400">
+                    {" "}
+                    /mo
+                  </span>
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  {plan.description}
+                </CardDescription>
+                <p className="mt-4 text-xs text-slate-400">
+                  or ${plan.annual}/mo billed annually
+                </p>
+                <Button
+                  asChild
+                  variant={plan.featured ? "default" : "outline"}
+                  className="mt-6 justify-between"
+                >
+                  <Link href="/billing">
+                    Get started
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </section>
 
       {/* FAQ */}

@@ -122,7 +122,7 @@
 ### Development & Build Setup
 
 #### Dependencies ✅
-- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind v4, SWR, Zod, Lucide React
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind v4, SWR, Zod, Radix icons 
 - **Backend**: Express, Prisma, PostgreSQL, JWT, bcryptjs, Node-cron
 - **DevTools**: TypeScript, PostCSS, Turbo
 

@@ -1,0 +1,989 @@
+// =============================================================================
+// Ayushman — Prisma Schema (v3, simplified)
+// Lives at packages/db/prisma/schema.prisma (PRD_v3_nextjs_express.md §7.2) —
+// the only package that imports this; apps/web never connects to Postgres directly.
+//
+// What changed from the schema this replaces, and why "simplicity" drove each cut:
+// - Removed `password_hash`, `auth_provider_id`, `phone_verified`, `email_verified`,
+//   `is_active`, `otp_verifications`, `refresh_tokens`. Supabase Auth owns all of
+//   this in its own `auth` schema (PRD §7.3) — re-adding them here would mean
+//   maintaining two auth systems that disagree with each other.
+// - Payments now target **Stripe**, not Razorpay: `stripe_payment_intent_id` /
+//   `stripe_customer_id` replace the Razorpay order/payment IDs, and payout
+//   percentage/timing live on `TenantBilling`/`ConsultantProfile` (already there)
+//   rather than duplicated onto every payment row.
+// - Dropped `case_deletion_requests` as its own table — deletion-request handling
+//   is a policy (schema §5 Data Retention), not a workflow this version needs a
+//   dedicated state machine for; it can be added back the day a real approval
+//   workflow is required.
+// - Dropped granular actor-tracking columns (`cancelled_by`, `reschedule_proposed_by`,
+//   `no_show_flagged_by`, `waitlisted_client_ids`, etc.) — "who did this and why"
+//   is exactly what `audit_logs` and `notifications` already exist to answer;
+//   duplicating it onto `appointments` was tracking the same fact twice.
+// - Every model keeps only fields a real query, RLS policy, or UI screen in
+//   PRD_v3_nextjs_express.md actually needs — nothing kept "just in case."
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [citext, pgcrypto] // citext: case-insensitive slug/email lookups; pgcrypto: gen_random_uuid()
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+
+  @@map("tenant_status")
+}
+
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+
+  @@map("subscription_status")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  CONSULTANT
+  CLIENT
+
+  @@map("user_role")
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+
+  @@map("account_status")
+}
+
+enum ConsultantCategory {
+  MEDICAL
+  LEGAL
+  IT
+  PHYSIOTHERAPY
+  HOMEOPATHY
+  ASTROLOGY
+
+  @@map("consultant_category")
+}
+
+enum VerificationDocType {
+  MEDICAL_LICENSE
+  BAR_REGISTRATION
+  DEGREE_CERTIFICATE
+  GOVERNMENT_ID
+  PROFESSIONAL_CERTIFICATE
+  OTHER
+
+  @@map("verification_doc_type")
+}
+
+enum SlotStatus {
+  OPEN
+  BOOKED
+  BLOCKED
+
+  @@map("slot_status")
+}
+
+enum CaseStatus {
+  ACTIVE
+  CLOSED
+
+  @@map("case_status")
+}
+
+enum SeriesStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+
+  @@map("series_status")
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  APPROVED
+  RESCHEDULE_PROPOSED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+
+  @@map("appointment_status")
+}
+
+enum InteractionType {
+  SESSION_NOTE
+  AD_HOC_NOTE
+  CALL_LOG
+  MESSAGE_LOG
+
+  @@map("interaction_type")
+}
+
+enum TranscriptionStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+
+  @@map("transcription_status")
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  COMPLETED
+  DISCONTINUED
+
+  @@map("commitment_status")
+}
+
+enum TaskAssignee {
+  CLIENT
+  CONSULTANT
+
+  @@map("task_assignee")
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+  OVERDUE
+
+  @@map("task_status")
+}
+
+enum ChatSender {
+  CLIENT
+  CONSULTANT
+  AI
+
+  @@map("chat_sender")
+}
+
+enum CitationParentType {
+  CHAT_MESSAGE
+  AI_SUMMARY
+
+  @@map("citation_parent_type")
+}
+
+enum CitationSourceType {
+  INTERACTION
+  DOCUMENT
+
+  @@map("citation_source_type")
+}
+
+enum GrievanceSubject {
+  CONSULTANT
+  TENANT_ADMIN
+  BILLING
+  PLATFORM
+  OTHER
+
+  @@map("grievance_subject")
+}
+
+enum GrievanceCategory {
+  SERVICE_QUALITY
+  MISCONDUCT
+  BILLING_DISPUTE
+  DATA_PRIVACY
+  OTHER
+
+  @@map("grievance_category")
+}
+
+enum GrievanceSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("grievance_severity")
+}
+
+enum GrievanceStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+
+  @@map("grievance_status")
+}
+
+enum RewardType {
+  DISCOUNT_CODE
+  CREDIT
+  NONE
+
+  @@map("reward_type")
+}
+
+enum RewardStatus {
+  PENDING
+  GRANTED
+
+  @@map("reward_status")
+}
+
+enum ReferralStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+
+  @@map("referral_status")
+}
+
+enum NotificationType {
+  APPOINTMENT_REMINDER
+  TASK_DUE
+  GRIEVANCE_SUBMITTED
+  GRIEVANCE_STATUS_CHANGED
+  SESSION_JOINING_SOON
+
+  @@map("notification_type")
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+
+  @@map("notification_channel")
+}
+
+// Stripe's own PaymentIntent status vocabulary — mirrored here so a webhook
+// handler can write the value straight through without translating it.
+enum PaymentStatus {
+  REQUIRES_PAYMENT_METHOD
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+enum PaymentTiming {
+  PAY_ON_BOOKING
+  PAY_AFTER_SESSION
+
+  @@map("payment_timing")
+}
+
+enum PlanTier {
+  STANDARD
+  PRO
+  ENTERPRISE
+}
+
+enum PayoutCycle {
+  MONTHLY
+  ANNUAL
+
+  @@map("payout_cycle")
+}
+
+const pricing = {
+  STANDARD: {
+    MONTHLY: 20,
+    ANNUAL: 10,
+  },
+  PRO: {
+    MONTHLY: 40,
+    ANNUAL: 25,
+  },
+  ENTERPRISE: {
+    MONTHLY: 100,
+    ANNUAL: 75,
+  },
+} as const;
+
+
+
+// -----------------------------------------------------------------------------
+// Tenancy
+// -----------------------------------------------------------------------------
+
+model Tenant {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug           String       @unique @db.Citext
+  customDomain   String?      @unique @map("custom_domain") @db.Citext
+  displayName    String       @map("display_name") @db.VarChar(200)
+  logoUrl        String?      @map("logo_url")
+  themeConfig    Json         @default("{}") @map("theme_config")
+  status         TenantStatus @default(ACTIVE)
+  planTier       String       @default("STANDARD") @map("plan_tier") @db.VarChar(50)
+  provisionedBy  String?      @map("provisioned_by") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  settings   TenantSettings?
+  billing    TenantBilling?
+  users      User[]
+
+  @@index([status])
+  @@map("tenants")
+}
+
+model TenantSettings {
+  tenantId            String      @id @map("tenant_id") @db.Uuid
+  defaultCurrency     String      @default("INR") @map("default_currency") @db.Char(3)
+  payoutCycle         PayoutCycle @default(WEEKLY) @map("payout_cycle")
+  bookingCutoffHours  Int         @default(2) @map("booking_cutoff_hours") @db.SmallInt
+  autoApproveBookings Boolean     @default(false) @map("auto_approve_bookings")
+  supportedLanguages  String[]    @default(["en"]) @map("supported_languages")
+  updatedAt           DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model TenantBilling {
+  tenantId               String             @id @map("tenant_id") @db.Uuid
+  planName               String             @map("plan_name") @db.VarChar(100)
+  status                 SubscriptionStatus @default(TRIALING)
+  platformCommissionPct  Decimal            @default(0) @map("platform_commission_pct") @db.Decimal(5, 2)
+  updatedAt              DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_billing")
+}
+
+// -----------------------------------------------------------------------------
+// Identity
+// -----------------------------------------------------------------------------
+
+// The only bridge to Supabase Auth is `supabaseAuthUserId`. Everything else on
+// this model is business data the app actually queries/joins — no auth state.
+model User {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supabaseAuthUserId    String        @unique @map("supabase_auth_user_id") @db.Uuid
+  tenantId              String?       @map("tenant_id") @db.Uuid
+  role                  UserRole
+  email                 String        @db.Citext
+  phone                 String?       @db.VarChar(20)
+  accountStatus         AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
+  clientProfile      ClientProfile?
+  consultantProfile  ConsultantProfile?
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Client
+// -----------------------------------------------------------------------------
+
+model ClientProfile {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String   @map("tenant_id") @db.Uuid
+  userId                String   @unique @map("user_id") @db.Uuid
+  fullName              String   @map("full_name") @db.VarChar(200)
+  dob                   DateTime? @db.Date
+  preferredLanguage     String   @default("en") @map("preferred_language") @db.VarChar(50)
+  timezone              String   @default("Asia/Kolkata") @db.VarChar(50)
+  emergencyContactName  String?  @map("emergency_contact_name") @db.VarChar(200)
+  emergencyContactPhone String?  @map("emergency_contact_phone") @db.VarChar(20)
+  referralCode          String?  @unique @map("referral_code") @db.VarChar(20)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user            User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryProfiles ClientCategoryProfile[]
+  guardianLinks    GuardianLink[]
+  cases            Case[]
+
+  @@index([tenantId])
+  @@map("client_profiles")
+}
+
+// `dob` on ClientProfile determines "is minor" at read time (age math belongs
+// in a query/view, not a stored generated column duplicated per Prisma version).
+model ClientCategoryProfile {
+  id        String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String             @map("tenant_id") @db.Uuid
+  clientId  String             @map("client_id") @db.Uuid
+  category  ConsultantCategory
+  data      Json               @default("{}") // category-owned intake shape — new categories never need a migration
+
+  client ClientProfile @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, category])
+  @@index([tenantId])
+  @@map("client_category_profiles")
+}
+
+model GuardianLink {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  minorClientId  String    @map("minor_client_id") @db.Uuid
+  guardianUserId String    @map("guardian_user_id") @db.Uuid
+  relationship   String    @db.VarChar(50)
+  consentGivenAt DateTime? @map("consent_given_at") @db.Timestamptz(6) // bookings blocked until this is set
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  minorClient ClientProfile @relation(fields: [minorClientId], references: [id], onDelete: Cascade)
+
+  @@unique([minorClientId, guardianUserId])
+  @@index([tenantId])
+  @@map("guardian_links")
+}
+
+// -----------------------------------------------------------------------------
+// Consultant
+// -----------------------------------------------------------------------------
+
+model ConsultantProfile {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String             @map("tenant_id") @db.Uuid
+  userId                String             @unique @map("user_id") @db.Uuid
+  invitedBy             String?            @map("invited_by") @db.Uuid
+  fullName              String             @map("full_name") @db.VarChar(200)
+  category              ConsultantCategory
+  subSpecialization     String?            @map("sub_specialization") @db.VarChar(150)
+  bio                   String?
+  consultationFee       Decimal            @default(0) @map("consultation_fee") @db.Decimal(10, 2)
+  currency              String             @default("INR") @db.Char(3)
+  languagesSpoken       String[]           @default(["en"]) @map("languages_spoken")
+  isAcceptingNewClients Boolean            @default(true) @map("is_accepting_new_clients")
+  autoApproveBookings   Boolean            @default(false) @map("auto_approve_bookings")
+  paymentTiming         PaymentTiming      @default(PAY_ON_BOOKING) @map("payment_timing")
+  ratingAvg             Decimal            @default(0) @map("rating_avg") @db.Decimal(3, 2) // cached; recomputed by a DB trigger on Review insert
+  ratingCount           Int                @default(0) @map("rating_count")
+  calendarSyncToken     String             @default(dbgenerated("gen_random_uuid()")) @map("calendar_sync_token") @db.Uuid
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user                  User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationDocuments ConsultantVerificationDocument[]
+  availabilitySlots     AvailabilitySlot[]
+  outOfOfficePeriods    OutOfOfficePeriod[]
+  cases                 Case[]
+  commitmentTemplates   CommitmentTemplate[]
+
+  @@index([tenantId])
+  @@index([tenantId, category, isAcceptingNewClients, ratingAvg])
+  @@map("consultant_profiles")
+}
+
+// Deliberately the last model migrated (packages/db/prisma/migrations —
+// nothing else in this schema depends on a row existing here; a consultant is
+// fully bookable without ever uploading a document).
+model ConsultantVerificationDocument {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String              @map("tenant_id") @db.Uuid
+  consultantId     String              @map("consultant_id") @db.Uuid
+  documentType     VerificationDocType @map("document_type")
+  fileUrl          String              @map("file_url")
+  issuingAuthority String?             @map("issuing_authority") @db.VarChar(255)
+  expiryDate       DateTime?           @map("expiry_date") @db.Date
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+  @@map("consultant_verification_documents")
+}
+
+model AvailabilitySlot {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  consultantId     String     @map("consultant_id") @db.Uuid
+  dayOfWeek        Int?       @map("day_of_week") @db.SmallInt // 0=Sunday..6=Saturday; null if specificDate set
+  specificDate     DateTime?  @map("specific_date") @db.Date  // one-off override; null if dayOfWeek set
+  startTime        DateTime   @map("start_time") @db.Time
+  endTime          DateTime   @map("end_time") @db.Time
+  slotDurationMins Int        @default(30) @map("slot_duration_mins") @db.SmallInt
+  status           SlotStatus @default(OPEN)
+  version          Int        @default(1) // optimistic lock — prevents double-booking races
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId, status])
+  @@index([specificDate])
+  @@map("availability_slots")
+}
+
+model OutOfOfficePeriod {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid
+  consultantId        String   @map("consultant_id") @db.Uuid
+  startDate           DateTime @map("start_date") @db.Date
+  endDate             DateTime @map("end_date") @db.Date
+  autoReplyMessage    String?  @map("auto_reply_message")
+  pausesNewBookings   Boolean  @default(true) @map("pauses_new_bookings")
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId, startDate, endDate])
+  @@map("out_of_office_periods")
+}
+
+// -----------------------------------------------------------------------------
+// Cases & Bookings
+// -----------------------------------------------------------------------------
+
+model Case {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  clientId     String             @map("client_id") @db.Uuid
+  consultantId String             @map("consultant_id") @db.Uuid
+  category     ConsultantCategory
+  matterKey    String?            @map("matter_key") @db.VarChar(150) // disambiguates 2 concurrent cases for the same pair
+  tags         String[]           @default([]) // consultant's own CRM segmentation; per-consultant, never tenant-shared
+  status       CaseStatus         @default(ACTIVE)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  client       ClientProfile        @relation(fields: [clientId], references: [id])
+  consultant   ConsultantProfile    @relation(fields: [consultantId], references: [id])
+  series       AppointmentSeries[]
+  appointments Appointment[]
+  interactions Interaction[]
+  commitments  Commitment[]
+  tasks        Task[]
+  documents    Document[]
+  chatMessages ChatMessage[]
+  aiSummaries  AiSummary[]
+  grievances   Grievance[]
+
+  @@index([tenantId])
+  @@index([consultantId, status])
+  @@index([clientId])
+  @@index([tags], type: Gin)
+  @@map("cases")
+}
+
+// The rule (this model) is separate from its occurrences (Appointment) so a
+// whole series can be approved/cancelled together while one occurrence stays
+// independently reschedulable.
+model AppointmentSeries {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  caseId         String       @map("case_id") @db.Uuid
+  recurrenceRule Json         @map("recurrence_rule") // {dayOfWeek, time, startDate, endDate | occurrenceCount}
+  status         SeriesStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case         Case          @relation(fields: [caseId], references: [id])
+  appointments Appointment[]
+
+  @@index([caseId])
+  @@map("appointment_series")
+}
+
+model Appointment {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String             @map("tenant_id") @db.Uuid
+  caseId              String             @map("case_id") @db.Uuid
+  seriesId            String?            @map("series_id") @db.Uuid // null for a one-off booking
+  scheduledStart      DateTime           @map("scheduled_start") @db.Timestamptz(6)
+  scheduledEnd        DateTime           @map("scheduled_end") @db.Timestamptz(6)
+  status              AppointmentStatus  @default(REQUESTED)
+  meetingLink         String?            @map("meeting_link") // external Zoom/Meet link; surfaced in the join-soon reminder
+  cancellationReason  String?            @map("cancellation_reason")
+  requestExpiresAt    DateTime?          @map("request_expires_at") @db.Timestamptz(6) // drives the auto-expire cron
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  case         Case               @relation(fields: [caseId], references: [id])
+  series       AppointmentSeries? @relation(fields: [seriesId], references: [id])
+  interactions Interaction[]
+  reviews      Review[]
+  payments     Payment[]
+
+  @@index([caseId])
+  @@index([seriesId])
+  @@index([scheduledStart])
+  @@index([status, requestExpiresAt])
+  @@map("appointments")
+}
+
+// -----------------------------------------------------------------------------
+// Session Logging
+// -----------------------------------------------------------------------------
+
+model Interaction {
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId             String               @map("tenant_id") @db.Uuid
+  caseId               String               @map("case_id") @db.Uuid
+  appointmentId        String?              @map("appointment_id") @db.Uuid // null for an ad-hoc note between sessions
+  type                 InteractionType      @map("type")
+  notes                String?
+  transcriptionStatus  TranscriptionStatus? @map("transcription_status") // null unless audio was recorded
+  isClientVisible      Boolean              @default(false) @map("is_client_visible")
+  deletedAt            DateTime?            @map("deleted_at") @db.Timestamptz(6) // soft-delete; hard-deleted 30 days later
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case        Case         @relation(fields: [caseId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  commitments Commitment[]
+  tasks       Task[]
+  documents   Document[]
+
+  @@index([caseId, createdAt(sort: Desc)])
+  @@map("interactions")
+}
+
+// -----------------------------------------------------------------------------
+// Commitments & Tasks
+// -----------------------------------------------------------------------------
+
+model CommitmentTemplate {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  consultantId String             @map("consultant_id") @db.Uuid // per-consultant library — each professional's protocol differs
+  category     ConsultantCategory
+  title        String             @db.VarChar(200)
+  description  String?
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+  @@map("commitment_templates")
+}
+
+model Commitment {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String            @map("tenant_id") @db.Uuid
+  caseId        String            @map("case_id") @db.Uuid
+  interactionId String?           @map("interaction_id") @db.Uuid // the session this was created during, if any
+  title         String            @db.VarChar(200)
+  description   String?
+  status        CommitmentStatus  @default(ACTIVE)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case        Case         @relation(fields: [caseId], references: [id])
+  interaction Interaction? @relation(fields: [interactionId], references: [id])
+
+  @@index([caseId])
+  @@map("commitments")
+}
+
+model Task {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String        @map("tenant_id") @db.Uuid
+  caseId       String        @map("case_id") @db.Uuid
+  interactionId String?      @map("interaction_id") @db.Uuid
+  assignedTo   TaskAssignee  @map("assigned_to") // who's expected to act — drives which dashboard it surfaces on
+  title        String        @db.VarChar(200)
+  dueAt        DateTime?     @map("due_at") @db.Timestamptz(6)
+  status       TaskStatus    @default(OPEN)
+  completedAt  DateTime?     @map("completed_at") @db.Timestamptz(6)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case        Case           @relation(fields: [caseId], references: [id])
+  interaction Interaction?   @relation(fields: [interactionId], references: [id])
+  reminders   TaskReminder[]
+
+  @@index([caseId])
+  @@index([dueAt], map: "idx_tasks_due_open") // cron sweep filters this to status = OPEN in the query itself
+  @@map("tasks")
+}
+
+model TaskReminder {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId       String    @map("task_id") @db.Uuid
+  leadTimeMins Int       @map("lead_time_mins") // how long before dueAt to fire
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6) // null until sent; prevents duplicate sends on cron retry
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_reminders")
+}
+
+// -----------------------------------------------------------------------------
+// Documents
+// -----------------------------------------------------------------------------
+
+// Append-only versioning via self-reference — a superseded version is never
+// overwritten, just chained.
+model Document {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  caseId            String    @map("case_id") @db.Uuid
+  interactionId     String?   @map("interaction_id") @db.Uuid
+  previousVersionId String?   @unique @map("previous_version_id") @db.Uuid
+  storagePath       String    @map("storage_path") // {tenantId}/{caseId}/... prefix, matches the Storage isolation rule
+  fileName          String    @map("file_name") @db.VarChar(255)
+  isClientVisible   Boolean   @default(false) @map("is_client_visible")
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case            Case         @relation(fields: [caseId], references: [id])
+  interaction     Interaction? @relation(fields: [interactionId], references: [id])
+  previousVersion Document?    @relation("DocumentVersions", fields: [previousVersionId], references: [id])
+  nextVersion     Document?    @relation("DocumentVersions")
+
+  @@index([caseId])
+  @@map("documents")
+}
+
+// -----------------------------------------------------------------------------
+// AI Chat & RAG
+// -----------------------------------------------------------------------------
+
+model ChatMessage {
+  id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String      @map("tenant_id") @db.Uuid
+  caseId    String      @map("case_id") @db.Uuid
+  sender    ChatSender
+  content   String
+  feedback  Int?        @db.SmallInt // +1/-1 thumbs; null if not rated
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case      Case          @relation(fields: [caseId], references: [id])
+  citations RagCitation[] @relation("ChatMessageCitations")
+
+  @@index([caseId, createdAt])
+  @@map("chat_messages")
+}
+
+model AiSummary {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  caseId          String    @map("case_id") @db.Uuid
+  appointmentId   String?   @map("appointment_id") @db.Uuid // which session this recap is for
+  content         String
+  isClientVisible Boolean   @default(false) @map("is_client_visible") // only shared summaries are ever client-queryable
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case      Case          @relation(fields: [caseId], references: [id])
+  citations RagCitation[] @relation("AiSummaryCitations")
+
+  @@index([caseId])
+  @@map("ai_summaries")
+}
+
+// Polymorphic on both ends (parent: chat message or summary; source: interaction
+// or document) — this is what lets the retrieval-isolation rule (tenantId AND
+// caseId, enforced in code per PRD §1.2) be checked against real foreign keys.
+model RagCitation {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parentType     CitationParentType  @map("parent_type")
+  chatMessageId  String?             @map("chat_message_id") @db.Uuid
+  aiSummaryId    String?             @map("ai_summary_id") @db.Uuid
+  sourceType     CitationSourceType  @map("source_type")
+  interactionId  String?             @map("interaction_id") @db.Uuid
+  documentId     String?             @map("document_id") @db.Uuid
+
+  chatMessage ChatMessage? @relation("ChatMessageCitations", fields: [chatMessageId], references: [id], onDelete: Cascade)
+  aiSummary   AiSummary?   @relation("AiSummaryCitations", fields: [aiSummaryId], references: [id], onDelete: Cascade)
+
+  @@map("rag_citations")
+}
+
+// -----------------------------------------------------------------------------
+// Reviews & Grievances
+// -----------------------------------------------------------------------------
+
+model Review {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  appointmentId String   @unique @map("appointment_id") @db.Uuid // one review per appointment; the case is reachable via appointment.case, so it isn't duplicated here
+  rating        Int      @db.SmallInt // 1-5, mandatory
+  npsScore      Int?     @map("nps_score") @db.SmallInt // 0-10, optional richer signal
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([tenantId])
+  @@map("reviews")
+}
+
+// A platform-level channel that bypasses the tenant entirely — tenantId is
+// stored for the Super Admin's own filtering, never for granting the Tenant
+// Admin visibility (PRD §4.2).
+model Grievance {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId               String            @map("tenant_id") @db.Uuid
+  clientId               String            @map("client_id") @db.Uuid
+  subjectType            GrievanceSubject  @map("subject_type")
+  subjectConsultantId    String?           @map("subject_consultant_id") @db.Uuid
+  caseId                 String?           @map("case_id") @db.Uuid
+  category               GrievanceCategory
+  description            String
+  attachmentUrls         String[]          @default([]) @map("attachment_urls")
+  severity               GrievanceSeverity @default(LOW)
+  status                 GrievanceStatus   @default(OPEN)
+  assignedToSuperAdminId String?           @map("assigned_to_super_admin_id") @db.Uuid
+  resolutionNotes        String?           @map("resolution_notes")
+  resolvedAt             DateTime?         @map("resolved_at") @db.Timestamptz(6)
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case Case? @relation(fields: [caseId], references: [id])
+
+  @@index([clientId])
+  @@index([status, severity])
+  @@map("grievances")
+}
+
+// -----------------------------------------------------------------------------
+// Growth & Analytics
+// -----------------------------------------------------------------------------
+
+// Precomputed daily aggregate so the burnout indicator and analytics page
+// never scan raw appointment/task history live.
+model ConsultantAnalyticsSnapshot {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId               String   @map("tenant_id") @db.Uuid
+  consultantId           String   @map("consultant_id") @db.Uuid
+  snapshotDate           DateTime @map("snapshot_date") @db.Date
+  bookedHours            Decimal  @default(0) @map("booked_hours") @db.Decimal(6, 2)
+  overdueItemCount       Int      @default(0) @map("overdue_item_count") // overdue commitments + tasks combined
+  cancellationRate       Decimal  @default(0) @map("cancellation_rate") @db.Decimal(4, 3) // feeds smart slot suggestions
+  repeatBookingRate      Decimal  @default(0) @map("repeat_booking_rate") @db.Decimal(4, 3)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([consultantId, snapshotDate])
+  @@index([consultantId, snapshotDate(sort: Desc)])
+  @@map("consultant_analytics_snapshot")
+}
+
+model Referral {
+  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String       @map("tenant_id") @db.Uuid
+  consultantId        String       @map("consultant_id") @db.Uuid // which practice the reward is scoped to
+  referringClientId   String       @map("referring_client_id") @db.Uuid
+  referredClientId    String?      @map("referred_client_id") @db.Uuid // null until the invitee signs up
+  rewardType          RewardType   @default(NONE) @map("reward_type")
+  rewardStatus        RewardStatus @default(PENDING) @map("reward_status")
+  createdAt           DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([referringClientId])
+  @@map("referrals")
+}
+
+model ConsultantReferral {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String         @map("tenant_id") @db.Uuid
+  fromConsultantId String         @map("from_consultant_id") @db.Uuid
+  toConsultantId   String         @map("to_consultant_id") @db.Uuid
+  clientId         String         @map("client_id") @db.Uuid
+  sourceCaseId     String         @map("source_case_id") @db.Uuid
+  contextNote      String?        @map("context_note") // carried-over summary only, never raw private notes unless explicitly shared
+  status           ReferralStatus @default(PENDING)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([toConsultantId, status])
+  @@map("consultant_referrals")
+}
+
+// -----------------------------------------------------------------------------
+// Notifications, Audit, Push
+// -----------------------------------------------------------------------------
+
+model Notification {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  type      NotificationType
+  channel   NotificationChannel
+  payload   Json                @default("{}") // rendering data (appointment time, video link, etc.) — shape varies per type
+  sentAt    DateTime?           @map("sent_at") @db.Timestamptz(6)
+  readAt    DateTime?           @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_notifications_user_unread") // query filters read_at IS NULL
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String              @map("user_id") @db.Uuid
+  type         NotificationType
+  channel      NotificationChannel
+  leadTimeMins Int?                @map("lead_time_mins")
+  enabled      Boolean             @default(true)
+
+  @@unique([userId, type, channel])
+  @@map("notification_preferences")
+}
+
+// Every escalated or cross-tenant read, per PRD §1.2 — "unrestricted ≠ invisible."
+model AuditLog {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String    @map("tenant_id") @db.Uuid // the tenant whose data was accessed
+  actorUserId         String    @map("actor_user_id") @db.Uuid
+  actorRole           UserRole  @map("actor_role")
+  isCrossTenantAccess Boolean   @default(false) @map("is_cross_tenant_access")
+  action              String    @db.VarChar(100)
+  entityType          String    @map("entity_type") @db.VarChar(100)
+  entityId            String?   @map("entity_id") @db.Uuid
+  reason              String?   // mandatory (enforced at the API layer) for anything beyond the tenant list/billing dashboard
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([isCrossTenantAccess])
+  @@map("audit_logs")
+}
+
+model PushSubscription {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  keys      Json     // {p256dh, auth} per the Web Push spec — opaque to the app
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// -----------------------------------------------------------------------------
+// Payments (Stripe)
+// -----------------------------------------------------------------------------
+
+// One row per PaymentIntent. Refunds are tracked by re-reading the same
+// PaymentIntent's status from Stripe rather than a separate refund table —
+// Stripe is already the source of truth for that history.
+model Payment {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String        @map("tenant_id") @db.Uuid
+  appointmentId         String        @map("appointment_id") @db.Uuid
+  clientId              String        @map("client_id") @db.Uuid
+  stripePaymentIntentId String        @unique @map("stripe_payment_intent_id") @db.VarChar(100)
+  stripeCustomerId      String?       @map("stripe_customer_id") @db.VarChar(100)
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("INR") @db.Char(3)
+  status                PaymentStatus @default(REQUIRES_PAYMENT_METHOD)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([appointmentId])
+  @@index([status])
+  @@map("payments")
+}

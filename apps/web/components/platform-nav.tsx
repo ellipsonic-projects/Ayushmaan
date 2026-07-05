@@ -8,7 +8,6 @@ import {
   CreditCard,
   ScrollText,
   ShieldAlert,
-  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -20,7 +19,6 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/grievances", label: "Grievances", icon: ShieldAlert },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function PlatformNav() {
