@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 
-export const clientRouter = Router();
+export const clientRouter: Router = Router();
 
 // Get client profile
 clientRouter.get("/profile", (req: AuthenticatedRequest, res: Response) => {

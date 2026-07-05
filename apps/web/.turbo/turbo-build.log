@@ -1,0 +1,51 @@
+[43m[33m[[39m[49m[43m[30mWARN[39m[49m[43m[33m][39m[49m The "pnpm" field in package.json is no longer read by pnpm. The following keys were ignored: "pnpm.overrides". See https://pnpm.io/settings for the new home of each setting.
+[2m$ next build[22m
+[1m[38;2;173;127;168m▲ Next.js 16.2.6[39m[22m (Turbopack)
+
+[37m[1m [22m[39m Creating an optimized production build ...
+(node:50662) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[32m[1m✓[22m[39m Compiled successfully in 4.0s
+[37m[1m [22m[39m Skipping validation of types
+[?25l[37m[1m [22m[39m Finished TypeScript config validation in 14ms  [36m.[39m[2K[1G[?25h[37m[1m [22m[39m Finished TypeScript config validation in 14ms    [32m[1m✓[22m[39m Finished TypeScript config validation in 14ms 
+[?25l[37m[1m [22m[39m Collecting page data using 7 workers  [36m.[39m[2K[1G[37m[1m [22m[39m Collecting page data using 7 workers  [36m..[39m[2K[1G[37m[1m [22m[39m Collecting page data using 7 workers  [36m...[39m[2K[1G[37m[1m [22m[39m Collecting page data using 7 workers  [36m.[39m[2K[1G[?25h[37m[1m [22m[39m Collecting page data using 7 workers in 799ms    [32m[1m✓[22m[39m Collecting page data using 7 workers in 799ms 
+[?25l[37m[1m [22m[39m Generating static pages using 7 workers (0/17)  [36m[    ][39m[2K[1G[37m[1m [22m[39m Generating static pages using 7 workers (2/17)  [36m[=   ][39m[2K[1G[?25hReferenceError: location is not defined
+    at <unknown> (.next/server/chunks/ssr/apps_web_0n3yy22._.js:1:6766)
+ReferenceError: location is not defined
+    at <unknown> (.next/server/chunks/ssr/apps_web_08pwzqx._.js:1:6549)
+ReferenceError: location is not defined
+    at <unknown> (.next/server/chunks/ssr/apps_web_01m3wn8._.js:1:7787)
+ReferenceError: location is not defined
+    at <unknown> (.next/server/chunks/ssr/_0jj_2nl._.js:1:2095)
+ReferenceError: location is not defined
+    at <unknown> (.next/server/chunks/ssr/_0sxo_44._.js:1:2023)
+ReferenceError: location is not defined
+    at <unknown> (.next/server/chunks/ssr/_0af3933._.js:1:7812)
+[?25h[32m[1m✓[22m[39m Generating static pages using 7 workers (17/17) in 405ms
+[?25l[37m[1m [22m[39m Finalizing page optimization  [36m.[39m[2K[1G[?25h[37m[1m [22m[39m Finalizing page optimization in 14ms    [32m[1m✓[22m[39m Finalizing page optimization in 14ms 
+
+[4mRoute (app)[24m
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/auth/login
+├ ƒ /api/auth/register
+├ ƒ /appointments/[id]
+├ ○ /auth/login
+├ ○ /auth/register
+├ ○ /browse-consultants
+├ ƒ /consultant/[id]
+├ ○ /dashboard
+├ ○ /dashboard/client
+├ ○ /dashboard/client/appointments
+├ ○ /dashboard/consultant
+├ ○ /dashboard/consultant/appointments
+├ ○ /dashboard/consultant/availability
+├ ○ /dashboard/consultant/profile
+├ ○ /dashboard/consultant/settings
+└ ○ /onboarding/consultant
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[?25h

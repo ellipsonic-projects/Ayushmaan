@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { AppError } from "../middleware/errorHandler";
 
-export const consultantRouter = Router();
+export const consultantRouter: Router = Router();
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",

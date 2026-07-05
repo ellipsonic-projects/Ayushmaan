@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { AppError } from "../middleware/errorHandler";
 
-export const authRouter = Router();
+export const authRouter: Router = Router();
 
 // In-memory store for demo (replace with database)
 const users: Map<string, any> = new Map();

@@ -3,7 +3,7 @@ import { AuthenticatedRequest } from "../middleware/auth";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-export const appointmentRouter = Router();
+export const appointmentRouter: Router = Router();
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
