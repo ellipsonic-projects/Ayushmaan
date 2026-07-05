@@ -116,7 +116,115 @@
   --sidebar-ring: rgba(59,110,230,0.2);
 }
 
+/* Tenant Admin theme — warm amber/teal palette, scoped so it never bleeds into the Super Admin (platform) shell */
+.tenant-theme {
+  color-scheme: light;
+  --background: #fdf6ec;
+  --foreground: #2b1d0e;
+  --card: #ffffff;
+  --card-foreground: #2b1d0e;
+  --popover: #ffffff;
+  --popover-foreground: #2b1d0e;
+  --primary: #c2650a;
+  --primary-foreground: #ffffff;
+  --secondary: #0f766e;
+  --secondary-foreground: #ffffff;
+  --muted: #f5e9d8;
+  --muted-foreground: #6b4a23;
+  --accent: #f3c98b;
+  --accent-foreground: #402c0a;
+  --destructive: #d94f4f;
+  --border: rgba(43,29,14,0.08);
+  --input: rgba(43,29,14,0.05);
+  --ring: rgba(194,101,10,0.25);
+  --chart-1: #c2650a;
+  --chart-2: #0f766e;
+  --chart-3: #f3c98b;
+  --chart-4: #6b4a23;
+  --chart-5: #f5e9d8;
+  --radius: 0.5rem;
+  --sidebar: #241708;
+  --sidebar-foreground: #fbead2;
+  --sidebar-primary: #c2650a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #3a2712;
+  --sidebar-accent-foreground: #fbead2;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(194,101,10,0.3);
+}
+
+.dark .tenant-theme,
+.tenant-theme.dark {
+  color-scheme: dark;
+  --background: #1a1208;
+  --foreground: #f3e6d0;
+  --card: #241a0d;
+  --card-foreground: #f3e6d0;
+  --popover: #241a0d;
+  --popover-foreground: #f3e6d0;
+  --primary: #e2872b;
+  --primary-foreground: #1a1208;
+  --secondary: #14b8a6;
+  --secondary-foreground: #052e2b;
+  --muted: #2c2011;
+  --muted-foreground: #d8b98a;
+  --accent: #3d2c14;
+  --accent-foreground: #f3e6d0;
+  --destructive: #f2908b;
+  --border: rgba(255,255,255,0.08);
+  --input: rgba(255,255,255,0.05);
+  --ring: rgba(226,135,43,0.3);
+  --chart-1: #e2872b;
+  --chart-2: #14b8a6;
+  --chart-3: #3d2c14;
+  --chart-4: #d8b98a;
+  --chart-5: #2c2011;
+  --sidebar: #120c05;
+  --sidebar-foreground: #f3e6d0;
+  --sidebar-primary: #e2872b;
+  --sidebar-primary-foreground: #1a1208;
+  --sidebar-accent: #241a0d;
+  --sidebar-accent-foreground: #f3e6d0;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(226,135,43,0.3);
+}
+
 @media (prefers-color-scheme: dark) {
+  .tenant-theme:not(.light) {
+    color-scheme: dark;
+    --background: #1a1208;
+    --foreground: #f3e6d0;
+    --card: #241a0d;
+    --card-foreground: #f3e6d0;
+    --popover: #241a0d;
+    --popover-foreground: #f3e6d0;
+    --primary: #e2872b;
+    --primary-foreground: #1a1208;
+    --secondary: #14b8a6;
+    --secondary-foreground: #052e2b;
+    --muted: #2c2011;
+    --muted-foreground: #d8b98a;
+    --accent: #3d2c14;
+    --accent-foreground: #f3e6d0;
+    --destructive: #f2908b;
+    --border: rgba(255,255,255,0.08);
+    --input: rgba(255,255,255,0.05);
+    --ring: rgba(226,135,43,0.3);
+    --chart-1: #e2872b;
+    --chart-2: #14b8a6;
+    --chart-3: #3d2c14;
+    --chart-4: #d8b98a;
+    --chart-5: #2c2011;
+    --sidebar: #120c05;
+    --sidebar-foreground: #f3e6d0;
+    --sidebar-primary: #e2872b;
+    --sidebar-primary-foreground: #1a1208;
+    --sidebar-accent: #241a0d;
+    --sidebar-accent-foreground: #f3e6d0;
+    --sidebar-border: rgba(255,255,255,0.08);
+    --sidebar-ring: rgba(226,135,43,0.3);
+  }
+
   :root:not(.light) {
     color-scheme: dark;
     --background: oklch(0.12 0.01 240);

@@ -9,6 +9,8 @@ import {
   ScrollText,
   ShieldAlert,
   type LucideIcon,
+  Bell,
+  SnowflakeIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -16,9 +18,11 @@ import { cn } from "@/lib/utils";
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tenants", label: "Tenants", icon: Building2 },
-  { href: "/billing", label: "Billing", icon: CreditCard },
+  { href: "/payments", label: "Payments", icon: CreditCard },
   { href: "/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/grievances", label: "Grievances", icon: ShieldAlert },
+  { href: "/notify", label: "Notify All", icon: Bell},
+  { href: "/microservices", label: "Microservices", icon: SnowflakeIcon},
 ];
 
 export function PlatformNav() {

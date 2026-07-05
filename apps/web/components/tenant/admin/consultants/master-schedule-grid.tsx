@@ -1,0 +1,215 @@
+import { AlertTriangle, Clock3 } from "lucide-react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
+const START_HOUR = 8;
+const END_HOUR = 19;
+const ROW_HEIGHT = 56;
+
+type Variant = "default" | "conflict" | "overtime";
+
+type ScheduleEvent = {
+  title: string;
+  time: string;
+  start: number;
+  end: number;
+  variant: Variant;
+  tag?: string;
+};
+
+type Consultant = {
+  name: string;
+  role: string;
+  initials: string;
+  avatarClass: string;
+  events: ScheduleEvent[];
+};
+
+const consultants: Consultant[] = [
+  {
+    name: "Dr. Jane Doe",
+    role: "Cardiology",
+    initials: "JD",
+    avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+    events: [
+      {
+        title: "Patient Consultation",
+        time: "08:00 - 09:00 AM",
+        start: 8,
+        end: 9,
+        variant: "default",
+      },
+    ],
+  },
+  {
+    name: "Marcus Reed",
+    role: "Legal Counsel",
+    initials: "MR",
+    avatarClass:
+      "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
+    events: [
+      {
+        title: "Case Review",
+        time: "09:00 - 10:30 AM",
+        start: 9,
+        end: 10.5,
+        variant: "conflict",
+        tag: "BOOKING CONFLICT",
+      },
+    ],
+  },
+  {
+    name: "Sarah Linn",
+    role: "Tax Specialist",
+    initials: "SL",
+    avatarClass:
+      "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
+    events: [
+      {
+        title: "Corporate Audit",
+        time: "10:00 AM - 12:00 PM",
+        start: 10,
+        end: 12,
+        variant: "default",
+      },
+      {
+        title: "Board Meeting",
+        time: "01:00 - 01:45 PM",
+        start: 13,
+        end: 13.75,
+        variant: "default",
+      },
+    ],
+  },
+  {
+    name: "Alan Kross",
+    role: "Compliance",
+    initials: "AK",
+    avatarClass: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400",
+    events: [
+      {
+        title: "Compliance Training",
+        time: "03:00 - 03:15 PM",
+        start: 15,
+        end: 15.25,
+        variant: "overtime",
+        tag: "EXISTING SLOT",
+      },
+    ],
+  },
+];
+
+const variantClass: Record<Variant, string> = {
+  default:
+    "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200",
+  conflict:
+    "border-red-300 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-200",
+  overtime:
+    "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200",
+};
+
+function hourLabel(hour: number) {
+  const period = hour < 12 || hour === 24 ? "AM" : "PM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${String(displayHour).padStart(2, "0")}:00 ${period}`;
+}
+
+const hours = Array.from(
+  { length: END_HOUR - START_HOUR + 1 },
+  (_, i) => START_HOUR + i
+);
+
+const gridHeight = (END_HOUR - START_HOUR) * ROW_HEIGHT;
+
+export function MasterScheduleGrid() {
+  return (
+    <Card>
+      <CardContent>
+        <div className="flex overflow-x-auto">
+          <div className="w-16 shrink-0">
+            <div className="h-14" />
+            <div className="relative" style={{ height: gridHeight }}>
+              {hours.map((hour) => (
+                <span
+                  key={hour}
+                  className="absolute -translate-y-1/2 text-[11px] font-medium text-muted-foreground"
+                  style={{ top: (hour - START_HOUR) * ROW_HEIGHT }}
+                >
+                  {hourLabel(hour)}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {consultants.map((consultant) => (
+            <div key={consultant.name} className="min-w-40 flex-1 border-l border-border">
+              <div className="flex h-14 flex-col items-center justify-center gap-1 border-b border-border px-2 text-center">
+                <span
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
+                    consultant.avatarClass
+                  )}
+                >
+                  {consultant.initials}
+                </span>
+                <div className="leading-tight">
+                  <p className="text-xs font-semibold text-foreground">
+                    {consultant.name}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {consultant.role}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="relative"
+                style={{
+                  height: gridHeight,
+                  backgroundImage:
+                    "repeating-linear-gradient(to bottom, var(--border) 0, var(--border) 1px, transparent 1px, transparent " +
+                    ROW_HEIGHT +
+                    "px)",
+                }}
+              >
+                {consultant.events.map((event) => (
+                  <div
+                    key={event.title}
+                    className={cn(
+                      "absolute inset-x-1 flex flex-col gap-0.5 overflow-hidden rounded-md border px-2 py-1.5 text-xs",
+                      variantClass[event.variant]
+                    )}
+                    style={{
+                      top: (event.start - START_HOUR) * ROW_HEIGHT,
+                      height: Math.max(
+                        (event.end - event.start) * ROW_HEIGHT,
+                        28
+                      ),
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="font-semibold">{event.title}</p>
+                      {event.variant === "conflict" && (
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                    </div>
+                    <p className="flex items-center gap-1 text-[10px] opacity-80">
+                      <Clock3 className="h-3 w-3" />
+                      {event.time}
+                    </p>
+                    {event.tag && (
+                      <p className="text-[10px] font-bold uppercase tracking-wide">
+                        {event.tag}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

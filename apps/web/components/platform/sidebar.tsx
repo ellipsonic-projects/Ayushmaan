@@ -29,10 +29,12 @@ export function PlatformSidebar() {
       <PlatformNav />
 
       <div className="mt-auto space-y-3 pt-4">
+        <a href="/tenants/add">
         <Button className="w-full justify-center gap-2">
           <Plus className="h-4 w-4" />
           New Tenant
         </Button>
+        </a>
 
         <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3">
           <Link
