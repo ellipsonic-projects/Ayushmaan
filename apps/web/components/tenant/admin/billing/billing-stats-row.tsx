@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-const stats: {
+const lineItems: {
   label: string;
   value: string;
   note: string;
@@ -12,7 +12,7 @@ const stats: {
   icon: LucideIcon;
 }[] = [
   {
-    label: "Total Revenue (30d)",
+    label: "Total Revenue",
     value: "$18,240",
     note: "+8.4% vs last month",
     noteClass: "text-emerald-600 dark:text-emerald-500",
@@ -43,23 +43,34 @@ const stats: {
 
 export function BillingStatsRow() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map(({ label, value, note, noteClass, icon: Icon }) => (
-        <Card key={label}>
-          <CardContent className="flex items-start justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {label}
-              </p>
-              <p className="mt-1 text-xl font-bold text-foreground">{value}</p>
-              <p className={cn("mt-1 text-xs font-medium", noteClass)}>{note}</p>
+    <Card>
+      <CardContent className="flex flex-col divide-y divide-dashed divide-border p-0">
+        {lineItems.map(({ label, value, note, noteClass, icon: Icon }, i) => (
+          <div
+            key={label}
+            className={cn(
+              "flex items-center justify-between gap-4 px-5 py-4",
+              i === 0 && "pt-5",
+              i === lineItems.length - 1 && "pb-5"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {label}
+                </p>
+                <p className={cn("text-[11px] font-medium", noteClass)}>{note}</p>
+              </div>
             </div>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
-              <Icon className="h-4 w-4" />
-            </span>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+            <p className="shrink-0 font-mono text-lg font-semibold tabular-nums text-foreground">
+              {value}
+            </p>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }

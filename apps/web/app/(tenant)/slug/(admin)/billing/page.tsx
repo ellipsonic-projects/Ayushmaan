@@ -6,8 +6,10 @@ export default function TenantBillingPage() {
   return (
     <div className="flex flex-col gap-6">
       <BillingHeader />
-      <BillingStatsRow />
-      <BookingsPaymentsLedger />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_1fr] lg:items-start">
+        <BillingStatsRow />
+        <BookingsPaymentsLedger />
+      </div>
     </div>
   );
 }

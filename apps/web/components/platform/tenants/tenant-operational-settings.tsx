@@ -20,8 +20,8 @@ export function TenantOperationalSettings() {
   const [autoApprove, setAutoApprove] = useState(false);
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-5">
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-sm font-semibold text-foreground">

@@ -6,7 +6,7 @@ import { PlatformFooter } from "@/components/platform/footer";
 
 export default function PlatformLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="platform-theme flex h-screen overflow-hidden bg-background text-foreground">
       <PlatformSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <PlatformHeader />

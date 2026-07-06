@@ -40,19 +40,19 @@ const stats: {
 
 export function TenantDetailStatsRow() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {stats.map(({ label, value, sub, icon: Icon, action,href }) => (
-        <Card key={label}>
+        <Card key={label} size="sm">
           <CardContent className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
-                <Icon className="h-4.5 w-4.5" />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                <Icon className="h-4 w-4" />
               </span>
               <div>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {label}
                 </p>
-                <p className="text-xl font-bold text-foreground">
+                <p className="text-xl font-bold tabular-nums text-foreground">
                   {value}{" "}
                   <span className="text-xs font-normal text-muted-foreground">
                     {sub}

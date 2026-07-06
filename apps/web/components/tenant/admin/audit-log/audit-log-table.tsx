@@ -1,15 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Search,
-} from "lucide-react";
+import { Download, Search } from "lucide-react";
 
 import {
   Card,
@@ -28,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 // Escalated-access actions a Tenant Admin can generate — schema §1.2, §1.4
 type AuditAction =
@@ -90,7 +83,7 @@ const actionLabel: Record<AuditAction, string> = {
   OPENED_GRIEVANCE_LINKED_CASE: "Opened Grievance-Linked Case",
 };
 
-const actionClass: Record<AuditAction, string> = {
+const actionBadgeClass: Record<AuditAction, string> = {
   VIEWED_PRIVATE_NOTES:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
   OPENED_DISPUTE_CASE:
@@ -99,33 +92,18 @@ const actionClass: Record<AuditAction, string> = {
     "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-400",
 };
 
+const actionDotClass: Record<AuditAction, string> = {
+  VIEWED_PRIVATE_NOTES: "bg-amber-500",
+  OPENED_DISPUTE_CASE: "bg-blue-500",
+  OPENED_GRIEVANCE_LINKED_CASE: "bg-violet-500",
+};
+
 const consultants = Array.from(new Set(initialEntries.map((e) => e.consultant)));
-
-type SortKey = "occurredAtSort" | "consultant" | "caseRef";
-type SortDirection = "asc" | "desc";
-
-const columns: { key: SortKey; label: string }[] = [
-  { key: "occurredAtSort", label: "When" },
-  { key: "consultant", label: "Consultant" },
-  { key: "caseRef", label: "Case" },
-];
 
 export function AuditLogTable() {
   const [actionFilter, setActionFilter] = useState("all");
   const [consultantFilter, setConsultantFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("occurredAtSort");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [page] = useState(1);
-
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDirection("asc");
-    }
-  }
 
   const filtered = useMemo(() => {
     return initialEntries
@@ -141,21 +119,15 @@ export function AuditLogTable() {
           e.reason.toLowerCase().includes(query)
         );
       })
-      .sort((a, b) => {
-        const dir = sortDirection === "asc" ? 1 : -1;
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-        if (typeof aVal === "string" && typeof bVal === "string") {
-          return aVal.localeCompare(bVal) * dir;
-        }
-        return ((aVal as number) - (bVal as number)) * dir;
-      });
-  }, [actionFilter, consultantFilter, search, sortKey, sortDirection]);
+      .sort((a, b) => b.occurredAtSort - a.occurredAtSort);
+  }, [actionFilter, consultantFilter, search]);
 
   return (
     <Card>
       <CardHeader className="flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle>Escalated-Access History</CardTitle>
+        <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Escalated-Access History
+        </CardTitle>
         <CardAction className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -205,101 +177,46 @@ export function AuditLogTable() {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="py-2 pr-4 font-medium">Log ID</th>
-                <th className="py-2 pr-4 font-medium">Action</th>
-                {columns.slice(1).map((col) => (
-                  <th key={col.key} className="py-2 pr-4 font-medium">
-                    <button
-                      type="button"
-                      onClick={() => toggleSort(col.key)}
-                      className="flex items-center gap-1 hover:text-foreground"
-                    >
-                      {col.label}
-                      {sortKey === col.key ? (
-                        sortDirection === "asc" ? (
-                          <ArrowUp className="h-3 w-3" />
-                        ) : (
-                          <ArrowDown className="h-3 w-3" />
-                        )
-                      ) : (
-                        <ArrowUpDown className="h-3 w-3 opacity-40" />
-                      )}
-                    </button>
-                  </th>
-                ))}
-                <th className="py-2 pr-4 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("occurredAtSort")}
-                    className="flex items-center gap-1 hover:text-foreground"
-                  >
-                    When
-                    {sortKey === "occurredAtSort" ? (
-                      sortDirection === "asc" ? (
-                        <ArrowUp className="h-3 w-3" />
-                      ) : (
-                        <ArrowDown className="h-3 w-3" />
-                      )
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3 opacity-40" />
-                    )}
-                  </button>
-                </th>
-                <th className="py-2 pr-4 font-medium">Reason</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((entry) => (
-                <tr key={entry.id} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground">
-                    {entry.id}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <Badge variant="outline" className={actionClass[entry.action]}>
-                      {actionLabel[entry.action]}
-                    </Badge>
-                  </td>
-                  <td className="py-3 pr-4 text-foreground">{entry.consultant}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">{entry.caseRef}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">
+        {filtered.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No escalated-access events match these filters.
+          </p>
+        ) : (
+          <ol className="relative flex flex-col gap-6 border-l border-border pl-6">
+            {filtered.map((entry) => (
+              <li key={entry.id} className="relative">
+                <span
+                  className={cn(
+                    "absolute -left-[29px] top-1 h-2.5 w-2.5 rounded-full ring-4 ring-card",
+                    actionDotClass[entry.action]
+                  )}
+                />
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={actionBadgeClass[entry.action]}
+                      >
+                        {actionLabel[entry.action]}
+                      </Badge>
+                      <span className="text-sm font-medium text-foreground">
+                        {entry.consultant}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {entry.caseRef}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{entry.reason}</p>
+                  </div>
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                     {entry.occurredAt}
-                  </td>
-                  <td className="py-3 pr-4 max-w-xs truncate text-muted-foreground">
-                    {entry.reason}
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="py-6 text-center text-sm text-muted-foreground"
-                  >
-                    No escalated-access events match these filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-          <span>
-            Showing {filtered.length} of {initialEntries.length} events
-          </span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={page === 1}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="icon-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
       </CardContent>
     </Card>
   );

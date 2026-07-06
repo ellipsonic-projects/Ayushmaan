@@ -78,11 +78,11 @@ export function ConsultantsTable({ totalRecords }: { totalRecords: number }) {
   const [page] = useState(1);
 
   return (
-    <Card>
-      <CardContent>
-        <div className="overflow-x-auto">
+    <Card size="sm">
+      <CardContent className="px-0">
+        <div className="max-h-112 overflow-auto px-4">
           <table className="w-full text-left text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Consultant</th>
                 <th className="py-2 pr-4 font-medium">Specialization</th>
@@ -95,9 +95,9 @@ export function ConsultantsTable({ totalRecords }: { totalRecords: number }) {
               {consultants.map((consultant) => (
                 <tr
                   key={consultant.consultantId}
-                  className="border-b border-border last:border-0"
+                  className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
                 >
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <div className="flex items-center gap-3">
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${consultant.avatarClass}`}
@@ -114,19 +114,19 @@ export function ConsultantsTable({ totalRecords }: { totalRecords: number }) {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-foreground">
+                  <td className="py-2.5 pr-4 text-foreground">
                     {consultant.specialization}
                   </td>
-                  <td className="py-3 pr-4 text-foreground">
+                  <td className="py-2.5 pr-4 tabular-nums text-foreground">
                     {consultant.totalClients.toLocaleString()}
                   </td>
-                  <td className="py-3 pr-4">
-                    <span className="flex items-center gap-1 text-foreground">
+                  <td className="py-2.5 pr-4">
+                    <span className="flex items-center gap-1 tabular-nums text-foreground">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                       {consultant.avgRating.toFixed(1)}
                     </span>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <Badge
                       variant="outline"
                       className={sentimentClass[consultant.sentiment]}
@@ -140,7 +140,7 @@ export function ConsultantsTable({ totalRecords }: { totalRecords: number }) {
           </table>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-4 flex items-center justify-between px-4 text-xs text-muted-foreground">
           <span>
             Showing 1-{consultants.length} of {totalRecords.toLocaleString()}{" "}
             consultants

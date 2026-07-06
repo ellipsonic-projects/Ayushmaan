@@ -101,11 +101,11 @@ export function ClientsTable() {
   const [page] = useState(1);
 
   return (
-    <Card>
-      <CardContent>
-        <div className="overflow-x-auto">
+    <Card size="sm">
+      <CardContent className="px-0">
+        <div className="max-h-112 overflow-auto px-4">
           <table className="w-full text-left text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Client Name</th>
                 <th className="py-2 pr-4 font-medium">Contact Details</th>
@@ -120,9 +120,9 @@ export function ClientsTable() {
               {clients.map((client) => (
                 <tr
                   key={client.clientId}
-                  className="border-b border-border last:border-0"
+                  className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
                 >
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <div className="flex items-center gap-3">
                       <span
                         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${client.avatarClass}`}
@@ -139,13 +139,13 @@ export function ClientsTable() {
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <p className="text-foreground">{client.email}</p>
                     <p className="text-xs text-muted-foreground">
                       {client.phone}
                     </p>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <div className="flex items-center gap-2">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-foreground">
                         {initials(client.consultant)}
@@ -155,13 +155,13 @@ export function ClientsTable() {
                       </span>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-foreground">
+                  <td className="py-2.5 pr-4 tabular-nums text-foreground">
                     {client.totalSessions}
                   </td>
-                  <td className="py-3 pr-4 text-muted-foreground">
+                  <td className="py-2.5 pr-4 tabular-nums text-muted-foreground">
                     {client.lastSessionDate}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <Badge
                       variant="outline"
                       className={statusClass[client.status]}
@@ -169,7 +169,7 @@ export function ClientsTable() {
                       {client.status.toUpperCase()}
                     </Badge>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon-sm">
                         <Pencil className="h-3.5 w-3.5" />
@@ -192,7 +192,7 @@ export function ClientsTable() {
           </table>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-4 flex items-center justify-between px-4 text-xs text-muted-foreground">
           <span>Showing 1 to {clients.length} of 142 clients</span>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon-sm" disabled={page === 1}>

@@ -11,14 +11,17 @@ import {
   Megaphone,
   Settings,
   type LucideIcon,
+  Clock,
+  BotOffIcon,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/consultants", label: "Consultants", icon: Stethoscope },
+  { href: "/scheduler", label: "Scheduler", icon: Clock},
   { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
+  { href: "/consultants", label: "Consultants", icon: BotOffIcon},
   { href: "/billing", label: "Billing", icon: Receipt },
   { href: "/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/grievance", label: "Escalate to Platform", icon: Megaphone },

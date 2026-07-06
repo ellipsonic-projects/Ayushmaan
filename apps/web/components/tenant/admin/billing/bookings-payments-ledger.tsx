@@ -205,8 +205,10 @@ export function BookingsPaymentsLedger() {
 
   return (
     <Card>
-      <CardHeader className="flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle>Bookings &amp; Payments</CardTitle>
+      <CardHeader className="flex-col items-stretch gap-3 border-b-2 border-double border-border sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Ledger — Bookings &amp; Payments
+        </CardTitle>
         <CardAction className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -297,7 +299,7 @@ export function BookingsPaymentsLedger() {
                   <td className="py-3 pr-4 text-muted-foreground">
                     {booking.scheduledAt}
                   </td>
-                  <td className="py-3 pr-4 font-medium text-foreground">
+                  <td className="py-3 pr-4 font-mono font-medium tabular-nums text-foreground">
                     {booking.currency} {booking.amount.toLocaleString()}
                   </td>
                   <td className="py-3 pr-4">

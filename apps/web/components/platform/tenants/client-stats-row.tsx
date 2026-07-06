@@ -43,15 +43,15 @@ const stats: {
 
 export function ClientStatsRow() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map(({ label, value, note, noteClass, icon: Icon }) => (
-        <Card key={label}>
+        <Card key={label} size="sm">
           <CardContent className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {label}
               </p>
-              <p className="mt-1 text-xl font-bold text-foreground">
+              <p className="mt-1 text-xl font-bold tabular-nums text-foreground">
                 {value}
               </p>
               <p className={cn("mt-1 text-xs font-medium", noteClass)}>

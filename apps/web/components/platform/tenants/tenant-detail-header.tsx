@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Download } from "lucide-react";
+import { Building2, ChevronRight, Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,10 @@ export function TenantDetailHeader({
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground">{tenantId}</span>
         </div>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Building2 className="h-4 w-4" />
+          </span>
           <h2 className="text-2xl font-bold text-foreground">{name}</h2>
           <Badge
             variant={status === "Active" ? "default" : "destructive"}

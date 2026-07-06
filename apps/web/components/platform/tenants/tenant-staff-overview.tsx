@@ -41,8 +41,8 @@ const roleVariant: Record<Staff["role"], "default" | "outline"> = {
 
 export function TenantStaffOverview() {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4">
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -58,7 +58,10 @@ export function TenantStaffOverview() {
 
         <div className="flex flex-col gap-3">
           {staff.map((member) => (
-            <div key={member.email} className="flex items-center gap-3">
+            <div
+              key={member.email}
+              className="flex items-center gap-3 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors hover:bg-muted/50"
+            >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
                 {member.name
                   .split(" ")

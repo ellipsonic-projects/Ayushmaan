@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Filter, Download } from "lucide-react";
+import { ChevronRight, Filter, Download, History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -26,9 +26,14 @@ export function SessionLogHeader({
           <ChevronRight className="h-3 w-3" />
           <span className="text-foreground">Sessions</span>
         </div>
-        <h2 className="mt-1 text-2xl font-bold text-foreground">
-          Global Session Logs
-        </h2>
+        <div className="mt-1 flex items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <History className="h-4 w-4" />
+          </span>
+          <h2 className="text-2xl font-bold text-foreground">
+            Global Session Logs
+          </h2>
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Reviewing {totalRecords.toLocaleString()} historical interaction
           records for {tenantName} infrastructure.

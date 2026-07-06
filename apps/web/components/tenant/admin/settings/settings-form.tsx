@@ -70,7 +70,7 @@ export function SettingsForm() {
 
   return (
     <div className="flex flex-col gap-6 pb-20">
-      <Card>
+      <Card id="branding" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <ImageIcon className="h-3.5 w-3.5" />
@@ -107,7 +107,7 @@ export function SettingsForm() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="business-identity" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <Building2 className="h-3.5 w-3.5" />
@@ -157,7 +157,7 @@ export function SettingsForm() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="financial-configuration" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <Landmark className="h-3.5 w-3.5" />
@@ -217,7 +217,7 @@ export function SettingsForm() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="platform-oversight" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5" />

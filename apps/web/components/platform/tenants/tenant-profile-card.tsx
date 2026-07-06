@@ -29,9 +29,9 @@ export function TenantProfileCard({
   const [customDomain, setCustomDomain] = useState("portal.acmeglobal.com");
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-6">
-        <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-foreground">
               {adminName.charAt(0)}

@@ -78,11 +78,11 @@ export function SessionsTable({ totalRecords }: { totalRecords: number }) {
   const [page] = useState(1);
 
   return (
-    <Card>
-      <CardContent>
-        <div className="overflow-x-auto">
+    <Card size="sm">
+      <CardContent className="px-0">
+        <div className="max-h-112 overflow-auto px-4">
           <table className="w-full text-left text-sm">
-            <thead>
+            <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Consultant</th>
                 <th className="py-2 pr-4 font-medium">Client Name</th>
@@ -95,9 +95,9 @@ export function SessionsTable({ totalRecords }: { totalRecords: number }) {
               {sessions.map((session) => (
                 <tr
                   key={session.id}
-                  className="border-b border-border last:border-0"
+                  className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
                 >
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <div className="flex items-center gap-3">
                       <span
                         className={cn(
@@ -123,13 +123,13 @@ export function SessionsTable({ totalRecords }: { totalRecords: number }) {
                       </p>
                     </div>
                   </td>
-                  <td className="py-3 pr-4 text-muted-foreground">
+                  <td className="py-2.5 pr-4 text-muted-foreground">
                     {session.client}
                   </td>
-                  <td className="py-3 pr-4 text-muted-foreground">
+                  <td className="py-2.5 pr-4 tabular-nums text-muted-foreground">
                     {session.duration}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <Badge
                       variant="outline"
                       className={statusClass[session.status]}
@@ -137,13 +137,14 @@ export function SessionsTable({ totalRecords }: { totalRecords: number }) {
                       {session.status.toUpperCase()}
                     </Badge>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-2.5 pr-4">
                     <span
-                      className={
+                      className={cn(
+                        "tabular-nums",
                         session.rescheduled
                           ? "text-amber-600 dark:text-amber-500"
                           : "text-muted-foreground"
-                      }
+                      )}
                     >
                       {session.reschedules}
                       {session.rescheduled && (
@@ -157,7 +158,7 @@ export function SessionsTable({ totalRecords }: { totalRecords: number }) {
           </table>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+        <div className="mt-4 flex items-center justify-between px-4 text-xs text-muted-foreground">
           <span>
             Showing 1 to {sessions.length} of {totalRecords.toLocaleString()}
           </span>

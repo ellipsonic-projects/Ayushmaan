@@ -189,7 +189,115 @@
   --sidebar-ring: rgba(226,135,43,0.3);
 }
 
+/* Super Admin (platform) theme — slate/graphite control-tower look with an emerald signal accent, scoped so it never bleeds into the consumer app or Tenant Admin shell */
+.platform-theme {
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #1e293b;
+  --primary-foreground: #ffffff;
+  --secondary: #475569;
+  --secondary-foreground: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #10b981;
+  --accent-foreground: #052e2b;
+  --destructive: #dc2626;
+  --border: rgba(15,23,42,0.08);
+  --input: rgba(15,23,42,0.05);
+  --ring: rgba(30,41,59,0.25);
+  --chart-1: #1e293b;
+  --chart-2: #10b981;
+  --chart-3: #0ea5e9;
+  --chart-4: #64748b;
+  --chart-5: #cbd5e1;
+  --radius: 0.4rem;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #10b981;
+  --sidebar-primary-foreground: #052e2b;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(16,185,129,0.3);
+}
+
+.dark .platform-theme,
+.platform-theme.dark {
+  color-scheme: dark;
+  --background: #0b1120;
+  --foreground: #e2e8f0;
+  --card: #131b2e;
+  --card-foreground: #e2e8f0;
+  --popover: #131b2e;
+  --popover-foreground: #e2e8f0;
+  --primary: #94a3b8;
+  --primary-foreground: #0b1120;
+  --secondary: #1e293b;
+  --secondary-foreground: #e2e8f0;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #34d399;
+  --accent-foreground: #052e2b;
+  --destructive: #f2908b;
+  --border: rgba(255,255,255,0.08);
+  --input: rgba(255,255,255,0.05);
+  --ring: rgba(52,211,153,0.3);
+  --chart-1: #94a3b8;
+  --chart-2: #34d399;
+  --chart-3: #38bdf8;
+  --chart-4: #64748b;
+  --chart-5: #cbd5e1;
+  --sidebar: #070c17;
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #34d399;
+  --sidebar-primary-foreground: #052e2b;
+  --sidebar-accent: #131b2e;
+  --sidebar-accent-foreground: #e2e8f0;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(52,211,153,0.3);
+}
+
 @media (prefers-color-scheme: dark) {
+  .platform-theme:not(.light) {
+    color-scheme: dark;
+    --background: #0b1120;
+    --foreground: #e2e8f0;
+    --card: #131b2e;
+    --card-foreground: #e2e8f0;
+    --popover: #131b2e;
+    --popover-foreground: #e2e8f0;
+    --primary: #94a3b8;
+    --primary-foreground: #0b1120;
+    --secondary: #1e293b;
+    --secondary-foreground: #e2e8f0;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #34d399;
+    --accent-foreground: #052e2b;
+    --destructive: #f2908b;
+    --border: rgba(255,255,255,0.08);
+    --input: rgba(255,255,255,0.05);
+    --ring: rgba(52,211,153,0.3);
+    --chart-1: #94a3b8;
+    --chart-2: #34d399;
+    --chart-3: #38bdf8;
+    --chart-4: #64748b;
+    --chart-5: #cbd5e1;
+    --sidebar: #070c17;
+    --sidebar-foreground: #e2e8f0;
+    --sidebar-primary: #34d399;
+    --sidebar-primary-foreground: #052e2b;
+    --sidebar-accent: #131b2e;
+    --sidebar-accent-foreground: #e2e8f0;
+    --sidebar-border: rgba(255,255,255,0.08);
+    --sidebar-ring: rgba(52,211,153,0.3);
+  }
+
   .tenant-theme:not(.light) {
     color-scheme: dark;
     --background: #1a1208;

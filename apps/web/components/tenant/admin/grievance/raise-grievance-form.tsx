@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 // Grievance entity — schema §1.3. subjectType constrained to what a Tenant
 // Admin can escalate about themselves (never CONSULTANT/TENANT_ADMIN, which
@@ -37,11 +38,41 @@ const CATEGORIES = [
 ] as const;
 
 const SEVERITIES = [
-  { value: "LOW", label: "Low" },
-  { value: "MEDIUM", label: "Medium" },
-  { value: "HIGH", label: "High" },
-  { value: "CRITICAL", label: "Critical" },
+  {
+    value: "LOW",
+    label: "Low",
+    dot: "bg-slate-400",
+    active: "border-slate-400 bg-slate-50 text-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  },
+  {
+    value: "MEDIUM",
+    label: "Medium",
+    dot: "bg-blue-500",
+    active:
+      "border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400",
+  },
+  {
+    value: "HIGH",
+    label: "High",
+    dot: "bg-amber-500",
+    active:
+      "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400",
+  },
+  {
+    value: "CRITICAL",
+    label: "Critical",
+    dot: "bg-red-500",
+    active:
+      "border-red-400 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400",
+  },
 ] as const;
+
+const severityAccentClass: Record<string, string> = {
+  LOW: "border-l-slate-400",
+  MEDIUM: "border-l-blue-500",
+  HIGH: "border-l-amber-500",
+  CRITICAL: "border-l-red-500",
+};
 
 export function RaiseGrievanceForm() {
   const [subjectType, setSubjectType] = useState<string>("");
@@ -84,7 +115,12 @@ export function RaiseGrievanceForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card>
+      <Card
+        className={cn(
+          "border-l-4",
+          severityAccentClass[severity] ?? "border-l-blue-500"
+        )}
+      >
         <CardHeader>
           <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             New Escalation
@@ -94,8 +130,8 @@ export function RaiseGrievanceForm() {
             You can track its status below.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <CardContent className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>
                 Subject <span className="text-destructive">*</span>
@@ -130,20 +166,27 @@ export function RaiseGrievanceForm() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Severity</Label>
-              <Select value={severity} onValueChange={(v) => setSeverity(v ?? "MEDIUM")}>
-                <SelectTrigger className="h-9 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {SEVERITIES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Severity</Label>
+            <div className="flex flex-wrap gap-2">
+              {SEVERITIES.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  onClick={() => setSeverity(s.value)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
+                    severity === s.value
+                      ? s.active
+                      : "border-border text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 

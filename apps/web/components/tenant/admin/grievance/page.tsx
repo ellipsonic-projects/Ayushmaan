@@ -4,7 +4,7 @@ import { MyEscalationsTable } from "@/components/tenant/admin/grievance/my-escal
 
 export default function TenantGrievancePage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <GrievanceHeader />
       <RaiseGrievanceForm />
       <MyEscalationsTable />
