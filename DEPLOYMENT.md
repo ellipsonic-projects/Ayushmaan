@@ -46,6 +46,24 @@ NEXT_PUBLIC_API_BASE_URL=https://your-api-domain.com
 
 Click "Deploy" to go live!
 
+## Frontend Deployment (Render)
+
+Because `apps/web` depends on `@ayushman/shared` via the `workspace:*` protocol, the build must run from the repo root with pnpm — `npm install` inside `apps/web` will fail.
+
+1. Go to [render.com](https://render.com) and create a new "Web Service"
+2. Connect your GitHub repo
+3. Configure:
+   - Root Directory: (leave blank — repo root)
+   - Build Command: `corepack enable && pnpm install && pnpm --filter @ayushman/web build`
+   - Start Command: `pnpm --filter @ayushman/web exec next start -H 0.0.0.0 -p $PORT`
+4. Add environment variables **before the first build** (`NEXT_PUBLIC_*` values are inlined at build time):
+   ```env
+   NEXT_PUBLIC_API_URL=https://your-api-domain.com
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+5. Deploy!
+
 ## Backend Deployment Options
 
 ### Option A: Railway.app (Recommended)
@@ -69,9 +87,10 @@ Click "Deploy" to go live!
 2. Create new "Web Service"
 3. Connect your GitHub repo
 4. Configure:
-   - Build command: `cd apps/api && npm install && npm run build`
-   - Start command: `npm start`
-   - Environment variables: (same as above)
+   - Root Directory: (leave blank — repo root; `npm install` inside `apps/api` fails on the `workspace:*` dependency)
+   - Build command: `corepack enable && pnpm install && pnpm --filter @ayushman/api build`
+   - Start command: `node apps/api/dist/index.js`
+   - Environment variables: (same as above — the API crashes at startup if `SUPABASE_URL`/`SUPABASE_ANON_KEY` are missing)
 5. Deploy!
 
 ### Option C: AWS ECS Fargate
