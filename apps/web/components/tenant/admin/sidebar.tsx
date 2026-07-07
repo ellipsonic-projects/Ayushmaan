@@ -5,10 +5,10 @@ import { LifeBuoy, Plus, LogOut } from "lucide-react";
 import { TenantAdminNav } from "@/components/tenant/admin/nav";
 import { Button } from "@/components/ui/button";
 
-export function TenantAdminSidebar() {
+export function TenantAdminSidebarContent() {
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-4 py-6">
-      <Link href="/slug/dashboard" className="flex items-center gap-2.5 px-2">
+    <>
+      <Link href="/slug/tenant/dashboard" className="flex items-center gap-2.5 px-2">
         <Image
           src="/icon.svg"
           alt="Ayushman"
@@ -21,7 +21,7 @@ export function TenantAdminSidebar() {
             Ayushman
           </p>
           <p className="text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60">
-            Clinic Admin
+            Tenant Admin
           </p>
         </div>
       </Link>
@@ -39,20 +39,28 @@ export function TenantAdminSidebar() {
         <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3">
           <Link
             href="/support"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <LifeBuoy className="h-4 w-4" />
             Support
           </Link>
           <Link
             href="/logout"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             <LogOut className="h-4 w-4" />
             Sign Out
           </Link>
         </div>
       </div>
+    </>
+  );
+}
+
+export function TenantAdminSidebar() {
+  return (
+    <aside className="hidden h-screen w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
+      <TenantAdminSidebarContent />
     </aside>
   );
 }

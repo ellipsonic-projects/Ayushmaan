@@ -3,7 +3,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+html {
+  font-size: 93.75%;
+}
+
 @theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -116,221 +121,280 @@
   --sidebar-ring: rgba(59,110,230,0.2);
 }
 
-/* Tenant Admin theme — warm amber/teal palette, scoped so it never bleeds into the Super Admin (platform) shell */
+/* Tenant Admin theme — indigo-purple palette, scoped so it never bleeds into the Super Admin (platform) shell */
 .tenant-theme {
   color-scheme: light;
-  --background: #fdf6ec;
-  --foreground: #2b1d0e;
+  --background: #f7f7fc;
+  --foreground: #211f36;
   --card: #ffffff;
-  --card-foreground: #2b1d0e;
+  --card-foreground: #211f36;
   --popover: #ffffff;
-  --popover-foreground: #2b1d0e;
-  --primary: #c2650a;
+  --popover-foreground: #211f36;
+  --primary: #4f39d6;
   --primary-foreground: #ffffff;
-  --secondary: #0f766e;
+  --secondary: #6366f1;
   --secondary-foreground: #ffffff;
-  --muted: #f5e9d8;
-  --muted-foreground: #6b4a23;
-  --accent: #f3c98b;
-  --accent-foreground: #402c0a;
-  --destructive: #d94f4f;
-  --border: rgba(43,29,14,0.08);
-  --input: rgba(43,29,14,0.05);
-  --ring: rgba(194,101,10,0.25);
-  --chart-1: #c2650a;
-  --chart-2: #0f766e;
-  --chart-3: #f3c98b;
-  --chart-4: #6b4a23;
-  --chart-5: #f5e9d8;
+  --muted: #efeef9;
+  --muted-foreground: #6d6a89;
+  --accent: #10b981;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: rgba(33,31,54,0.08);
+  --input: rgba(33,31,54,0.05);
+  --ring: rgba(79,57,214,0.22);
+  --chart-1: #4f39d6;
+  --chart-2: #6366f1;
+  --chart-3: #10b981;
+  --chart-4: #a5b4fc;
+  --chart-5: #e0e7ff;
   --radius: 0.5rem;
-  --sidebar: #241708;
-  --sidebar-foreground: #fbead2;
-  --sidebar-primary: #c2650a;
+  --sidebar: #15102b;
+  --sidebar-foreground: #eceafc;
+  --sidebar-primary: #6d5bef;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #3a2712;
-  --sidebar-accent-foreground: #fbead2;
+  --sidebar-accent: #241c47;
+  --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(194,101,10,0.3);
+  --sidebar-ring: rgba(109,91,239,0.3);
 }
 
 .dark .tenant-theme,
 .tenant-theme.dark {
   color-scheme: dark;
-  --background: #1a1208;
-  --foreground: #f3e6d0;
-  --card: #241a0d;
-  --card-foreground: #f3e6d0;
-  --popover: #241a0d;
-  --popover-foreground: #f3e6d0;
-  --primary: #e2872b;
-  --primary-foreground: #1a1208;
-  --secondary: #14b8a6;
-  --secondary-foreground: #052e2b;
-  --muted: #2c2011;
-  --muted-foreground: #d8b98a;
-  --accent: #3d2c14;
-  --accent-foreground: #f3e6d0;
-  --destructive: #f2908b;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.05);
-  --ring: rgba(226,135,43,0.3);
-  --chart-1: #e2872b;
-  --chart-2: #14b8a6;
-  --chart-3: #3d2c14;
-  --chart-4: #d8b98a;
-  --chart-5: #2c2011;
-  --sidebar: #120c05;
-  --sidebar-foreground: #f3e6d0;
-  --sidebar-primary: #e2872b;
-  --sidebar-primary-foreground: #1a1208;
-  --sidebar-accent: #241a0d;
-  --sidebar-accent-foreground: #f3e6d0;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(226,135,43,0.3);
-}
-
-/* Super Admin (platform) theme — slate/graphite control-tower look with an emerald signal accent, scoped so it never bleeds into the consumer app or Tenant Admin shell */
-.platform-theme {
-  color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #1e293b;
-  --primary-foreground: #ffffff;
-  --secondary: #475569;
-  --secondary-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #10b981;
-  --accent-foreground: #052e2b;
-  --destructive: #dc2626;
-  --border: rgba(15,23,42,0.08);
-  --input: rgba(15,23,42,0.05);
-  --ring: rgba(30,41,59,0.25);
-  --chart-1: #1e293b;
-  --chart-2: #10b981;
-  --chart-3: #0ea5e9;
-  --chart-4: #64748b;
-  --chart-5: #cbd5e1;
-  --radius: 0.4rem;
-  --sidebar: #0f172a;
-  --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #10b981;
-  --sidebar-primary-foreground: #052e2b;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #e2e8f0;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(16,185,129,0.3);
-}
-
-.dark .platform-theme,
-.platform-theme.dark {
-  color-scheme: dark;
-  --background: #0b1120;
-  --foreground: #e2e8f0;
-  --card: #131b2e;
-  --card-foreground: #e2e8f0;
-  --popover: #131b2e;
-  --popover-foreground: #e2e8f0;
-  --primary: #94a3b8;
-  --primary-foreground: #0b1120;
-  --secondary: #1e293b;
-  --secondary-foreground: #e2e8f0;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --background: #100d1f;
+  --foreground: #e9e7f7;
+  --card: #191530;
+  --card-foreground: #e9e7f7;
+  --popover: #191530;
+  --popover-foreground: #e9e7f7;
+  --primary: #8b7bf0;
+  --primary-foreground: #100d1f;
+  --secondary: #6366f1;
+  --secondary-foreground: #100d1f;
+  --muted: #221d3d;
+  --muted-foreground: #b3aed6;
   --accent: #34d399;
   --accent-foreground: #052e2b;
   --destructive: #f2908b;
   --border: rgba(255,255,255,0.08);
   --input: rgba(255,255,255,0.05);
-  --ring: rgba(52,211,153,0.3);
-  --chart-1: #94a3b8;
-  --chart-2: #34d399;
-  --chart-3: #38bdf8;
-  --chart-4: #64748b;
-  --chart-5: #cbd5e1;
-  --sidebar: #070c17;
-  --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #34d399;
-  --sidebar-primary-foreground: #052e2b;
-  --sidebar-accent: #131b2e;
-  --sidebar-accent-foreground: #e2e8f0;
+  --ring: rgba(139,123,240,0.3);
+  --chart-1: #8b7bf0;
+  --chart-2: #6366f1;
+  --chart-3: #34d399;
+  --chart-4: #a5b4fc;
+  --chart-5: #e0e7ff;
+  --sidebar: #0d0a1a;
+  --sidebar-foreground: #e9e7f7;
+  --sidebar-primary: #8b7bf0;
+  --sidebar-primary-foreground: #100d1f;
+  --sidebar-accent: #191530;
+  --sidebar-accent-foreground: #e9e7f7;
   --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(52,211,153,0.3);
+  --sidebar-ring: rgba(139,123,240,0.3);
+}
+
+/* Consultant theme — violet variant of the tenant-theme, closest to the Carepatron reference */
+.tenant-theme.consultant-scope {
+  --primary: #6e46f0;
+  --secondary: #8b5cf6;
+  --ring: rgba(110,70,240,0.22);
+  --chart-1: #6e46f0;
+  --chart-2: #8b5cf6;
+  --chart-3: #10b981;
+  --chart-4: #c4b5fd;
+  --chart-5: #ede9fe;
+  --sidebar: #170f2e;
+  --sidebar-foreground: #efeafd;
+  --sidebar-primary: #7c5cfc;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #241a44;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(124,92,252,0.3);
+}
+
+.dark .tenant-theme.consultant-scope,
+.tenant-theme.consultant-scope.dark {
+  --primary: #a48bf5;
+  --secondary: #8b5cf6;
+  --ring: rgba(164,139,245,0.3);
+  --chart-1: #a48bf5;
+  --chart-2: #8b5cf6;
+  --chart-3: #34d399;
+  --chart-4: #c4b5fd;
+  --chart-5: #ede9fe;
+  --sidebar: #0e0920;
+  --sidebar-foreground: #efeafd;
+  --sidebar-primary: #a48bf5;
+  --sidebar-primary-foreground: #170f2e;
+  --sidebar-accent: #1c1438;
+  --sidebar-accent-foreground: #efeafd;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(164,139,245,0.3);
+}
+
+/* Super Admin (platform) theme — plum/violet control-tower look with an amber ops-signal accent, scoped so it never bleeds into the consumer app or Tenant Admin shell */
+.platform-theme {
+  color-scheme: light;
+  --background: #f8f7fc;
+  --foreground: #1e1b2e;
+  --card: #ffffff;
+  --card-foreground: #1e1b2e;
+  --popover: #ffffff;
+  --popover-foreground: #1e1b2e;
+  --primary: #4c1d95;
+  --primary-foreground: #ffffff;
+  --secondary: #7c3aed;
+  --secondary-foreground: #ffffff;
+  --muted: #f1eefc;
+  --muted-foreground: #6b6280;
+  --accent: #f59e0b;
+  --accent-foreground: #1e1b2e;
+  --destructive: #dc2626;
+  --border: rgba(30,27,46,0.08);
+  --input: rgba(30,27,46,0.05);
+  --ring: rgba(124,58,237,0.25);
+  --chart-1: #4c1d95;
+  --chart-2: #7c3aed;
+  --chart-3: #f59e0b;
+  --chart-4: #a78bfa;
+  --chart-5: #ede9fe;
+  --radius: 0.5rem;
+  --sidebar: #1b1130;
+  --sidebar-foreground: #efeaf7;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a1d47;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(124,58,237,0.3);
+}
+
+.dark .platform-theme,
+.platform-theme.dark {
+  color-scheme: dark;
+  --background: #0f0c1a;
+  --foreground: #efeaf7;
+  --card: #171226;
+  --card-foreground: #efeaf7;
+  --popover: #171226;
+  --popover-foreground: #efeaf7;
+  --primary: #a78bfa;
+  --primary-foreground: #0f0c1a;
+  --secondary: #7c3aed;
+  --secondary-foreground: #0f0c1a;
+  --muted: #201a34;
+  --muted-foreground: #b0a7c9;
+  --accent: #fbbf24;
+  --accent-foreground: #1e1b2e;
+  --destructive: #f2908b;
+  --border: rgba(255,255,255,0.08);
+  --input: rgba(255,255,255,0.05);
+  --ring: rgba(167,139,250,0.3);
+  --chart-1: #a78bfa;
+  --chart-2: #7c3aed;
+  --chart-3: #fbbf24;
+  --chart-4: #c4b5fd;
+  --chart-5: #ede9fe;
+  --sidebar: #0b0815;
+  --sidebar-foreground: #efeaf7;
+  --sidebar-primary: #a78bfa;
+  --sidebar-primary-foreground: #0f0c1a;
+  --sidebar-accent: #171226;
+  --sidebar-accent-foreground: #efeaf7;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: rgba(167,139,250,0.3);
 }
 
 @media (prefers-color-scheme: dark) {
   .platform-theme:not(.light) {
     color-scheme: dark;
-    --background: #0b1120;
-    --foreground: #e2e8f0;
-    --card: #131b2e;
-    --card-foreground: #e2e8f0;
-    --popover: #131b2e;
-    --popover-foreground: #e2e8f0;
-    --primary: #94a3b8;
-    --primary-foreground: #0b1120;
-    --secondary: #1e293b;
-    --secondary-foreground: #e2e8f0;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
+    --background: #0f0c1a;
+    --foreground: #efeaf7;
+    --card: #171226;
+    --card-foreground: #efeaf7;
+    --popover: #171226;
+    --popover-foreground: #efeaf7;
+    --primary: #a78bfa;
+    --primary-foreground: #0f0c1a;
+    --secondary: #7c3aed;
+    --secondary-foreground: #0f0c1a;
+    --muted: #201a34;
+    --muted-foreground: #b0a7c9;
+    --accent: #fbbf24;
+    --accent-foreground: #1e1b2e;
+    --destructive: #f2908b;
+    --border: rgba(255,255,255,0.08);
+    --input: rgba(255,255,255,0.05);
+    --ring: rgba(167,139,250,0.3);
+    --chart-1: #a78bfa;
+    --chart-2: #7c3aed;
+    --chart-3: #fbbf24;
+    --chart-4: #c4b5fd;
+    --chart-5: #ede9fe;
+    --sidebar: #0b0815;
+    --sidebar-foreground: #efeaf7;
+    --sidebar-primary: #a78bfa;
+    --sidebar-primary-foreground: #0f0c1a;
+    --sidebar-accent: #171226;
+    --sidebar-accent-foreground: #efeaf7;
+    --sidebar-border: rgba(255,255,255,0.08);
+    --sidebar-ring: rgba(167,139,250,0.3);
+  }
+
+  .tenant-theme:not(.light) {
+    color-scheme: dark;
+    --background: #100d1f;
+    --foreground: #e9e7f7;
+    --card: #191530;
+    --card-foreground: #e9e7f7;
+    --popover: #191530;
+    --popover-foreground: #e9e7f7;
+    --primary: #8b7bf0;
+    --primary-foreground: #100d1f;
+    --secondary: #6366f1;
+    --secondary-foreground: #100d1f;
+    --muted: #221d3d;
+    --muted-foreground: #b3aed6;
     --accent: #34d399;
     --accent-foreground: #052e2b;
     --destructive: #f2908b;
     --border: rgba(255,255,255,0.08);
     --input: rgba(255,255,255,0.05);
-    --ring: rgba(52,211,153,0.3);
-    --chart-1: #94a3b8;
-    --chart-2: #34d399;
-    --chart-3: #38bdf8;
-    --chart-4: #64748b;
-    --chart-5: #cbd5e1;
-    --sidebar: #070c17;
-    --sidebar-foreground: #e2e8f0;
-    --sidebar-primary: #34d399;
-    --sidebar-primary-foreground: #052e2b;
-    --sidebar-accent: #131b2e;
-    --sidebar-accent-foreground: #e2e8f0;
+    --ring: rgba(139,123,240,0.3);
+    --chart-1: #8b7bf0;
+    --chart-2: #6366f1;
+    --chart-3: #34d399;
+    --chart-4: #a5b4fc;
+    --chart-5: #e0e7ff;
+    --sidebar: #0d0a1a;
+    --sidebar-foreground: #e9e7f7;
+    --sidebar-primary: #8b7bf0;
+    --sidebar-primary-foreground: #100d1f;
+    --sidebar-accent: #191530;
+    --sidebar-accent-foreground: #e9e7f7;
     --sidebar-border: rgba(255,255,255,0.08);
-    --sidebar-ring: rgba(52,211,153,0.3);
+    --sidebar-ring: rgba(139,123,240,0.3);
   }
 
-  .tenant-theme:not(.light) {
-    color-scheme: dark;
-    --background: #1a1208;
-    --foreground: #f3e6d0;
-    --card: #241a0d;
-    --card-foreground: #f3e6d0;
-    --popover: #241a0d;
-    --popover-foreground: #f3e6d0;
-    --primary: #e2872b;
-    --primary-foreground: #1a1208;
-    --secondary: #14b8a6;
-    --secondary-foreground: #052e2b;
-    --muted: #2c2011;
-    --muted-foreground: #d8b98a;
-    --accent: #3d2c14;
-    --accent-foreground: #f3e6d0;
-    --destructive: #f2908b;
-    --border: rgba(255,255,255,0.08);
-    --input: rgba(255,255,255,0.05);
-    --ring: rgba(226,135,43,0.3);
-    --chart-1: #e2872b;
-    --chart-2: #14b8a6;
-    --chart-3: #3d2c14;
-    --chart-4: #d8b98a;
-    --chart-5: #2c2011;
-    --sidebar: #120c05;
-    --sidebar-foreground: #f3e6d0;
-    --sidebar-primary: #e2872b;
-    --sidebar-primary-foreground: #1a1208;
-    --sidebar-accent: #241a0d;
-    --sidebar-accent-foreground: #f3e6d0;
+  .tenant-theme.consultant-scope:not(.light) {
+    --primary: #a48bf5;
+    --secondary: #8b5cf6;
+    --ring: rgba(164,139,245,0.3);
+    --chart-1: #a48bf5;
+    --chart-2: #8b5cf6;
+    --chart-3: #34d399;
+    --chart-4: #c4b5fd;
+    --chart-5: #ede9fe;
+    --sidebar: #0e0920;
+    --sidebar-foreground: #efeafd;
+    --sidebar-primary: #a48bf5;
+    --sidebar-primary-foreground: #170f2e;
+    --sidebar-accent: #1c1438;
+    --sidebar-accent-foreground: #efeafd;
     --sidebar-border: rgba(255,255,255,0.08);
-    --sidebar-ring: rgba(226,135,43,0.3);
+    --sidebar-ring: rgba(164,139,245,0.3);
   }
 
   :root:not(.light) {
@@ -376,4 +440,74 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Tiptap template editor */
+.tiptap-template p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
+
+.tiptap-template h1 {
+  @apply mt-6 mb-3 text-2xl font-bold first:mt-0;
+}
+
+.tiptap-template h2 {
+  @apply mt-5 mb-2 text-xl font-semibold first:mt-0;
+}
+
+.tiptap-template h3 {
+  @apply mt-4 mb-2 text-lg font-semibold first:mt-0;
+}
+
+.tiptap-template p {
+  @apply my-1.5 leading-6;
+}
+
+.tiptap-template ul {
+  @apply my-2 list-disc pl-6;
+}
+
+.tiptap-template ol {
+  @apply my-2 list-decimal pl-6;
+}
+
+.tiptap-template blockquote {
+  @apply my-2 border-l-2 border-border pl-3 text-muted-foreground;
+}
+
+.tiptap-template a {
+  @apply text-primary underline underline-offset-2;
+}
+
+.tiptap-template mark {
+  @apply rounded-xs bg-yellow-200 px-0.5 dark:bg-yellow-500/40;
+}
+
+.tiptap-template table {
+  @apply my-3 w-full border-collapse;
+}
+
+.tiptap-template th,
+.tiptap-template td {
+  @apply relative border border-border px-2 py-1.5 align-top;
+}
+
+.tiptap-template th {
+  @apply bg-muted text-left font-semibold;
+}
+
+.tiptap-template .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+}
+
+.tiptap-template img {
+  @apply my-2 h-auto max-w-full rounded-md;
 }
