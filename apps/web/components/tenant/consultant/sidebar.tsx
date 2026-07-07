@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button";
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/sessions", label: "Sessions", icon: CalendarClock },
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/clients", label: "Clients", icon: Users },
