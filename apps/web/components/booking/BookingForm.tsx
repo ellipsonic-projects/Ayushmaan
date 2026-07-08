@@ -57,7 +57,7 @@ export function BookingForm({ consultantId, consultantName, onSuccess }: Booking
 
   return (
     <Card className="p-6">
-      <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">
+      <h2 className="mb-4 text-lg font-bold text-foreground">
         Book with {consultantName}
       </h2>
 
@@ -113,7 +113,7 @@ export function BookingForm({ consultantId, consultantName, onSuccess }: Booking
           </select>
         </div>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" disabled={submitting} className="w-full">
           {submitting ? "Booking..." : "Confirm Booking"}

@@ -3,6 +3,17 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { AuthProvider } from '@/lib/auth/context'
+import { ThemeProvider } from '@/lib/theme/theme-provider'
+
+const themeInitScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem('ayushman-theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    if (theme === 'dark') document.documentElement.classList.add('dark');
+  } catch (e) {}
+})();
+`
 
 const geist = Geist({ subsets: ['latin'] })
 const geistMono = Geist_Mono({ subsets: ['latin'] })
@@ -44,11 +55,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} bg-background`}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable} bg-background`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="antialiased font-sans">
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

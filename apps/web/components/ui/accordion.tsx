@@ -19,7 +19,7 @@ function AccordionItem({
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      className={cn("border-b border-slate-100", className)}
+      className={cn("border-b border-slate-100 dark:border-slate-800", className)}
       {...props}
     />
   );
@@ -35,13 +35,13 @@ function AccordionTrigger({
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group flex flex-1 items-center justify-between py-5 text-left text-sm font-medium text-slate-900 transition-colors hover:text-blue-600",
+          "group flex flex-1 items-center justify-between py-5 text-left text-sm font-medium text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400",
           className
         )}
         {...props}
       >
         {children}
-        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-blue-600" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-blue-600 dark:text-slate-500 dark:group-data-[state=open]:text-blue-400" />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );
@@ -58,7 +58,7 @@ function AccordionContent({
       className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
       {...props}
     >
-      <div className={cn("max-w-2xl pb-5 leading-6 text-slate-500", className)}>
+      <div className={cn("max-w-2xl pb-5 leading-6 text-slate-500 dark:text-slate-400", className)}>
         {children}
       </div>
     </AccordionPrimitive.Content>

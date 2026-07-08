@@ -95,7 +95,7 @@ export default function BillingPage() {
 								</div>
 
 								<div className="grid gap-6 lg:grid-cols-[1fr_240px]">
-									<div className="space-y-3 rounded-2xl border border-border bg-white p-4 shadow-sm">
+									<div className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
 										<div className="flex items-center gap-2">
 											  <CalendarDays className="h-4 w-4 text-primary" />
 											<Label className="text-sm font-semibold">Select a date</Label>
@@ -124,7 +124,7 @@ export default function BillingPage() {
 											/>
 										</div>
 
-										<div className="rounded-xl bg-white p-4 shadow-sm">
+										<div className="rounded-xl bg-card p-4 shadow-sm">
 											<p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 												Scheduled talk
 											</p>

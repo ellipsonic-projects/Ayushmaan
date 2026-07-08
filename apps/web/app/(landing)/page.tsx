@@ -24,6 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { CapabilitiesSection } from "@/components/capabilities-section";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 function Logo({ className = "" }: { className?: string }) {
   return (
@@ -35,7 +36,7 @@ function Logo({ className = "" }: { className?: string }) {
           fill="white"
         />
       </svg>
-      <span className="text-lg font-semibold tracking-tight text-slate-900">
+      <span className="text-lg font-semibold tracking-tight text-slate-900 dark:text-white">
         Ayushman
       </span>
     </div>
@@ -44,8 +45,8 @@ function Logo({ className = "" }: { className?: string }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 text-xs font-medium tracking-widest text-blue-600">
-      <span className="h-px w-8 bg-blue-600/40" />
+    <div className="flex items-center gap-3 text-xs font-medium tracking-widest text-blue-600 dark:text-blue-400">
+      <span className="h-px w-8 bg-blue-600/40 dark:bg-blue-400/40" />
       {children}
     </div>
   );
@@ -128,79 +129,88 @@ const insights = [
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col text-slate-900">
+    <div className="relative flex min-h-screen flex-col text-slate-900 dark:text-slate-100">
       <div className="fixed inset-0 -z-10">
         <Image
           src="/landing_page.jpg"
           alt=""
           fill
           priority
-          className="object-cover opacity-100"
+          className="object-cover opacity-100 dark:opacity-30"
         />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_60%_at_50%_-10%,theme(colors.blue.100),transparent)]" />
-        <div className="absolute inset-0 bg-white/0" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_60%_at_50%_-10%,theme(colors.blue.100),transparent)] dark:bg-[radial-gradient(ellipse_120%_60%_at_50%_-10%,theme(colors.blue.950),transparent)]" />
+        <div className="absolute inset-0 bg-white/0 dark:bg-slate-950/60" />
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-blue-100/70 bg-white/70 backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-blue-100/70 bg-white/70 backdrop-blur-md dark:border-blue-900/40 dark:bg-slate-950/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo />
-          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
-            <a href="#capabilities" className="hover:text-blue-600">
+          <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 dark:text-slate-300 md:flex">
+            <a href="#capabilities" className="hover:text-blue-600 dark:hover:text-blue-400">
               Capabilities
             </a>
-            <a href="#faq" className="hover:text-blue-600">
+            <a href="#faq" className="hover:text-blue-600 dark:hover:text-blue-400">
               FAQ
             </a>
-            <a href="#insights" className="hover:text-blue-600">
+            <a href="#insights" className="hover:text-blue-600 dark:hover:text-blue-400">
               Insights
-            </a> 
-           <a href="#pricing" className="hover:text-blue-600">
+            </a>
+           <a href="#pricing" className="hover:text-blue-600 dark:hover:text-blue-400">
             Pricing
             </a>
           </nav>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
               <Link href="/billing">Get in touch</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/signin">Sign in</Link>
             </Button>
             <Sheet>
               <SheetTrigger
                 aria-label="Open menu"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600 md:hidden"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-blue-950/40 dark:hover:text-blue-400 md:hidden"
               >
                 <Menu className="h-4 w-4" />
               </SheetTrigger>
-              <SheetContent side="right" className="gap-6 bg-white px-6 py-8">
+              <SheetContent side="right" className="gap-6 bg-white px-6 py-8 dark:bg-slate-950">
                 <SheetHeader className="p-0">
                   <SheetTitle>
                     <Logo />
                   </SheetTitle>
                 </SheetHeader>
-                <nav className="flex flex-col gap-1 text-base font-medium text-slate-700">
+                <nav className="flex flex-col gap-1 text-base font-medium text-slate-700 dark:text-slate-200">
                   <SheetClose
-                    render={<a href="#capabilities" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600" />}
+                    render={<a href="#capabilities" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400" />}
                   >
                     Capabilities
                   </SheetClose>
                   <SheetClose
-                    render={<a href="#faq" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600" />}
+                    render={<a href="#faq" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400" />}
                   >
                     FAQ
                   </SheetClose>
                   <SheetClose
-                    render={<a href="#insights" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600" />}
+                    render={<a href="#insights" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400" />}
                   >
                     Insights
                   </SheetClose>
                   <SheetClose
-                    render={<a href="#pricing" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600" />}
+                    render={<a href="#pricing" className="rounded-md px-2 py-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 dark:hover:text-blue-400" />}
                   >
                     Pricing
                   </SheetClose>
                 </nav>
-                <Button asChild variant="outline" className="mt-auto">
-                  <Link href="/billing">Get in touch</Link>
-                </Button>
+                <div className="mt-auto flex flex-col gap-2">
+                  <Button asChild>
+                    <Link href="/signin">Sign in</Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <Link href="/billing">Get in touch</Link>
+                  </Button>
+                </div>
               </SheetContent>
             </Sheet>
           </div>
@@ -211,23 +221,23 @@ export default function Home() {
       <section className="mx-auto w-full max-w-6xl px-6 pb-16 pt-14 sm:pt-20">
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div>
-            <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
+            <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-white sm:text-5xl">
               One trusted platform for every consultant your clients rely on.
             </h1>
           </div>
-          <Card className="overflow-hidden border-blue-100 bg-white/60 shadow-sm">
+          <Card className="overflow-hidden border-blue-100 bg-white/60 shadow-sm dark:border-blue-900/40 dark:bg-slate-900/60">
             <div className="grid grid-cols-3 gap-2 p-4">
               <Card className="col-span-2 border-none shadow-sm">
                 <CardContent className="p-4">
-                  <p className="text-xs font-medium text-slate-400">
+                  <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
                     Today&apos;s briefing
                   </p>
-                  <p className="mt-2 text-sm font-semibold text-slate-800">
+                  <p className="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     4 sessions · 2 overdue tasks
                   </p>
                   <div className="mt-3 space-y-1.5">
-                    <div className="h-1.5 w-full rounded-full bg-blue-100" />
-                    <div className="h-1.5 w-3/4 rounded-full bg-blue-100" />
+                    <div className="h-1.5 w-full rounded-full bg-blue-100 dark:bg-blue-950/60" />
+                    <div className="h-1.5 w-3/4 rounded-full bg-blue-100 dark:bg-blue-950/60" />
                   </div>
                 </CardContent>
               </Card>
@@ -239,7 +249,7 @@ export default function Home() {
               </Card>
               <Card className="col-span-3 border-none shadow-sm">
                 <CardContent className="p-4">
-                  <p className="text-xs font-medium text-slate-400">
+                  <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
                     Recurring series
                   </p>
                   <div className="mt-2 flex gap-1.5">
@@ -247,7 +257,7 @@ export default function Home() {
                       <span
                         key={i}
                         className={`h-6 flex-1 rounded-md ${
-                          i < 2 ? "bg-blue-600" : "bg-blue-100"
+                          i < 2 ? "bg-blue-600" : "bg-blue-100 dark:bg-blue-950/60"
                         }`}
                       />
                     ))}
@@ -260,7 +270,7 @@ export default function Home() {
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="max-w-xl">
-            <p className="text-lg leading-8 text-slate-600">
+            <p className="text-lg leading-8 text-slate-600 dark:text-slate-300">
               Ayushman gives medical, legal, physiotherapy, IT, homeopathy,
               and astrology practices a single home for bookings, session
               notes, AI-assisted recaps, and client trust — with every
@@ -283,10 +293,10 @@ export default function Home() {
           </div>
 
           <div className="self-end">
-            <p className="text-xs font-medium tracking-widest text-slate-400">
+            <p className="text-xs font-medium tracking-widest text-slate-400 dark:text-slate-500">
               /BUILT FOR
             </p>
-            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-400">
+            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-400 dark:text-slate-500">
               <span>MEDICAL</span>
               <span>LEGAL</span>
               <span>PHYSIOTHERAPY</span>
@@ -305,11 +315,11 @@ export default function Home() {
         <div className="grid gap-6 sm:grid-cols-2 sm:items-end">
           <div>
             <SectionLabel>OUR SERVICES</SectionLabel>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
               Capabilities
             </h2>
           </div>
-          <p className="text-sm leading-6 text-slate-500 sm:justify-self-end sm:max-w-sm">
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400 sm:justify-self-end sm:max-w-sm">
             Every tenant gets the same core loop — booking, session logging,
             AI recap, and trust oversight — tuned to the way each profession
             actually works.
@@ -324,11 +334,11 @@ export default function Home() {
         <div className="grid gap-6 sm:grid-cols-2 sm:items-end">
           <div>
             <SectionLabel>PRICING</SectionLabel>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
               Simple plans for every practice
             </h2>
           </div>
-          <p className="text-sm leading-6 text-slate-500 sm:justify-self-end sm:max-w-sm">
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400 sm:justify-self-end sm:max-w-sm">
             Pay monthly or save by billing annually. Upgrade or downgrade
             anytime as your practice grows.
           </p>
@@ -338,17 +348,17 @@ export default function Home() {
           {pricing.map((plan) => (
             <Card
               key={plan.tier}
-              className={`flex flex-col border-blue-100 shadow-sm ${
-                plan.featured ? "border-blue-600 ring-1 ring-blue-600" : ""
+              className={`flex flex-col border-blue-100 shadow-sm dark:border-blue-900/40 ${
+                plan.featured ? "border-blue-600 ring-1 ring-blue-600 dark:border-blue-400 dark:ring-blue-400" : ""
               }`}
             >
               <CardContent className="flex flex-1 flex-col p-6">
-                <p className="text-xs font-medium tracking-widest text-blue-600">
+                <p className="text-xs font-medium tracking-widest text-blue-600 dark:text-blue-400">
                   {plan.tier}
                 </p>
                 <CardTitle className="mt-3">
                   ${plan.monthly}
-                  <span className="text-sm font-normal text-slate-400">
+                  <span className="text-sm font-normal text-slate-400 dark:text-slate-500">
                     {" "}
                     /mo
                   </span>
@@ -356,7 +366,7 @@ export default function Home() {
                 <CardDescription className="mt-2">
                   {plan.description}
                 </CardDescription>
-                <p className="mt-4 text-xs text-slate-400">
+                <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
                   or ${plan.annual}/mo billed annually
                 </p>
                 <Button
@@ -378,13 +388,13 @@ export default function Home() {
       {/* FAQ */}
       <section id="faq" className="mx-auto w-full max-w-6xl px-6 py-20">
         <SectionLabel>FAQ</SectionLabel>
-        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
           Frequently Asked Questions
         </h2>
 
-        <Accordion type="single" collapsible className="mt-8 border-t border-blue-100">
+        <Accordion type="single" collapsible className="mt-8 border-t border-blue-100 dark:border-blue-900/40">
           {faqs.map((f) => (
-            <AccordionItem key={f.q} value={f.q} className="border-blue-100">
+            <AccordionItem key={f.q} value={f.q} className="border-blue-100 dark:border-blue-900/40">
               <AccordionTrigger>{f.q}</AccordionTrigger>
               <AccordionContent>{f.a}</AccordionContent>
             </AccordionItem>
@@ -397,7 +407,7 @@ export default function Home() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <SectionLabel>FROM THE TEAM</SectionLabel>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
               Latest insights
             </h2>
           </div>
@@ -412,10 +422,10 @@ export default function Home() {
         <div className="mt-10 grid gap-6 sm:grid-cols-3">
           {insights.map((post) => (
             <Card key={post.title} className="border-none bg-transparent shadow-none">
-              <div className="aspect-4/3 rounded-xl bg-linear-to-br from-blue-600 to-slate-900" />
+              <div className="aspect-4/3 rounded-xl bg-linear-to-br from-blue-600 to-slate-900 dark:to-slate-700" />
               <CardContent className="px-0 pb-0">
-                <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400">
-                  <span className="text-blue-600">{post.tag}</span>
+                <div className="mt-4 flex items-center gap-2 text-xs font-medium text-slate-400 dark:text-slate-500">
+                  <span className="text-blue-600 dark:text-blue-400">{post.tag}</span>
                   <span>/{post.date}</span>
                 </div>
                 <CardTitle className="mt-2">{post.title}</CardTitle>
@@ -427,10 +437,10 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer id="contact" className="border-t border-blue-100 bg-white/70">
+      <footer id="contact" className="border-t border-blue-100 bg-white/70 dark:border-blue-900/40 dark:bg-slate-950/70">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             © 2026 Ayushman. Built for the consultants your clients trust.
           </p>
         </div>

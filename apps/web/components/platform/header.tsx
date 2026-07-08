@@ -9,6 +9,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { PlatformSidebarContent } from "@/components/platform/sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function PlatformHeader({
   title = "SUPER ADMIN DASHBOARD",
@@ -55,6 +56,7 @@ export function PlatformHeader({
           <Bell className="h-4 w-4" />
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-destructive" />
         </button>
+        <ThemeToggle />
       </div>
     </header>
   );

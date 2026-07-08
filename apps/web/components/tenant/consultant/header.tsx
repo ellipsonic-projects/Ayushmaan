@@ -26,6 +26,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ConsultantSidebarContent } from "@/components/tenant/consultant/sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Appointment", icon: CalendarCheck },
@@ -88,6 +89,7 @@ export function ConsultantHeader({
         >
           <Grid3x3 className="h-4 w-4" />
         </button>
+        <ThemeToggle />
         <Popover>
           <PopoverTrigger
             render={

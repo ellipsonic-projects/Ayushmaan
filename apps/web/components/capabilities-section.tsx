@@ -150,8 +150,8 @@ export function CapabilitiesSection() {
             transition={{ duration: 0.5, delay: i * 0.08, ease: "easeOut" }}
             whileHover={{ y: -4 }}
           >
-            <Card className="h-full overflow-hidden border-blue-100 bg-white/70 transition-shadow hover:shadow-lg hover:shadow-blue-100">
-              <div className="h-24 w-full bg-linear-to-br from-blue-50 to-white p-4">
+            <Card className="h-full overflow-hidden border-blue-100 bg-white/70 transition-shadow hover:shadow-lg hover:shadow-blue-100 dark:border-blue-900/40 dark:bg-slate-900/70 dark:hover:shadow-blue-950">
+              <div className="h-24 w-full bg-linear-to-br from-blue-50 to-white p-4 dark:from-blue-950/40 dark:to-slate-900">
                 <Illustration />
               </div>
               <CardHeader>
