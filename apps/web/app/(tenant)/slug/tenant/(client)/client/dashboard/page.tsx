@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   CalendarClock,
   CalendarPlus,
@@ -132,9 +133,11 @@ export default function ClientDashboardPage() {
             Keep track of all upcoming and past appointments
           </p>
         </div>
-        <Button className="w-fit gap-2">
-          <CalendarPlus className="h-4 w-4" />
-          Book Appointment
+        <Button asChild className="w-fit gap-2">
+          <Link href="/slug/tenant/client/appointments/book">
+            <CalendarPlus className="h-4 w-4" />
+            Book Appointment
+          </Link>
         </Button>
       </div>
 

@@ -17,6 +17,7 @@ import {
   Contact,
   FileText,
   Workflow,
+  FileQuestionMark
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/workflows", label: "Workflows", icon: Workflow },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/help", label: "Help", icon: FileQuestionMark},
 ];
 
 export function ConsultantSidebarContent() {

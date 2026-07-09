@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CalendarPlus, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -75,9 +76,11 @@ export default function ClientRelationshipsPage() {
                   <MessageSquare className="h-3.5 w-3.5" />
                   Message
                 </Button>
-                <Button size="sm" className="flex-1 gap-1.5">
-                  <CalendarPlus className="h-3.5 w-3.5" />
-                  Book
+                <Button asChild size="sm" className="flex-1 gap-1.5">
+                  <Link href="/slug/tenant/client/appointments/book">
+                    <CalendarPlus className="h-3.5 w-3.5" />
+                    Book
+                  </Link>
                 </Button>
               </div>
             </CardContent>

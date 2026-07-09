@@ -25,7 +25,7 @@ export default function TenantsPage() {
             <Download className="h-4 w-4" />
             Export CSV
           </Button>
-          <a href="/tenants/add">
+          <a href="/superadmin/tenants/add">
           <Button className="gap-1.5">
             <Plus className="h-4 w-4" />
             Create Tenant

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Inbox,
   FileText,
+  Upload,
   UsersRound,
   Settings,
   CalendarPlus,
@@ -20,6 +21,7 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/documentation", label: "Documentation", icon: FileText },
+  { href: "/documents", label: "My Documents", icon: Upload },
   { href: "/relationships", label: "My relationships", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -70,9 +72,11 @@ export function ClientSidebarContent() {
       </nav>
 
       <div className="mt-auto space-y-3 pt-4">
-        <Button className="w-full justify-center gap-2">
-          <CalendarPlus className="h-4 w-4" />
-          Book Appointment
+        <Button asChild className="w-full justify-center gap-2">
+          <Link href={`${base}/appointments/book`}>
+            <CalendarPlus className="h-4 w-4" />
+            Book Appointment
+          </Link>
         </Button>
 
         <div className="flex items-center gap-3 border-t border-sidebar-border pt-3">

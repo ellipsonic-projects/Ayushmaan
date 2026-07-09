@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Bell,
   CalendarCheck,
@@ -27,16 +30,15 @@ import {
 } from "@/components/ui/sheet";
 import { ConsultantSidebarContent } from "@/components/tenant/consultant/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AiScribeOverlay } from "@/components/tenant/consultant/ai-scribe/ai-scribe-overlay";
 
 const quickCreateItems: { label: string; icon: LucideIcon }[] = [
-  { label: "Appointment", icon: CalendarCheck },
-  { label: "Note", icon: StickyNote },
-  { label: "AI Scribe", icon: Mic },
-  { label: "Client", icon: UserRoundPlus },
-  { label: "Invoice", icon: ReceiptText },
+  { label: "New Log", icon: Mic },
+  { label: "Case", icon: Mic },
   { label: "Video call", icon: Video },
   { label: "Task", icon: CircleCheck },
   { label: "Template", icon: FileText },
+  { label: "Workflow", icon: FileText },
 ];
 
 export function ConsultantHeader({
@@ -44,6 +46,16 @@ export function ConsultantHeader({
 }: {
   tenantName?: string;
 }) {
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [scribeOpen, setScribeOpen] = useState(false);
+
+  function handleQuickCreateSelect(label: string) {
+    setQuickCreateOpen(false);
+    if (label === "New Log") {
+      setScribeOpen(true);
+    }
+  }
+
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
@@ -90,7 +102,7 @@ export function ConsultantHeader({
           <Grid3x3 className="h-4 w-4" />
         </button>
         <ThemeToggle />
-        <Popover>
+        <Popover open={quickCreateOpen} onOpenChange={setQuickCreateOpen}>
           <PopoverTrigger
             render={
               <Button size="sm" className="gap-1.5">
@@ -104,6 +116,7 @@ export function ConsultantHeader({
               <button
                 key={label}
                 type="button"
+                onClick={() => handleQuickCreateSelect(label)}
                 className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-foreground transition-colors hover:bg-muted"
               >
                 <Icon className="h-4 w-4 text-muted-foreground" />
@@ -113,6 +126,8 @@ export function ConsultantHeader({
           </PopoverContent>
         </Popover>
       </div>
+
+      <AiScribeOverlay open={scribeOpen} onClose={() => setScribeOpen(false)} />
     </header>
   );
 }

@@ -107,6 +107,7 @@ export function SessionDetailSheet({
                       <Badge className="bg-primary text-primary-foreground">
                         {event.appointmentStatus}
                       </Badge>
+                      <a href="/slug/tenant/consultant/sessions/id">
                       <button
                         type="button"
                         className="flex items-center gap-0.5 text-xs font-medium text-primary hover:underline"
@@ -114,6 +115,7 @@ export function SessionDetailSheet({
                         View
                         <ChevronRight className="h-3 w-3" />
                       </button>
+                      </a>
                     </div>
                   </div>
                 </div>

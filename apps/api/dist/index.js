@@ -32,7 +32,7 @@ app.get("/health", (req, res) => {
 });
 // Error handling
 app.use(errorHandler_1.errorHandler);
-app.listen(PORT, () => {
+app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`API server running on port ${PORT}`);
 });
 //# sourceMappingURL=index.js.map

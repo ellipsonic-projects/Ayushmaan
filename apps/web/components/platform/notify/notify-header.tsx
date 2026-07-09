@@ -27,13 +27,13 @@ export function NotifyHeader() {
           <LayoutTemplate className="h-4 w-4" />
           Templates
         </Button>
-        <Link href="/notify/create">
+        <Link href="/superadmin/notify/create">
           <Button className="gap-1.5">
             <Radio className="h-4 w-4" />
             Create Global Broadcast
           </Button>
         </Link>
-        <Link href="/notify/create">
+        <Link href="/superadmin/notify/create">
           <Button variant="outline" className="gap-1.5">
             <Target className="h-4 w-4" />
             Create Targeted Broadcast

@@ -116,16 +116,18 @@ export function InboxWorkspace({
   userName = "Advik Advik",
   userEmail = "jokers584j@gmail.com",
   workspaceName = "Homeopathy",
+  defaultView = "mail",
 }: {
   userName?: string;
   userEmail?: string;
   workspaceName?: string;
+  defaultView?: "mail" | "chat";
 }) {
   const [heroDismissed, setHeroDismissed] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [view, setView] = useState<"mail" | "chat">("mail");
+  const [view, setView] = useState<"mail" | "chat">(defaultView);
   const [messages, setMessages] = useState<ChatMessage[]>(initialWendyThread);
   const [chatInput, setChatInput] = useState("");
 

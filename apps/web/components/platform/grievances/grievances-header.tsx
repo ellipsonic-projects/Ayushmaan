@@ -27,10 +27,6 @@ export function GrievancesHeader() {
           <Download className="h-4 w-4" />
           Export Report
         </Button>
-        <Button className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          Log Internal Concern
-        </Button>
       </div>
     </div>
   );

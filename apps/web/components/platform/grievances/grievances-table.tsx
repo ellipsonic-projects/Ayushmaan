@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -170,7 +171,9 @@ export function GrievancesTable() {
                           <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       ) : (
-                        <Button size="sm">Review</Button>
+                        <Button size="sm" asChild>
+                          <Link href="/superadmin/grievances/id">Review</Link>
+                        </Button>
                       )}
                     </div>
                   </td>

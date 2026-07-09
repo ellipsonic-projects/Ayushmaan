@@ -29,7 +29,7 @@ export function PlatformSidebarContent() {
       <PlatformNav />
 
       <div className="mt-auto space-y-3 pt-4">
-        <a href="/tenants/add">
+        <a href="/superadmin/tenants/add">
         <Button className="w-full justify-center gap-2">
           <Plus className="h-4 w-4" />
           New Tenant
