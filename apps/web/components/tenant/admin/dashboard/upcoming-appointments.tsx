@@ -11,29 +11,29 @@ const appointments = [
   {
     time: "10:00 AM",
     client: "Rahul Hegde",
-    consultant: "Dr. Amit Shah",
+    consultant: "Amit Shah",
     mode: "Video" as const,
     status: "Confirmed" as const,
   },
   {
     time: "11:30 AM",
     client: "Sarah Lawson",
-    consultant: "Dr. Meera Iyer",
-    mode: "In-Clinic" as const,
+    consultant: "Meera Iyer",
+    mode: "In-Office" as const,
     status: "Confirmed" as const,
   },
   {
     time: "1:15 PM",
     client: "David Kim",
-    consultant: "Dr. Karan Walia",
+    consultant: "Karan Walia",
     mode: "Video" as const,
     status: "Pending" as const,
   },
   {
     time: "2:30 PM",
     client: "Mira Sethi",
-    consultant: "Dr. Amit Shah",
-    mode: "In-Clinic" as const,
+    consultant: "Amit Shah",
+    mode: "In-Office" as const,
     status: "Confirmed" as const,
   },
 ];
@@ -74,13 +74,9 @@ export function UpcomingAppointments() {
                   key={`${appt.time}-${appt.client}`}
                   className="border-b border-border last:border-0"
                 >
-                  <td className="py-3 pr-4 font-medium text-foreground">
-                    {appt.time}
-                  </td>
+                  <td className="py-3 pr-4 font-medium text-foreground">{appt.time}</td>
                   <td className="py-3 pr-4 text-foreground">{appt.client}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">
-                    {appt.consultant}
-                  </td>
+                  <td className="py-3 pr-4 text-muted-foreground">{appt.consultant}</td>
                   <td className="py-3 pr-4">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                       {appt.mode === "Video" ? (
@@ -92,9 +88,7 @@ export function UpcomingAppointments() {
                     </span>
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge variant={statusVariant[appt.status]}>
-                      {appt.status}
-                    </Badge>
+                    <Badge variant={statusVariant[appt.status]}>{appt.status}</Badge>
                   </td>
                 </tr>
               ))}

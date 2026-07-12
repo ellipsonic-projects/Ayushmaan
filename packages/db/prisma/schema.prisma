@@ -1,29 +1,3 @@
-// =============================================================================
-// Ayushman — Prisma Schema (v3, simplified)
-// Lives at packages/db/prisma/schema.prisma (PRD_v3_nextjs_express.md §7.2) —
-// the only package that imports this; apps/web never connects to Postgres directly.
-//
-// What changed from the schema this replaces, and why "simplicity" drove each cut:
-// - Removed `password_hash`, `auth_provider_id`, `phone_verified`, `email_verified`,
-//   `is_active`, `otp_verifications`, `refresh_tokens`. Supabase Auth owns all of
-//   this in its own `auth` schema (PRD §7.3) — re-adding them here would mean
-//   maintaining two auth systems that disagree with each other.
-// - Payments now target **Stripe**, not Razorpay: `stripe_payment_intent_id` /
-//   `stripe_customer_id` replace the Razorpay order/payment IDs, and payout
-//   percentage/timing live on `TenantBilling`/`ConsultantProfile` (already there)
-//   rather than duplicated onto every payment row.
-// - Dropped `case_deletion_requests` as its own table — deletion-request handling
-//   is a policy (schema §5 Data Retention), not a workflow this version needs a
-//   dedicated state machine for; it can be added back the day a real approval
-//   workflow is required.
-// - Dropped granular actor-tracking columns (`cancelled_by`, `reschedule_proposed_by`,
-//   `no_show_flagged_by`, `waitlisted_client_ids`, etc.) — "who did this and why"
-//   is exactly what `audit_logs` and `notifications` already exist to answer;
-//   duplicating it onto `appointments` was tracking the same fact twice.
-// - Every model keeps only fields a real query, RLS policy, or UI screen in
-//   PRD_v3_nextjs_express.md actually needs — nothing kept "just in case."
-// =============================================================================
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -42,10 +16,8 @@ enum TenantStatus {
   ACTIVE
   SUSPENDED
   ARCHIVED
-
   @@map("tenant_status")
 }
-
 
 enum SubscriptionStatus {
   TRIALING
@@ -299,28 +271,12 @@ enum PlanTier {
 }
 
 enum PayoutCycle {
+  WEEKLY
+  BIWEEKLY
   MONTHLY
-  ANNUAL
 
   @@map("payout_cycle")
 }
-
-const pricing = {
-  STANDARD: {
-    MONTHLY: 20,
-    ANNUAL: 10,
-  },
-  PRO: {
-    MONTHLY: 40,
-    ANNUAL: 25,
-  },
-  ENTERPRISE: {
-    MONTHLY: 100,
-    ANNUAL: 75,
-  },
-} as const;
-
-
 
 // -----------------------------------------------------------------------------
 // Tenancy
@@ -385,7 +341,9 @@ model User {
   tenantId              String?       @map("tenant_id") @db.Uuid
   role                  UserRole
   email                 String        @db.Citext
+  emailIsVerified       Boolean       @default(false) @map("email_is_verified")
   phone                 String?       @db.VarChar(20)
+  phoneIsVerified       Boolean       @default(false) @map("phone_is_verified")
   accountStatus         AccountStatus @default(ACTIVE) @map("account_status")
   createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)

@@ -5,7 +5,7 @@ import { ConsultantDetailForm } from "@/components/tenant/admin/consultants-dire
 // consultant_profiles joined with users/cases/grievances for this view.
 const mockConsultant = {
   id: "CON-1042",
-  fullName: "Dr. Amit Shah",
+  fullName: "Amit Shah",
   email: "amit.shah@ayushman.health",
   category: "MEDICAL",
   subSpecialization: "Cardiology",

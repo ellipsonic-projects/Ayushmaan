@@ -11,13 +11,9 @@ import {
   ImageIcon,
 } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,10 +24,10 @@ const CURRENCIES = ["INR", "USD"] as const;
 type Currency = (typeof CURRENCIES)[number];
 
 export function SettingsForm() {
-  const [companyName, setCompanyName] = useState("Ayushman Healthcare Ltd.");
-  const [contactEmail, setContactEmail] = useState("admin@ayushman.health");
+  const [companyName, setCompanyName] = useState("Meridian Consulting Group");
+  const [contactEmail, setContactEmail] = useState("admin@meridianconsulting.com");
   const [address, setAddress] = useState(
-    "Level 5, Medical Tower B, Knowledge City, Hyderabad - 500081"
+    "Level 5, Business Bay Tower, Knowledge City, Hyderabad - 500081"
   );
   const [supportPhone, setSupportPhone] = useState("+91 1800 234 5678");
   const [baseSessionFee, setBaseSessionFee] = useState("1500");
@@ -82,12 +78,8 @@ export function SettingsForm() {
             <Label>Company Logo</Label>
             <label className="flex h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/40 text-center transition-colors hover:bg-muted/60">
               <UploadCloud className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground">
-                Upload New
-              </span>
-              <span className="text-[11px] text-muted-foreground">
-                PNG or SVG. Max 2MB.
-              </span>
+              <span className="text-xs font-medium text-foreground">Upload New</span>
+              <span className="text-[11px] text-muted-foreground">PNG or SVG. Max 2MB.</span>
               <input type="file" accept="image/*" className="hidden" />
             </label>
           </div>
@@ -95,9 +87,7 @@ export function SettingsForm() {
             <Label>Brand Banner</Label>
             <label className="flex h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-input bg-muted/40 text-center transition-colors hover:bg-muted/60">
               <UploadCloud className="h-5 w-5 text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground">
-                Upload Landscape Banner
-              </span>
+              <span className="text-xs font-medium text-foreground">Upload Landscape Banner</span>
               <span className="text-[11px] text-muted-foreground">
                 Recommended size 1500&times;500px.
               </span>
@@ -146,12 +136,11 @@ export function SettingsForm() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="support-phone">Support Phone</Label>
-            <Input
+            <PhoneInput
               id="support-phone"
-              type="tel"
               value={supportPhone}
-              onChange={(e) => withDirty(setSupportPhone)(e.target.value)}
-              className="h-9"
+              onChange={(value) => withDirty(setSupportPhone)(value ?? "")}
+              inputClassName="h-9"
             />
           </div>
         </CardContent>
@@ -171,11 +160,9 @@ export function SettingsForm() {
                 <ShieldCheck className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-sm font-medium text-foreground">
-                  Stripe Integration
-                </p>
+                <p className="text-sm font-medium text-foreground">Stripe Integration</p>
                 <p className="text-xs text-muted-foreground">
-                  Payouts and patient billing handled via Stripe.
+                  Payouts and client billing handled via Stripe.
                 </p>
               </div>
             </div>
@@ -190,9 +177,7 @@ export function SettingsForm() {
                 type="number"
                 min={0}
                 value={baseSessionFee}
-                onChange={(e) =>
-                  withDirty(setBaseSessionFee)(e.target.value)
-                }
+                onChange={(e) => withDirty(setBaseSessionFee)(e.target.value)}
                 className="h-9 max-w-xs"
               />
               <div className="flex h-9 shrink-0 items-center rounded-lg border border-input p-0.5">
@@ -228,9 +213,7 @@ export function SettingsForm() {
           <div className="flex flex-col gap-1.5">
             <Label>Tenant ID</Label>
             <div className="flex h-9 items-center justify-between gap-2 rounded-lg border border-input bg-muted/40 px-3">
-              <span className="truncate text-sm text-muted-foreground">
-                {tenantId}
-              </span>
+              <span className="truncate text-sm text-muted-foreground">{tenantId}</span>
               <button
                 type="button"
                 onClick={handleCopyTenantId}
@@ -248,9 +231,7 @@ export function SettingsForm() {
           <div className="flex flex-col gap-1.5">
             <Label>Plan Tier</Label>
             <div className="flex h-9 items-center gap-2">
-              <Badge className="bg-blue-600 text-white dark:bg-blue-500">
-                Enterprise Healthcare Elite
-              </Badge>
+              <Badge className="bg-blue-600 text-white dark:bg-blue-500">Enterprise Elite</Badge>
               <Badge
                 variant="outline"
                 className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400"
@@ -264,9 +245,7 @@ export function SettingsForm() {
 
       <div className="fixed inset-x-0 bottom-10 z-10 flex items-center justify-between border-t border-border bg-card px-6 py-3 shadow-[0_-1px_0_rgba(0,0,0,0.04)] sm:left-64">
         <span className="text-xs text-muted-foreground">
-          {dirty
-            ? "You have unsaved changes."
-            : "All changes are saved. Last synced 2m ago."}
+          {dirty ? "You have unsaved changes." : "All changes are saved. Last synced 2m ago."}
         </span>
         <div className="flex items-center gap-2">
           <Button
@@ -278,12 +257,7 @@ export function SettingsForm() {
           >
             Discard
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            disabled={!dirty || saving}
-            onClick={handleSave}
-          >
+          <Button type="button" size="sm" disabled={!dirty || saving} onClick={handleSave}>
             {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>

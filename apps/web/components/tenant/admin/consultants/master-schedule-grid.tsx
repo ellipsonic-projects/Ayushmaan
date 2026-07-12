@@ -28,13 +28,13 @@ type Consultant = {
 
 const consultants: Consultant[] = [
   {
-    name: "Dr. Jane Doe",
-    role: "Cardiology",
+    name: "Jane Doe",
+    role: "Executive Coaching",
     initials: "JD",
     avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
     events: [
       {
-        title: "Patient Consultation",
+        title: "Client Consultation",
         time: "08:00 - 09:00 AM",
         start: 8,
         end: 9,
@@ -46,8 +46,7 @@ const consultants: Consultant[] = [
     name: "Marcus Reed",
     role: "Legal Counsel",
     initials: "MR",
-    avatarClass:
-      "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
+    avatarClass: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
     events: [
       {
         title: "Case Review",
@@ -63,8 +62,7 @@ const consultants: Consultant[] = [
     name: "Sarah Linn",
     role: "Tax Specialist",
     initials: "SL",
-    avatarClass:
-      "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
+    avatarClass: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
     events: [
       {
         title: "Corporate Audit",
@@ -115,10 +113,7 @@ function hourLabel(hour: number) {
   return `${String(displayHour).padStart(2, "0")}:00 ${period}`;
 }
 
-const hours = Array.from(
-  { length: END_HOUR - START_HOUR + 1 },
-  (_, i) => START_HOUR + i
-);
+const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
 const gridHeight = (END_HOUR - START_HOUR) * ROW_HEIGHT;
 
@@ -154,12 +149,8 @@ export function MasterScheduleGrid() {
                   {consultant.initials}
                 </span>
                 <div className="leading-tight">
-                  <p className="text-xs font-semibold text-foreground">
-                    {consultant.name}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {consultant.role}
-                  </p>
+                  <p className="text-xs font-semibold text-foreground">{consultant.name}</p>
+                  <p className="text-[10px] text-muted-foreground">{consultant.role}</p>
                 </div>
               </div>
 
@@ -182,10 +173,7 @@ export function MasterScheduleGrid() {
                     )}
                     style={{
                       top: (event.start - START_HOUR) * ROW_HEIGHT,
-                      height: Math.max(
-                        (event.end - event.start) * ROW_HEIGHT,
-                        28
-                      ),
+                      height: Math.max((event.end - event.start) * ROW_HEIGHT, 28),
                     }}
                   >
                     <div className="flex items-start justify-between gap-1">
@@ -199,9 +187,7 @@ export function MasterScheduleGrid() {
                       {event.time}
                     </p>
                     {event.tag && (
-                      <p className="text-[10px] font-bold uppercase tracking-wide">
-                        {event.tag}
-                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide">{event.tag}</p>
                     )}
                   </div>
                 ))}

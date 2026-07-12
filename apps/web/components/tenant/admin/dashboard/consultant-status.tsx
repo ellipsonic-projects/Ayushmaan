@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge";
 type Status = "Available" | "In Session" | "On Leave";
 
 const consultants: { name: string; specialty: string; status: Status }[] = [
-  { name: "Dr. Amit Shah", specialty: "Cardiology", status: "In Session" },
-  { name: "Dr. Meera Iyer", specialty: "Dermatology", status: "Available" },
-  { name: "Dr. Karan Walia", specialty: "Psychiatry", status: "In Session" },
-  { name: "Dr. Priya Nair", specialty: "Pediatrics", status: "On Leave" },
+  { name: "Amit Shah", specialty: "Business Strategy", status: "In Session" },
+  { name: "Meera Iyer", specialty: "Financial Advisory", status: "Available" },
+  { name: "Karan Walia", specialty: "Legal Counsel", status: "In Session" },
+  { name: "Priya Nair", specialty: "Career Coaching", status: "On Leave" },
 ];
 
 const statusClass: Record<Status, string> = {

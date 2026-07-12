@@ -16,13 +16,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,13 +39,7 @@ import {
 } from "@/components/ui/dialog";
 
 // consultant_category enum — schema §3.8
-type Category =
-  | "MEDICAL"
-  | "LEGAL"
-  | "IT"
-  | "PHYSIOTHERAPY"
-  | "HOMEOPATHY"
-  | "ASTROLOGY";
+type Category = "MEDICAL" | "LEGAL" | "IT" | "PHYSIOTHERAPY" | "HOMEOPATHY" | "ASTROLOGY";
 
 // users.account_status — schema §3.4 (BANNED/DELETED are platform-only actions,
 // not exposed to a Tenant Admin here)
@@ -76,7 +64,7 @@ type Consultant = {
 const initialConsultants: Consultant[] = [
   {
     id: "CON-1042",
-    fullName: "Dr. Amit Shah",
+    fullName: "Amit Shah",
     email: "amit.shah@ayushman.health",
     avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
     category: "MEDICAL",
@@ -91,10 +79,9 @@ const initialConsultants: Consultant[] = [
   },
   {
     id: "CON-0997",
-    fullName: "Dr. Meera Iyer",
+    fullName: "Meera Iyer",
     email: "meera.iyer@ayushman.health",
-    avatarClass:
-      "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
+    avatarClass: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
     category: "PHYSIOTHERAPY",
     subSpecialization: "Sports Injury",
     consultationFee: 1200,
@@ -107,10 +94,9 @@ const initialConsultants: Consultant[] = [
   },
   {
     id: "CON-0954",
-    fullName: "Dr. Karan Walia",
+    fullName: "Karan Walia",
     email: "karan.walia@ayushman.health",
-    avatarClass:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+    avatarClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
     category: "LEGAL",
     subSpecialization: "Family Law",
     consultationFee: 2200,
@@ -123,12 +109,11 @@ const initialConsultants: Consultant[] = [
   },
   {
     id: "CON-0888",
-    fullName: "Dr. Priya Nair",
+    fullName: "Priya Nair",
     email: "priya.nair@ayushman.health",
-    avatarClass:
-      "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+    avatarClass: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
     category: "HOMEOPATHY",
-    subSpecialization: "Chronic Care",
+    subSpecialization: "Wellness Coaching",
     consultationFee: 900,
     currency: "INR",
     ratingAvg: 4.6,
@@ -167,7 +152,6 @@ const statusBadgeClass: Record<AccountStatus, string> = {
 function initials(name: string) {
   return name
     .split(" ")
-    .filter((part) => part !== "Dr.")
     .map((part) => part.charAt(0))
     .join("");
 }
@@ -203,9 +187,7 @@ export function ConsultantsTable() {
 
   function toggleAccepting(id: string) {
     setConsultants((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, isAcceptingNewClients: !c.isAcceptingNewClients } : c
-      )
+      prev.map((c) => (c.id === id ? { ...c, isAcceptingNewClients: !c.isAcceptingNewClients } : c))
     );
   }
 
@@ -279,10 +261,7 @@ export function ConsultantsTable() {
               ))}
             </SelectContent>
           </Select>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value ?? "all")}
-          >
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "all")}>
             <SelectTrigger size="sm" className="h-9 w-36">
               <SelectValue />
             </SelectTrigger>
@@ -349,9 +328,7 @@ export function ConsultantsTable() {
                     <span className="flex items-center gap-1 text-foreground">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                       {c.ratingAvg.toFixed(1)}
-                      <span className="text-xs text-muted-foreground">
-                        ({c.ratingCount})
-                      </span>
+                      <span className="text-xs text-muted-foreground">({c.ratingCount})</span>
                     </span>
                   </td>
                   <td className="py-3 pr-4 text-foreground">{c.caseCount}</td>

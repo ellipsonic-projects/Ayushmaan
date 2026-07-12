@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import {
   Calendar as BigCalendar,
   dateFnsLocalizer,
+  type EventProps,
   type View,
 } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS } from "date-fns/locale";
+import ellipsize from "ellipsize";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "@/components/tenant/consultant/sessions/calendar-overrides.css";
 
@@ -28,6 +30,14 @@ const localizer = dateFnsLocalizer({
   locales: { "en-US": enUS },
 });
 
+// Event titles can overflow narrow day/week columns — ellipsize at a word
+// boundary instead of letting the calendar cell clip mid-word.
+const EVENT_TITLE_MAX_LENGTH = 28;
+
+function SessionEventContent({ title }: EventProps<SessionEvent>) {
+  return <span>{ellipsize(title, EVENT_TITLE_MAX_LENGTH)}</span>;
+}
+
 export function SessionCalendar({
   events: allEvents = sessionEvents,
   members,
@@ -42,18 +52,14 @@ export function SessionCalendar({
   const [date, setDate] = useState(() => new Date());
   const [view, setView] = useState<View>("week");
   const [selectedEvent, setSelectedEvent] = useState<SessionEvent | null>(null);
-  const [checkedMembers, setCheckedMembers] =
-    useState<Record<string, boolean>>(initialChecked);
+  const [checkedMembers, setCheckedMembers] = useState<Record<string, boolean>>(initialChecked);
 
   // Events without a memberId are always visible; the rest follow the
   // sidebar checkboxes, with "all" acting as an override.
   const events = useMemo(
     () =>
       allEvents.filter(
-        (event) =>
-          !event.memberId ||
-          checkedMembers.all ||
-          checkedMembers[event.memberId]
+        (event) => !event.memberId || checkedMembers.all || checkedMembers[event.memberId]
       ),
     [allEvents, checkedMembers]
   );
@@ -90,7 +96,7 @@ export function SessionCalendar({
             className: (event as SessionEvent).colorClass,
             style: { color: "white" },
           })}
-          components={{ toolbar: SessionToolbar }}
+          components={{ toolbar: SessionToolbar, event: SessionEventContent }}
         />
       </div>
 

@@ -1,23 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Briefcase,
-  ScrollText,
-  AlertTriangle,
-  FileText,
-  X,
-  Ban,
-  RotateCcw,
-} from "lucide-react";
+import { Briefcase, ScrollText, AlertTriangle, FileText, X, Ban, RotateCcw } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -73,14 +59,14 @@ type VerificationDocument = {
 const initialDocuments: VerificationDocument[] = [
   {
     id: "DOC-1",
-    documentType: "Medical License",
-    issuingAuthority: "Medical Council of India",
+    documentType: "Professional License",
+    issuingAuthority: "National Board of Professional Standards",
     expiryDate: "Mar 2028",
   },
   {
     id: "DOC-2",
     documentType: "Degree Certificate",
-    issuingAuthority: "AIIMS Delhi",
+    issuingAuthority: "University of Delhi",
     expiryDate: null,
   },
 ];
@@ -105,9 +91,7 @@ export function ConsultantDetailForm({
   };
 }) {
   const [category, setCategory] = useState(consultant.category);
-  const [subSpecialization, setSubSpecialization] = useState(
-    consultant.subSpecialization
-  );
+  const [subSpecialization, setSubSpecialization] = useState(consultant.subSpecialization);
   const [bio, setBio] = useState(consultant.bio);
   const [consultationFee, setConsultationFee] = useState(consultant.consultationFee);
   const [currency, setCurrency] = useState(consultant.currency);
@@ -219,9 +203,7 @@ export function ConsultantDetailForm({
           <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Professional Profile
           </CardTitle>
-          <CardDescription>
-            Shown on their public booking profile.
-          </CardDescription>
+          <CardDescription>Shown on their public booking profile.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -327,8 +309,8 @@ export function ConsultantDetailForm({
             License &amp; Verification Documents
           </CardTitle>
           <CardDescription>
-            Self-attested uploads shown on the public profile — review only,
-            there is no platform approval workflow.
+            Self-attested uploads shown on the public profile — review only, there is no platform
+            approval workflow.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
@@ -382,7 +364,9 @@ export function ConsultantDetailForm({
         <CardContent className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-foreground">
-              {accountStatus === "ACTIVE" ? "Suspend this consultant" : "Reactivate this consultant"}
+              {accountStatus === "ACTIVE"
+                ? "Suspend this consultant"
+                : "Reactivate this consultant"}
             </p>
             <p className="text-xs text-muted-foreground">
               {accountStatus === "ACTIVE"

@@ -33,12 +33,12 @@ export function HelpSidebar() {
             </span>
             <Quote className="h-4 w-4 text-primary" />
             <p className="text-sm text-foreground">
-              Not having to copy and paste events from my EMR, to my work
-              Google account, to my personal calendar has been amazing.
+              Not having to copy and paste events from my practice software, to my work Google
+              account, to my personal calendar has been amazing.
             </p>
             <div>
               <p className="text-sm font-semibold text-foreground">Gillian Makowski</p>
-              <p className="text-xs text-muted-foreground">Speech-Language Pathologist</p>
+              <p className="text-xs text-muted-foreground">Independent Consultant</p>
             </div>
           </CardContent>
         </Card>
@@ -48,11 +48,7 @@ export function HelpSidebar() {
         <h3 className="mb-2 text-sm font-semibold text-foreground">Need a hand?</h3>
         <div className="flex flex-col gap-2">
           {actions.map(({ label, icon: Icon }) => (
-            <Button
-              key={label}
-              variant="outline"
-              className="w-full justify-start gap-2.5"
-            >
+            <Button key={label} variant="outline" className="w-full justify-start gap-2.5">
               <Icon className="h-4 w-4" />
               {label}
             </Button>

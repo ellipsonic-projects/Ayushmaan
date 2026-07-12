@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const consultants = [
-  { name: "Dr. Jane Doe", utilization: 92 },
+  { name: "Jane Doe", utilization: 92 },
   { name: "Marcus Reed", utilization: 45 },
   { name: "Sarah Linn", utilization: 105 },
 ];
@@ -26,15 +26,11 @@ export function ResourceUtilization() {
         {consultants.map((consultant) => (
           <div key={consultant.name} className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-foreground">
-                {consultant.name}
-              </span>
+              <span className="font-medium text-foreground">{consultant.name}</span>
               <span
                 className={cn(
                   "text-xs font-semibold",
-                  consultant.utilization > 100
-                    ? "text-destructive"
-                    : "text-muted-foreground"
+                  consultant.utilization > 100 ? "text-destructive" : "text-muted-foreground"
                 )}
               >
                 {consultant.utilization}%
@@ -47,9 +43,7 @@ export function ResourceUtilization() {
               />
             </div>
             {consultant.utilization > 100 && (
-              <p className="text-[11px] text-destructive">
-                Over capacity: Action required
-              </p>
+              <p className="text-[11px] text-destructive">Over capacity: Action required</p>
             )}
           </div>
         ))}

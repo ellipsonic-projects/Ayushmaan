@@ -1,0 +1,1 @@
+{"version":3,"file":"supabase-verifier.d.ts","sourceRoot":"","sources":["../../../src/lib/auth/supabase-verifier.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,YAAY,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAE1D,qBAAa,oBAAqB,YAAW,YAAY;IACjD,WAAW,CAAC,KAAK,EAAE,MAAM,GAAG,OAAO,CAAC,YAAY,GAAG,IAAI,CAAC;CAK/D"}

@@ -71,7 +71,7 @@ function GoogleIcon({ className = "h-4 w-4" }: { className?: string }) {
 
 export default function SignInPage() {
   const router = useRouter();
-  const { login, bypassLogin } = useAuth();
+  const { login } = useAuth();
 
   const [role, setRole] = useState<Role>("client");
   const [method, setMethod] = useState<Method>("password");
@@ -86,11 +86,6 @@ export default function SignInPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const finishLogin = () => {
-    bypassLogin(role);
-    router.push("/");
-  };
-
   const handlePasswordSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!identifier || !password) return;
@@ -99,43 +94,27 @@ export default function SignInPage() {
     try {
       await login(identifier, password);
       router.push("/");
-    } catch {
-      // No live auth backend wired up yet — fall back to the demo session
-      // so the sign-in flow remains usable end-to-end.
-      finishLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
       setSubmitting(false);
     }
   };
 
+  // OTP and social sign-in aren't wired to Supabase yet (see data_api_v3.md §4.5/§4.2) —
+  // surfaced as "coming soon" rather than granting a session with no real auth behind it.
   const handleSendOtp = (e: FormEvent) => {
     e.preventDefault();
-    if (!identifier) return;
-    setSubmitting(true);
-    setError(null);
-    window.setTimeout(() => {
-      setSubmitting(false);
-      setOtpSent(true);
-    }, 600);
+    setError("OTP sign-in is coming soon — use password sign-in for now.");
   };
 
   const handleVerifyOtp = (e: FormEvent) => {
     e.preventDefault();
-    if (otp.length < 4) {
-      setError("Enter the code sent to you");
-      return;
-    }
-    setSubmitting(true);
-    setError(null);
-    window.setTimeout(() => {
-      setSubmitting(false);
-      finishLogin();
-    }, 500);
+    setError("OTP sign-in is coming soon — use password sign-in for now.");
   };
 
   const handleSocial = (_provider: "google" | "apple") => {
-    setSubmitting(true);
-    window.setTimeout(finishLogin, 400);
+    setError("Social sign-in is coming soon — use password sign-in for now.");
   };
 
   return (
@@ -143,7 +122,10 @@ export default function SignInPage() {
       {/* Left — role selection */}
       <div className="relative flex flex-col justify-between bg-primary px-8 py-10 text-white sm:px-12 lg:py-12 dark:bg-slate-900">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to home
           </Link>
@@ -152,8 +134,8 @@ export default function SignInPage() {
             Welcome back to Ayushman
           </h1>
           <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">
-            Tell us who you are, then sign in the way that suits you —
-            password, one-time code, or your Google / Apple account.
+            Tell us who you are, then sign in the way that suits you — password, one-time code, or
+            your Google / Apple account.
           </p>
 
           <div className="mt-10 space-y-3">
@@ -184,9 +166,7 @@ export default function SignInPage() {
                       {r.title}
                       {active && <CheckCircle2 className="h-4 w-4 shrink-0" />}
                     </span>
-                    <span className="mt-0.5 block text-sm text-white/70">
-                      {r.description}
-                    </span>
+                    <span className="mt-0.5 block text-sm text-white/70">{r.description}</span>
                   </span>
                 </button>
               );
@@ -202,9 +182,7 @@ export default function SignInPage() {
       {/* Right — login form */}
       <div className="flex items-center justify-center bg-background px-6 py-12 sm:px-12">
         <div className="w-full max-w-sm">
-          <p className="text-xs font-medium tracking-widest text-muted-foreground">
-            SIGNING IN AS
-          </p>
+          <p className="text-xs font-medium tracking-widest text-muted-foreground">SIGNING IN AS</p>
           <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             {role === "consultant" ? "Consultant" : "Client"}
           </h2>
@@ -290,7 +268,11 @@ export default function SignInPage() {
                     />
                   </div>
                   <Button type="submit" disabled={submitting} className="w-full">
-                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send one-time code"}
+                    {submitting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Send one-time code"
+                    )}
                   </Button>
                 </form>
               ) : (
@@ -298,7 +280,8 @@ export default function SignInPage() {
                   <div className="flex items-start gap-2 rounded-lg bg-muted p-3 text-xs text-muted-foreground">
                     <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>
-                      We sent a 6-digit code to <span className="font-medium text-foreground">{identifier}</span>.
+                      We sent a 6-digit code to{" "}
+                      <span className="font-medium text-foreground">{identifier}</span>.
                     </span>
                   </div>
                   <div className="space-y-1.5">
@@ -340,9 +323,7 @@ export default function SignInPage() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
+              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
             </div>
           </div>
 

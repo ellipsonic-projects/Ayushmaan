@@ -2,21 +2,11 @@ import Image from "next/image";
 import { Bell, Menu, Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { TenantAdminSidebarContent } from "@/components/tenant/admin/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export function TenantAdminHeader({
-  title = "Clinic Overview",
-}: {
-  title?: string;
-}) {
+export function TenantAdminHeader({ title = "Practice Overview" }: { title?: string }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
@@ -39,22 +29,17 @@ export function TenantAdminHeader({
         </Sheet>
         <Image
           src="/icon.svg"
-          alt="Clinic logo"
+          alt="Practice logo"
           width={28}
           height={28}
           className="hidden shrink-0 rounded-md sm:block"
         />
-        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-          {title}
-        </h1>
+        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">{title}</h1>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="relative hidden w-40 sm:block md:w-56 lg:w-72">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search clients, consultants..."
-            className="h-9 pl-9"
-          />
+          <Input placeholder="Search clients, consultants..." className="h-9 pl-9" />
         </div>
         <button
           type="button"

@@ -6,6 +6,7 @@ import { X, UserPlus } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,7 @@ export function ConsultantOnboardingForm() {
             </Label>
             <Input
               id="full-name"
-              placeholder="Dr. Amit Shah"
+              placeholder="Aditi Rao"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="h-9"
@@ -109,7 +110,7 @@ export function ConsultantOnboardingForm() {
             <Input
               id="email"
               type="email"
-              placeholder="amit.shah@clinic.com"
+              placeholder="aditi.rao@practice.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-9"
@@ -118,13 +119,13 @@ export function ConsultantOnboardingForm() {
           </div>
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="phone">Phone</Label>
-            <Input
+            <PhoneInput
               id="phone"
-              type="tel"
-              placeholder="+91 98765 43210"
+              placeholder="98765 43210"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="h-9 sm:w-1/2"
+              onChange={(value) => setPhone(value ?? "")}
+              className="sm:w-1/2"
+              inputClassName="h-9"
             />
           </div>
         </CardContent>
@@ -136,8 +137,7 @@ export function ConsultantOnboardingForm() {
             2. Professional Profile
           </CardTitle>
           <CardDescription>
-            Shown on their public booking profile and used to route client
-            matches.
+            Shown on their public booking profile and used to route client matches.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -227,11 +227,7 @@ export function ConsultantOnboardingForm() {
               {languages.map((language) => (
                 <Badge key={language} variant="secondary" className="gap-1 py-1">
                   {language}
-                  <button
-                    type="button"
-                    onClick={() => removeLanguage(language)}
-                    className="ml-0.5"
-                  >
+                  <button type="button" onClick={() => removeLanguage(language)} className="ml-0.5">
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
@@ -241,13 +237,11 @@ export function ConsultantOnboardingForm() {
                   <SelectValue placeholder="Add language..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {AVAILABLE_LANGUAGES.filter((l) => !languages.includes(l)).map(
-                    (language) => (
-                      <SelectItem key={language} value={language}>
-                        {language}
-                      </SelectItem>
-                    )
-                  )}
+                  {AVAILABLE_LANGUAGES.filter((l) => !languages.includes(l)).map((language) => (
+                    <SelectItem key={language} value={language}>
+                      {language}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

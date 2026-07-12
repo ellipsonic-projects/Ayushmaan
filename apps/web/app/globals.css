@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -67,9 +67,9 @@ html {
   --accent: #9ad3d9; /* light teal */
   --accent-foreground: #072033;
   --destructive: #e05252;
-  --border: rgba(11,37,70,0.06);
-  --input: rgba(11,37,70,0.04);
-  --ring: rgba(36,59,138,0.2);
+  --border: rgba(11, 37, 70, 0.06);
+  --input: rgba(11, 37, 70, 0.04);
+  --ring: rgba(36, 59, 138, 0.2);
   --chart-1: #243b8a;
   --chart-2: #3b82f6;
   --chart-3: #9ad3d9;
@@ -82,8 +82,8 @@ html {
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #3b82f6;
   --sidebar-accent-foreground: #243b8a;
-  --sidebar-border: rgba(11,37,70,0.06);
-  --sidebar-ring: rgba(36,59,138,0.2);
+  --sidebar-border: rgba(11, 37, 70, 0.06);
+  --sidebar-ring: rgba(36, 59, 138, 0.2);
 }
 
 .dark {
@@ -103,9 +103,9 @@ html {
   --accent: #7fd0d6;
   --accent-foreground: #071031;
   --destructive: #f28b8b;
-  --border: rgba(255,255,255,0.06);
-  --input: rgba(255,255,255,0.04);
-  --ring: rgba(59,110,230,0.2);
+  --border: rgba(255, 255, 255, 0.06);
+  --input: rgba(255, 255, 255, 0.04);
+  --ring: rgba(59, 110, 230, 0.2);
   --chart-1: #3b6ee6;
   --chart-2: #7fd0d6;
   --chart-3: #9ad3d9;
@@ -117,8 +117,8 @@ html {
   --sidebar-primary-foreground: #071031;
   --sidebar-accent: #0e2a3f;
   --sidebar-accent-foreground: #e6f7fb;
-  --sidebar-border: rgba(255,255,255,0.06);
-  --sidebar-ring: rgba(59,110,230,0.2);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-ring: rgba(59, 110, 230, 0.2);
 }
 
 /* Tenant Admin theme — indigo-purple palette, scoped so it never bleeds into the Super Admin (platform) shell */
@@ -139,9 +139,9 @@ html {
   --accent: #10b981;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
-  --border: rgba(33,31,54,0.08);
-  --input: rgba(33,31,54,0.05);
-  --ring: rgba(79,57,214,0.22);
+  --border: rgba(33, 31, 54, 0.08);
+  --input: rgba(33, 31, 54, 0.05);
+  --ring: rgba(79, 57, 214, 0.22);
   --chart-1: #4f39d6;
   --chart-2: #6366f1;
   --chart-3: #10b981;
@@ -154,8 +154,8 @@ html {
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #241c47;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(109,91,239,0.3);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(109, 91, 239, 0.3);
 }
 
 .dark .tenant-theme,
@@ -176,9 +176,9 @@ html {
   --accent: #34d399;
   --accent-foreground: #052e2b;
   --destructive: #f2908b;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.05);
-  --ring: rgba(139,123,240,0.3);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: rgba(139, 123, 240, 0.3);
   --chart-1: #8b7bf0;
   --chart-2: #6366f1;
   --chart-3: #34d399;
@@ -190,15 +190,15 @@ html {
   --sidebar-primary-foreground: #100d1f;
   --sidebar-accent: #191530;
   --sidebar-accent-foreground: #e9e7f7;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(139,123,240,0.3);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(139, 123, 240, 0.3);
 }
 
 /* Consultant theme — violet variant of the tenant-theme, closest to the Carepatron reference */
 .tenant-theme.consultant-scope {
   --primary: #6e46f0;
   --secondary: #8b5cf6;
-  --ring: rgba(110,70,240,0.22);
+  --ring: rgba(110, 70, 240, 0.22);
   --chart-1: #6e46f0;
   --chart-2: #8b5cf6;
   --chart-3: #10b981;
@@ -210,15 +210,15 @@ html {
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #241a44;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(124,92,252,0.3);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(124, 92, 252, 0.3);
 }
 
 .dark .tenant-theme.consultant-scope,
 .tenant-theme.consultant-scope.dark {
   --primary: #a48bf5;
   --secondary: #8b5cf6;
-  --ring: rgba(164,139,245,0.3);
+  --ring: rgba(164, 139, 245, 0.3);
   --chart-1: #a48bf5;
   --chart-2: #8b5cf6;
   --chart-3: #34d399;
@@ -230,8 +230,8 @@ html {
   --sidebar-primary-foreground: #170f2e;
   --sidebar-accent: #1c1438;
   --sidebar-accent-foreground: #efeafd;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(164,139,245,0.3);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(164, 139, 245, 0.3);
 }
 
 /* Super Admin (platform) theme — plum/violet control-tower look with an amber ops-signal accent, scoped so it never bleeds into the consumer app or Tenant Admin shell */
@@ -252,9 +252,9 @@ html {
   --accent: #f59e0b;
   --accent-foreground: #1e1b2e;
   --destructive: #dc2626;
-  --border: rgba(30,27,46,0.08);
-  --input: rgba(30,27,46,0.05);
-  --ring: rgba(124,58,237,0.25);
+  --border: rgba(30, 27, 46, 0.08);
+  --input: rgba(30, 27, 46, 0.05);
+  --ring: rgba(124, 58, 237, 0.25);
   --chart-1: #4c1d95;
   --chart-2: #7c3aed;
   --chart-3: #f59e0b;
@@ -267,8 +267,8 @@ html {
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #2a1d47;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(124,58,237,0.3);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(124, 58, 237, 0.3);
 }
 
 .dark .platform-theme,
@@ -289,9 +289,9 @@ html {
   --accent: #fbbf24;
   --accent-foreground: #1e1b2e;
   --destructive: #f2908b;
-  --border: rgba(255,255,255,0.08);
-  --input: rgba(255,255,255,0.05);
-  --ring: rgba(167,139,250,0.3);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: rgba(167, 139, 250, 0.3);
   --chart-1: #a78bfa;
   --chart-2: #7c3aed;
   --chart-3: #fbbf24;
@@ -303,8 +303,8 @@ html {
   --sidebar-primary-foreground: #0f0c1a;
   --sidebar-accent: #171226;
   --sidebar-accent-foreground: #efeaf7;
-  --sidebar-border: rgba(255,255,255,0.08);
-  --sidebar-ring: rgba(167,139,250,0.3);
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: rgba(167, 139, 250, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -325,9 +325,9 @@ html {
     --accent: #fbbf24;
     --accent-foreground: #1e1b2e;
     --destructive: #f2908b;
-    --border: rgba(255,255,255,0.08);
-    --input: rgba(255,255,255,0.05);
-    --ring: rgba(167,139,250,0.3);
+    --border: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.05);
+    --ring: rgba(167, 139, 250, 0.3);
     --chart-1: #a78bfa;
     --chart-2: #7c3aed;
     --chart-3: #fbbf24;
@@ -339,8 +339,8 @@ html {
     --sidebar-primary-foreground: #0f0c1a;
     --sidebar-accent: #171226;
     --sidebar-accent-foreground: #efeaf7;
-    --sidebar-border: rgba(255,255,255,0.08);
-    --sidebar-ring: rgba(167,139,250,0.3);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-ring: rgba(167, 139, 250, 0.3);
   }
 
   .tenant-theme:not(.light) {
@@ -360,9 +360,9 @@ html {
     --accent: #34d399;
     --accent-foreground: #052e2b;
     --destructive: #f2908b;
-    --border: rgba(255,255,255,0.08);
-    --input: rgba(255,255,255,0.05);
-    --ring: rgba(139,123,240,0.3);
+    --border: rgba(255, 255, 255, 0.08);
+    --input: rgba(255, 255, 255, 0.05);
+    --ring: rgba(139, 123, 240, 0.3);
     --chart-1: #8b7bf0;
     --chart-2: #6366f1;
     --chart-3: #34d399;
@@ -374,14 +374,14 @@ html {
     --sidebar-primary-foreground: #100d1f;
     --sidebar-accent: #191530;
     --sidebar-accent-foreground: #e9e7f7;
-    --sidebar-border: rgba(255,255,255,0.08);
-    --sidebar-ring: rgba(139,123,240,0.3);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-ring: rgba(139, 123, 240, 0.3);
   }
 
   .tenant-theme.consultant-scope:not(.light) {
     --primary: #a48bf5;
     --secondary: #8b5cf6;
-    --ring: rgba(164,139,245,0.3);
+    --ring: rgba(164, 139, 245, 0.3);
     --chart-1: #a48bf5;
     --chart-2: #8b5cf6;
     --chart-3: #34d399;
@@ -393,8 +393,8 @@ html {
     --sidebar-primary-foreground: #170f2e;
     --sidebar-accent: #1c1438;
     --sidebar-accent-foreground: #efeafd;
-    --sidebar-border: rgba(255,255,255,0.08);
-    --sidebar-ring: rgba(164,139,245,0.3);
+    --sidebar-border: rgba(255, 255, 255, 0.08);
+    --sidebar-ring: rgba(164, 139, 245, 0.3);
   }
 
   :root:not(.light) {
@@ -439,6 +439,13 @@ html {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Marketing-site display font, set via app/(landing)/layout.tsx */
+  .font-display {
+    font-family: var(--font-display), var(--font-sans);
   }
 }
 

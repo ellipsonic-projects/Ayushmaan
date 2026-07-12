@@ -1,8 +1,15 @@
+import ellipsize from "ellipsize";
+
 import {
   dateAt,
   type CalendarMember,
   type SessionEvent,
 } from "@/components/tenant/consultant/sessions/session-data";
+
+// Session titles ("Advik · Sarah D - Initial Assessment") can overflow the
+// narrow day/week columns — ellipsize at a word boundary instead of letting
+// the calendar cell clip mid-word.
+const SESSION_TITLE_MAX_LENGTH = 28;
 
 // One color per consultant so events are attributable at a glance.
 export const consultantMembers: CalendarMember[] = [
@@ -13,7 +20,7 @@ export const consultantMembers: CalendarMember[] = [
   { id: "meera", label: "Meera Iyer", colorClass: "bg-rose-600" },
 ];
 
-export const allConsultantEvents: SessionEvent[] = [
+const rawConsultantEvents: SessionEvent[] = [
   {
     id: "advik-sarah-initial",
     title: "Advik · Sarah D - Initial Assessment",
@@ -177,3 +184,8 @@ export const allConsultantEvents: SessionEvent[] = [
     colorClass: "bg-emerald-600",
   },
 ];
+
+export const allConsultantEvents: SessionEvent[] = rawConsultantEvents.map((event) => ({
+  ...event,
+  title: ellipsize(event.title, SESSION_TITLE_MAX_LENGTH),
+}));

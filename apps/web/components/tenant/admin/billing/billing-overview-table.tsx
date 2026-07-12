@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Calendar,
-  Eye,
-  Plus,
-  SlidersHorizontal,
-} from "lucide-react";
+import { Calendar, Eye, Plus, SlidersHorizontal } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,7 +49,7 @@ const appointments: BilledAppointment[] = [
     unpaid: 0,
     paid: 1500,
     billingItem: "Standard Appointment",
-    provider: "Dr. Amit Shah",
+    provider: "Amit Shah",
     noteStatus: "Signed",
     invoice: { number: "000005", status: "Paid" },
   },
@@ -69,7 +64,7 @@ const appointments: BilledAppointment[] = [
     unpaid: 2200,
     paid: 0,
     billingItem: "Initial Assessment",
-    provider: "Dr. Meera Iyer",
+    provider: "Meera Iyer",
     noteStatus: "In Progress",
     invoice: { number: "000004", status: "Unpaid" },
   },
@@ -84,7 +79,7 @@ const appointments: BilledAppointment[] = [
     unpaid: 1800,
     paid: 0,
     billingItem: "Follow-up Consultation",
-    provider: "Dr. Karan Walia",
+    provider: "Karan Walia",
     noteStatus: "None",
     invoice: { number: "000003", status: "Unpaid" },
   },
@@ -99,7 +94,7 @@ const appointments: BilledAppointment[] = [
     unpaid: 0,
     paid: 1500,
     billingItem: "Final Appointment",
-    provider: "Dr. Amit Shah",
+    provider: "Amit Shah",
     noteStatus: "Signed",
     invoice: { number: "000002", status: "Paid" },
   },
@@ -114,7 +109,7 @@ const appointments: BilledAppointment[] = [
     unpaid: 1200,
     paid: 0,
     billingItem: "Standard Appointment",
-    provider: "Dr. Priya Nair",
+    provider: "Priya Nair",
     noteStatus: "None",
   },
 ];
@@ -146,23 +141,15 @@ const filterChips = [
 export function BillingOverviewTable() {
   const [range, setRange] = useState("14d");
   const [view, setView] = useState<"all" | "unbilled">("all");
-  const [invoiceFilter, setInvoiceFilter] = useState<"all" | InvoiceStatus>(
-    "all"
-  );
+  const [invoiceFilter, setInvoiceFilter] = useState<"all" | InvoiceStatus>("all");
 
-  const unpaidCount = appointments.filter(
-    (a) => a.invoice?.status === "Unpaid"
-  ).length;
-  const paidCount = appointments.filter(
-    (a) => a.invoice?.status === "Paid"
-  ).length;
+  const unpaidCount = appointments.filter((a) => a.invoice?.status === "Unpaid").length;
+  const paidCount = appointments.filter((a) => a.invoice?.status === "Paid").length;
 
   const filtered = useMemo(() => {
     return appointments
       .filter((a) => (view === "unbilled" ? !a.invoice : true))
-      .filter((a) =>
-        invoiceFilter === "all" ? true : a.invoice?.status === invoiceFilter
-      );
+      .filter((a) => (invoiceFilter === "all" ? true : a.invoice?.status === invoiceFilter));
   }, [view, invoiceFilter]);
 
   return (
@@ -206,11 +193,7 @@ export function BillingOverviewTable() {
             Invoices
             <button
               type="button"
-              onClick={() =>
-                setInvoiceFilter((prev) =>
-                  prev === "Unpaid" ? "all" : "Unpaid"
-                )
-              }
+              onClick={() => setInvoiceFilter((prev) => (prev === "Unpaid" ? "all" : "Unpaid"))}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5",
                 invoiceFilter === "Unpaid" && "border-red-300 bg-red-50 dark:bg-red-950"
@@ -222,13 +205,10 @@ export function BillingOverviewTable() {
             </button>
             <button
               type="button"
-              onClick={() =>
-                setInvoiceFilter((prev) => (prev === "Paid" ? "all" : "Paid"))
-              }
+              onClick={() => setInvoiceFilter((prev) => (prev === "Paid" ? "all" : "Paid"))}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-0.5",
-                invoiceFilter === "Paid" &&
-                  "border-emerald-300 bg-emerald-50 dark:bg-emerald-950"
+                invoiceFilter === "Paid" && "border-emerald-300 bg-emerald-50 dark:bg-emerald-950"
               )}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -270,7 +250,7 @@ export function BillingOverviewTable() {
                   <th className="py-2 pr-4 text-right font-medium">Total Unpaid</th>
                   <th className="py-2 pr-4 text-right font-medium">Total Paid</th>
                   <th className="py-2 pr-4 font-medium">Billing Items</th>
-                  <th className="py-2 pr-4 font-medium">Provider</th>
+                  <th className="py-2 pr-4 font-medium">Consultant</th>
                   <th className="py-2 pr-4 font-medium">Note Status</th>
                   <th className="py-2 font-medium">Invoices</th>
                 </tr>
@@ -290,9 +270,7 @@ export function BillingOverviewTable() {
                     </td>
                     <td className="py-3 pr-4 align-top">
                       <p className="font-medium text-primary">{appt.client}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {appt.billingMethod}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{appt.billingMethod}</p>
                     </td>
                     <td className="py-3 pr-4 text-right align-top font-mono font-semibold tabular-nums text-foreground">
                       ₹{appt.billed.toLocaleString("en-IN")}
@@ -317,12 +295,8 @@ export function BillingOverviewTable() {
                     >
                       ₹{appt.paid.toLocaleString("en-IN")}
                     </td>
-                    <td className="py-3 pr-4 align-top text-foreground">
-                      {appt.billingItem}
-                    </td>
-                    <td className="py-3 pr-4 align-top text-muted-foreground">
-                      {appt.provider}
-                    </td>
+                    <td className="py-3 pr-4 align-top text-foreground">{appt.billingItem}</td>
+                    <td className="py-3 pr-4 align-top text-muted-foreground">{appt.provider}</td>
                     <td className="py-3 pr-4 align-top">
                       <Badge
                         variant="outline"
@@ -340,17 +314,12 @@ export function BillingOverviewTable() {
                             </span>
                             <Badge
                               variant="outline"
-                              className={cn(
-                                "text-[10px]",
-                                invoiceStatusClass[appt.invoice.status]
-                              )}
+                              className={cn("text-[10px]", invoiceStatusClass[appt.invoice.status])}
                             >
                               {appt.invoice.status}
                             </Badge>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {appt.client}
-                          </span>
+                          <span className="text-xs text-muted-foreground">{appt.client}</span>
                         </div>
                       ) : (
                         <Button variant="outline" size="sm" className="h-8 gap-1.5">
@@ -363,10 +332,7 @@ export function BillingOverviewTable() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td
-                      colSpan={9}
-                      className="py-6 text-center text-sm text-muted-foreground"
-                    >
+                    <td colSpan={9} className="py-6 text-center text-sm text-muted-foreground">
                       No appointments match these filters.
                     </td>
                   </tr>

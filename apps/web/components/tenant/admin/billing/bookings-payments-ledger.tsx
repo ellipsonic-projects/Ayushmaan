@@ -11,13 +11,7 @@ import {
   Search,
 } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +28,7 @@ type PaymentStatus = "Paid" | "Pending" | "Refunded" | "Failed";
 
 // appointment_status enum — schema_ayushman_v3.md §3.12
 type OperationsStatus =
-  | "REQUESTED"
-  | "APPROVED"
-  | "RESCHEDULE_PROPOSED"
-  | "COMPLETED"
-  | "CANCELLED"
-  | "NO_SHOW";
+  "REQUESTED" | "APPROVED" | "RESCHEDULE_PROPOSED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
 
 type Booking = {
   id: string;
@@ -57,7 +46,7 @@ const initialBookings: Booking[] = [
   {
     id: "BKG-4821",
     client: "Rahul Hegde",
-    consultant: "Dr. Amit Shah",
+    consultant: "Amit Shah",
     scheduledAt: "Oct 24, 2023 · 10:00 AM",
     scheduledAtSort: 20231024_1000,
     amount: 1500,
@@ -68,7 +57,7 @@ const initialBookings: Booking[] = [
   {
     id: "BKG-4819",
     client: "Sarah Lawson",
-    consultant: "Dr. Meera Iyer",
+    consultant: "Meera Iyer",
     scheduledAt: "Oct 23, 2023 · 11:30 AM",
     scheduledAtSort: 20231023_1130,
     amount: 2200,
@@ -79,7 +68,7 @@ const initialBookings: Booking[] = [
   {
     id: "BKG-4802",
     client: "David Kim",
-    consultant: "Dr. Karan Walia",
+    consultant: "Karan Walia",
     scheduledAt: "Oct 22, 2023 · 01:15 PM",
     scheduledAtSort: 20231022_1315,
     amount: 1800,
@@ -90,7 +79,7 @@ const initialBookings: Booking[] = [
   {
     id: "BKG-4795",
     client: "Mira Sethi",
-    consultant: "Dr. Amit Shah",
+    consultant: "Amit Shah",
     scheduledAt: "Oct 21, 2023 · 02:30 PM",
     scheduledAtSort: 20231021_1430,
     amount: 1500,
@@ -101,7 +90,7 @@ const initialBookings: Booking[] = [
   {
     id: "BKG-4788",
     client: "Arjun Verma",
-    consultant: "Dr. Priya Nair",
+    consultant: "Priya Nair",
     scheduledAt: "Oct 20, 2023 · 09:00 AM",
     scheduledAtSort: 20231020_0900,
     amount: 1200,
@@ -115,9 +104,11 @@ const consultants = Array.from(new Set(initialBookings.map((b) => b.consultant))
 
 const paymentStatusClass: Record<PaymentStatus, string> = {
   Paid: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
-  Pending: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
+  Pending:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
   Refunded: "border-border bg-muted text-foreground",
-  Failed: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
+  Failed:
+    "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
 };
 
 const operationsStatusOptions: { value: OperationsStatus; label: string }[] = [
@@ -172,16 +163,12 @@ export function BookingsPaymentsLedger() {
   }
 
   function updateOperationsStatus(id: string, operationsStatus: OperationsStatus) {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, operationsStatus } : b))
-    );
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, operationsStatus } : b)));
   }
 
   const filtered = useMemo(() => {
     return bookings
-      .filter(
-        (b) => statusFilter === "all" || b.paymentStatus.toLowerCase() === statusFilter
-      )
+      .filter((b) => statusFilter === "all" || b.paymentStatus.toLowerCase() === statusFilter)
       .filter((b) => consultantFilter === "all" || b.consultant === consultantFilter)
       .filter((b) => {
         const query = search.trim().toLowerCase();
@@ -219,10 +206,7 @@ export function BookingsPaymentsLedger() {
               className="h-9 w-full pl-9 sm:w-48"
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value ?? "all")}
-          >
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "all")}>
             <SelectTrigger size="sm" className="h-9 w-36">
               <SelectValue />
             </SelectTrigger>
@@ -289,24 +273,15 @@ export function BookingsPaymentsLedger() {
             <tbody>
               {filtered.map((booking) => (
                 <tr key={booking.id} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground">
-                    {booking.id}
-                  </td>
+                  <td className="py-3 pr-4 font-medium text-foreground">{booking.id}</td>
                   <td className="py-3 pr-4 text-foreground">{booking.client}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">
-                    {booking.consultant}
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground">
-                    {booking.scheduledAt}
-                  </td>
+                  <td className="py-3 pr-4 text-muted-foreground">{booking.consultant}</td>
+                  <td className="py-3 pr-4 text-muted-foreground">{booking.scheduledAt}</td>
                   <td className="py-3 pr-4 font-mono font-medium tabular-nums text-foreground">
                     {booking.currency} {booking.amount.toLocaleString()}
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge
-                      variant="outline"
-                      className={paymentStatusClass[booking.paymentStatus]}
-                    >
+                    <Badge variant="outline" className={paymentStatusClass[booking.paymentStatus]}>
                       {booking.paymentStatus.toUpperCase()}
                     </Badge>
                   </td>
@@ -314,8 +289,7 @@ export function BookingsPaymentsLedger() {
                     <Select
                       value={booking.operationsStatus}
                       onValueChange={(value) =>
-                        value &&
-                        updateOperationsStatus(booking.id, value as OperationsStatus)
+                        value && updateOperationsStatus(booking.id, value as OperationsStatus)
                       }
                     >
                       <SelectTrigger
@@ -340,10 +314,7 @@ export function BookingsPaymentsLedger() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="py-6 text-center text-sm text-muted-foreground"
-                  >
+                  <td colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
                     No bookings match these filters.
                   </td>
                 </tr>
@@ -353,7 +324,9 @@ export function BookingsPaymentsLedger() {
         </div>
 
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Showing {filtered.length} of {bookings.length} bookings</span>
+          <span>
+            Showing {filtered.length} of {bookings.length} bookings
+          </span>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon-sm" disabled={page === 1}>
               <ChevronLeft className="h-3.5 w-3.5" />

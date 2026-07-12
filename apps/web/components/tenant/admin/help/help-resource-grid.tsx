@@ -21,13 +21,14 @@ const resources: {
     tag: "Feature",
     illustration: <AiScribeIllustration />,
     title: "Save time with AI Scribe",
-    description: "Transcribe audio and transform it into any clinical template with one click.",
+    description: "Transcribe audio and transform it into any session template with one click.",
     ctaLabel: "Try it",
   },
   {
     tag: "Story",
     illustration: <StoryIllustration />,
-    title: "Right-sized for a solo practice: how one clinician runs their practice without the busywork.",
+    title:
+      "Right-sized for a solo practice: how one consultant runs their practice without the busywork.",
     description: "Read how a real consultant streamlined their workflow.",
     ctaLabel: "Read story",
   },
@@ -62,15 +63,15 @@ const resources: {
   {
     tag: "Feature",
     illustration: <ClaimsIllustration />,
-    title: "Get set up for insurance billing",
-    description: "Create claims and track them from the same place you run your practice.",
+    title: "Get set up for client invoicing",
+    description: "Create invoices and track payments from the same place you run your practice.",
     ctaLabel: "Set up",
   },
   {
     tag: "Feature",
     illustration: <VideoCallIllustration />,
     title: "Start video calls",
-    description: "Run secure telehealth sessions inside Ayushman.",
+    description: "Run secure virtual sessions inside Ayushman.",
     ctaLabel: "Try it",
   },
   {

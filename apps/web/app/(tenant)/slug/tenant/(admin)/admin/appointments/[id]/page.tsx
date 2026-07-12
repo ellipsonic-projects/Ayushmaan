@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { useAuth } from '@/lib/auth/context';
-import { api } from '@/lib/api/client';
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { useAuth } from "@/lib/auth/context";
+import { api } from "@/lib/api/client";
 
 interface Appointment {
   id: string;
   title: string;
   startTime: string;
   endTime: string;
-  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+  status: "scheduled" | "confirmed" | "completed" | "cancelled";
   consultant: { id: string; first_name: string; last_name: string };
   client: { first_name: string; last_name: string };
   meetingLink?: string;
@@ -23,9 +23,9 @@ interface Appointment {
 export default function AppointmentDetail() {
   const params = useParams();
   const router = useRouter();
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const id = params.id as string;
-  
+
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
@@ -33,12 +33,12 @@ export default function AppointmentDetail() {
   useEffect(() => {
     const fetchAppointment = async () => {
       if (!token) return;
-      
+
       try {
         const data = await api.get(`/api/appointments/${id}`, token);
         setAppointment(data.data);
       } catch (error) {
-        console.error('[v0] Failed to fetch appointment:', error);
+        console.error("[v0] Failed to fetch appointment:", error);
       } finally {
         setLoading(false);
       }
@@ -49,15 +49,15 @@ export default function AppointmentDetail() {
 
   const handleCancel = async () => {
     if (!token || !appointment) return;
-    
+
     setCancelling(true);
     try {
       await api.post(`/api/appointments/${appointment.id}/cancel`, {}, token);
-      alert('Appointment cancelled successfully');
-      router.push('/dashboard/client/appointments');
+      alert("Appointment cancelled successfully");
+      router.push("/dashboard/client/appointments");
     } catch (error) {
-      console.error('[v0] Failed to cancel appointment:', error);
-      alert('Failed to cancel appointment');
+      console.error("[v0] Failed to cancel appointment:", error);
+      alert("Failed to cancel appointment");
     } finally {
       setCancelling(false);
     }
@@ -86,8 +86,10 @@ export default function AppointmentDetail() {
 
   const startDate = new Date(appointment.startTime);
   const endDate = new Date(appointment.endTime);
-  const isConsultant = user?.userType === 'consultant';
-  const isClient = user?.userType === 'client';
+  // Role isn't available on the client-side session yet — apps/api has no
+  // `/me` endpoint to resolve it from the Supabase user id (data_api_v3.md §5).
+  const isConsultant = false;
+  const isClient = false;
   const isPastAppointment = endDate < new Date();
 
   return (
@@ -118,13 +120,15 @@ export default function AppointmentDetail() {
               {appointment.title}
             </h1>
             <div className="flex items-center gap-2">
-              <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                appointment.status === 'confirmed' 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                  : appointment.status === 'cancelled'
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-              }`}>
+              <span
+                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                  appointment.status === "confirmed"
+                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"
+                    : appointment.status === "cancelled"
+                      ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                      : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                }`}
+              >
                 {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
               </span>
             </div>
@@ -136,22 +140,24 @@ export default function AppointmentDetail() {
             <div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Date & Time</p>
               <p className="text-lg font-medium text-slate-900 dark:text-white">
-                {startDate.toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                {startDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </p>
               <p className="text-slate-600 dark:text-slate-400">
-                {startDate.toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit', 
-                  hour12: true 
-                })} - {endDate.toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit', 
-                  hour12: true 
+                {startDate.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })}{" "}
+                -{" "}
+                {endDate.toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
                 })}
               </p>
             </div>
@@ -194,9 +200,9 @@ export default function AppointmentDetail() {
           {appointment.meetingLink && (
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Meeting Link</p>
-              <a 
-                href={appointment.meetingLink} 
-                target="_blank" 
+              <a
+                href={appointment.meetingLink}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 dark:text-blue-400 hover:underline break-all"
               >
@@ -215,18 +221,21 @@ export default function AppointmentDetail() {
 
           {/* Actions */}
           <div className="flex gap-4 pt-4">
-            {!isPastAppointment && appointment.status !== 'cancelled' && isClient && (
+            {!isPastAppointment && appointment.status !== "cancelled" && isClient && (
               <Button
                 variant="outline"
                 onClick={handleCancel}
                 disabled={cancelling}
                 className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
               >
-                {cancelling ? 'Cancelling...' : 'Cancel Appointment'}
+                {cancelling ? "Cancelling..." : "Cancel Appointment"}
               </Button>
             )}
-            
-            <Link href={isConsultant ? "/dashboard/consultant" : "/dashboard/client"} className="ml-auto">
+
+            <Link
+              href={isConsultant ? "/dashboard/consultant" : "/dashboard/client"}
+              className="ml-auto"
+            >
               <Button>Back to Dashboard</Button>
             </Link>
           </div>

@@ -6,7 +6,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const filters = ["All", "Pinned", "High Priority", "Chronic Care", "Needs Hindi"];
+const filters = ["All", "Pinned", "High Priority", "Long-Term Engagement", "Needs Hindi"];
 
 export function ClientQuickFilters() {
   const [active, setActive] = useState("All");

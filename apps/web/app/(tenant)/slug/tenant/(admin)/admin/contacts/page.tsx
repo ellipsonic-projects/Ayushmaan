@@ -9,7 +9,7 @@ export default function TenantAdminContactsPage() {
       <ComingSoon
         icon={Contact}
         title="A shared contacts directory is on the way"
-        description="Referring physicians, pharmacies, and other non-client contacts, shared across your tenant."
+        description="Referral partners, vendors, and other non-client contacts, shared across your tenant."
       />
     </div>
   );

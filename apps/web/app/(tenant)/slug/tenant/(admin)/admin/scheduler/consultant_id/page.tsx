@@ -15,7 +15,7 @@ type ScheduleEvent = {
 };
 
 const events: ScheduleEvent[] = [
-  { title: "Patient Consultation", time: "08:00 - 09:00 AM", variant: "default" },
+  { title: "Client Consultation", time: "08:00 - 09:00 AM", variant: "default" },
   {
     title: "Case Review",
     time: "09:00 - 10:30 AM",
@@ -49,9 +49,9 @@ export default function ConsultantSchedulePage() {
             Master Schedule
           </Link>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">Dr. Jane Doe</span>
+          <span className="text-foreground">Jane Doe</span>
         </div>
-        <h2 className="mt-1 text-2xl font-bold text-foreground">Dr. Jane Doe</h2>
+        <h2 className="mt-1 text-2xl font-bold text-foreground">Jane Doe</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Today's booked slots and conflicts for this consultant.
         </p>

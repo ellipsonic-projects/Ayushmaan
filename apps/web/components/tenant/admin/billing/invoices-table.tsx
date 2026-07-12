@@ -3,13 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, Search, Send } from "lucide-react";
 
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,7 +31,7 @@ const initialInvoices: Invoice[] = [
   {
     number: "000005",
     client: "Rahul Hegde",
-    provider: "Dr. Amit Shah",
+    provider: "Amit Shah",
     issued: "Oct 24, 2023",
     due: "Nov 7, 2023",
     amount: 1500,
@@ -46,7 +40,7 @@ const initialInvoices: Invoice[] = [
   {
     number: "000004",
     client: "Sarah Lawson",
-    provider: "Dr. Meera Iyer",
+    provider: "Meera Iyer",
     issued: "Oct 23, 2023",
     due: "Nov 6, 2023",
     amount: 2200,
@@ -55,7 +49,7 @@ const initialInvoices: Invoice[] = [
   {
     number: "000003",
     client: "David Kim",
-    provider: "Dr. Karan Walia",
+    provider: "Karan Walia",
     issued: "Oct 22, 2023",
     due: "Oct 29, 2023",
     amount: 1800,
@@ -64,7 +58,7 @@ const initialInvoices: Invoice[] = [
   {
     number: "000002",
     client: "Mira Sethi",
-    provider: "Dr. Amit Shah",
+    provider: "Amit Shah",
     issued: "Oct 21, 2023",
     due: "Nov 4, 2023",
     amount: 1500,
@@ -73,7 +67,7 @@ const initialInvoices: Invoice[] = [
   {
     number: "000001",
     client: "Arjun Verma",
-    provider: "Dr. Priya Nair",
+    provider: "Priya Nair",
     issued: "Oct 20, 2023",
     due: "Nov 3, 2023",
     amount: 1200,
@@ -98,17 +92,12 @@ export function InvoicesTable() {
   const [search, setSearch] = useState("");
 
   function updateStatus(number: string, status: InvoiceStatus) {
-    setInvoices((prev) =>
-      prev.map((inv) => (inv.number === number ? { ...inv, status } : inv))
-    );
+    setInvoices((prev) => prev.map((inv) => (inv.number === number ? { ...inv, status } : inv)));
   }
 
   const filtered = useMemo(() => {
     return invoices
-      .filter(
-        (inv) =>
-          statusFilter === "all" || inv.status.toLowerCase() === statusFilter
-      )
+      .filter((inv) => statusFilter === "all" || inv.status.toLowerCase() === statusFilter)
       .filter((inv) => {
         const query = search.trim().toLowerCase();
         if (!query) return true;
@@ -146,10 +135,7 @@ export function InvoicesTable() {
               className="h-9 w-full pl-9 sm:w-48"
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => setStatusFilter(value ?? "all")}
-          >
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? "all")}>
             <SelectTrigger size="sm" className="h-9 w-36">
               <SelectValue />
             </SelectTrigger>
@@ -171,7 +157,7 @@ export function InvoicesTable() {
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Invoice #</th>
                 <th className="py-2 pr-4 font-medium">Client</th>
-                <th className="py-2 pr-4 font-medium">Provider</th>
+                <th className="py-2 pr-4 font-medium">Consultant</th>
                 <th className="py-2 pr-4 font-medium">Issued</th>
                 <th className="py-2 pr-4 font-medium">Due</th>
                 <th className="py-2 pr-4 text-right font-medium">Amount</th>
@@ -182,13 +168,9 @@ export function InvoicesTable() {
             <tbody>
               {filtered.map((inv) => (
                 <tr key={inv.number} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-semibold text-primary">
-                    {inv.number}
-                  </td>
+                  <td className="py-3 pr-4 font-semibold text-primary">{inv.number}</td>
                   <td className="py-3 pr-4 text-foreground">{inv.client}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">
-                    {inv.provider}
-                  </td>
+                  <td className="py-3 pr-4 text-muted-foreground">{inv.provider}</td>
                   <td className="py-3 pr-4 text-muted-foreground">{inv.issued}</td>
                   <td className="py-3 pr-4 text-muted-foreground">{inv.due}</td>
                   <td className="py-3 pr-4 text-right font-mono font-semibold tabular-nums text-foreground">
@@ -239,10 +221,7 @@ export function InvoicesTable() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="py-6 text-center text-sm text-muted-foreground"
-                  >
+                  <td colSpan={8} className="py-6 text-center text-sm text-muted-foreground">
                     No invoices match these filters.
                   </td>
                 </tr>

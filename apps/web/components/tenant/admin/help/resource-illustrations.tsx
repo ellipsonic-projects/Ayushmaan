@@ -12,11 +12,7 @@ export function AiScribeIllustration() {
       </span>
       <div className="flex items-end gap-0.5">
         {heights.map((h, i) => (
-          <span
-            key={i}
-            className="w-1 rounded-full bg-primary/70"
-            style={{ height: h }}
-          />
+          <span key={i} className="w-1 rounded-full bg-primary/70" style={{ height: h }} />
         ))}
       </div>
     </div>
@@ -28,11 +24,7 @@ export function StoryIllustration() {
     <div className="flex h-32 items-center justify-center bg-gradient-to-br from-secondary/30 to-primary/40">
       <svg viewBox="0 0 64 64" className="h-16 w-16 text-primary-foreground/90">
         <circle cx="32" cy="24" r="12" fill="currentColor" opacity="0.9" />
-        <path
-          d="M8 58c0-13.3 10.7-22 24-22s24 8.7 24 22"
-          fill="currentColor"
-          opacity="0.9"
-        />
+        <path d="M8 58c0-13.3 10.7-22 24-22s24 8.7 24 22" fill="currentColor" opacity="0.9" />
       </svg>
     </div>
   );
@@ -57,7 +49,7 @@ export function BrandingIllustration() {
   return (
     <div className="flex h-32 items-center gap-3 bg-muted px-4">
       <div className="flex h-full flex-1 flex-col justify-center gap-1.5 rounded-md bg-primary/90 px-3 py-2">
-        <span className="text-xs font-semibold text-primary-foreground">My Clinic</span>
+        <span className="text-xs font-semibold text-primary-foreground">My Practice</span>
         {[0, 1, 2].map((i) => (
           <span key={i} className="h-1.5 w-full rounded-full bg-primary-foreground/30" />
         ))}
@@ -77,9 +69,7 @@ export function BookingTimeIllustration() {
       <span className="rounded-md bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">
         08:30 am
       </span>
-      <span className="rounded-md bg-card px-4 py-1.5 text-sm text-muted-foreground">
-        09:00 am
-      </span>
+      <span className="rounded-md bg-card px-4 py-1.5 text-sm text-muted-foreground">09:00 am</span>
     </div>
   );
 }
@@ -91,7 +81,9 @@ export function ClaimsIllustration() {
         <span className="text-xs font-semibold text-foreground">Claim #00001</span>
       </div>
       <div className="flex gap-1.5">
-        <Button size="xs" variant="outline">Save</Button>
+        <Button size="xs" variant="outline">
+          Save
+        </Button>
         <Button size="xs">Submit</Button>
       </div>
     </div>

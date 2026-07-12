@@ -12,8 +12,7 @@ type Tag = { label: string; className: string };
 
 type Client = {
   name: string;
-  age: number;
-  gender: string;
+  clientType: string;
   caseId: string;
   avatarClass: string;
   tags: Tag[];
@@ -23,55 +22,51 @@ type Client = {
   nextAppointmentTime: string;
   nextAppointmentType: string;
   appointmentDotClass: string;
-  consultantName: string;
-  consultantId: string;
+  consultantName?: string;
+  consultantId?: string;
 };
 
 const tagClass: Record<string, string> = {
   VIP: "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-400",
-  Chronic:
+  "Long-Term":
     "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400",
-  "Post-Op":
+  Onboarding:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
-  Critical:
+  Urgent:
     "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
-  "Hindi Pref.":
-    "border-border bg-muted text-muted-foreground",
+  "Hindi Pref.": "border-border bg-muted text-muted-foreground",
 };
 
 const clients: Client[] = [
   {
     name: "Ramesh Chandra",
-    age: 68,
-    gender: "Male",
-    caseId: "#CAS-88219",
+    clientType: "Enterprise Client",
+    caseId: "#ENG-88219",
     avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
     tags: [
       { label: "VIP", className: tagClass.VIP },
-      { label: "Chronic", className: tagClass.Chronic },
+      { label: "Long-Term", className: tagClass["Long-Term"] },
     ],
     lastInteractionDate: "Oct 24, 2023",
-    lastInteractionNote: "Follow-up on BP meds...",
+    lastInteractionNote: "Follow-up on Q3 tax filing...",
     nextAppointmentDate: "Oct 30",
     nextAppointmentTime: "10:30 AM",
-    nextAppointmentType: "In-Person Clinic",
+    nextAppointmentType: "In-Person Meeting",
     appointmentDotClass: "bg-emerald-500",
-    consultantName: "Dr. Anil Kapoor",
+    consultantName: "Anil Kapoor",
     consultantId: "#CON-1042",
   },
   {
     name: "Priya Sharma",
-    age: 34,
-    gender: "Female",
-    caseId: "#CAS-91844",
-    avatarClass:
-      "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
+    clientType: "Individual Client",
+    caseId: "#ENG-91844",
+    avatarClass: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
     tags: [
-      { label: "Post-Op", className: tagClass["Post-Op"] },
-      { label: "Critical", className: tagClass.Critical },
+      { label: "Onboarding", className: tagClass.Onboarding },
+      { label: "Urgent", className: tagClass.Urgent },
     ],
     lastInteractionDate: "Today, 08:15 AM",
-    lastInteractionNote: "Emergency triage call...",
+    lastInteractionNote: "Urgent escalation call...",
     nextAppointmentDate: "Oct 26",
     nextAppointmentTime: "02:00 PM",
     nextAppointmentType: "Video Consultation",
@@ -79,17 +74,15 @@ const clients: Client[] = [
   },
   {
     name: "Ananya Verma",
-    age: 29,
-    gender: "Female",
-    caseId: "#CAS-77301",
-    avatarClass:
-      "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
+    clientType: "Individual Client",
+    caseId: "#ENG-77301",
+    avatarClass: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
     tags: [{ label: "Hindi Pref.", className: tagClass["Hindi Pref."] }],
     lastInteractionDate: "Oct 20, 2023",
-    lastInteractionNote: "Lab results sent...",
+    lastInteractionNote: "Reports sent...",
     nextAppointmentDate: "Nov 05",
     nextAppointmentTime: "09:00 AM",
-    nextAppointmentType: "Follow-up Lab",
+    nextAppointmentType: "Follow-up Review",
     appointmentDotClass: "bg-muted-foreground/40",
   },
 ];
@@ -112,7 +105,7 @@ export function ClientsTable() {
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Client Name</th>
-                <th className="py-2 pr-4 font-medium">Case ID</th>
+                <th className="py-2 pr-4 font-medium">Engagement ID</th>
                 <th className="py-2 pr-4 font-medium">Contact</th>
                 <th className="py-2 pr-4 font-medium">CRM Tags</th>
                 <th className="py-2 pr-4 font-medium">Last Interaction</th>
@@ -135,9 +128,7 @@ export function ClientsTable() {
                       </span>
                       <div>
                         <p className="font-medium text-foreground">{client.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {client.age}, {client.gender}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{client.clientType}</p>
                       </div>
                     </div>
                   </td>
@@ -165,16 +156,19 @@ export function ClientsTable() {
                   </td>
                   <td className="py-3 pr-4">
                     <p className="text-foreground">{client.lastInteractionDate}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {client.lastInteractionNote}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{client.lastInteractionNote}</p>
                   </td>
                   <td className="py-3 pr-4">
                     <p className="text-foreground">
                       {client.nextAppointmentDate} &middot; {client.nextAppointmentTime}
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", client.appointmentDotClass)} />
+                      <span
+                        className={cn(
+                          "h-1.5 w-1.5 shrink-0 rounded-full",
+                          client.appointmentDotClass
+                        )}
+                      />
                       {client.nextAppointmentType}
                     </p>
                   </td>

@@ -3,13 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardAction,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,10 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 // Escalated-access actions a Tenant Admin can generate — schema §1.2, §1.4
-type AuditAction =
-  | "VIEWED_PRIVATE_NOTES"
-  | "OPENED_DISPUTE_CASE"
-  | "OPENED_GRIEVANCE_LINKED_CASE";
+type AuditAction = "VIEWED_PRIVATE_NOTES" | "OPENED_DISPUTE_CASE" | "OPENED_GRIEVANCE_LINKED_CASE";
 
 type AuditEntry = {
   id: string;
@@ -42,7 +33,7 @@ const initialEntries: AuditEntry[] = [
   {
     id: "AUD-2041",
     action: "VIEWED_PRIVATE_NOTES",
-    consultant: "Dr. Meera Iyer",
+    consultant: "Meera Iyer",
     caseRef: "CASE-1042",
     reason: "Client disputed session outcome — verifying session notes",
     occurredAt: "Jul 4, 2026 · 4:12 PM",
@@ -51,7 +42,7 @@ const initialEntries: AuditEntry[] = [
   {
     id: "AUD-2038",
     action: "OPENED_DISPUTE_CASE",
-    consultant: "Dr. Amit Shah",
+    consultant: "Amit Shah",
     caseRef: "CASE-0997",
     reason: "No-show dispute mediation (FR36)",
     occurredAt: "Jul 2, 2026 · 11:05 AM",
@@ -60,7 +51,7 @@ const initialEntries: AuditEntry[] = [
   {
     id: "AUD-2029",
     action: "OPENED_GRIEVANCE_LINKED_CASE",
-    consultant: "Dr. Karan Walia",
+    consultant: "Karan Walia",
     caseRef: "CASE-0954",
     reason: "Client grievance referenced this case for context",
     occurredAt: "Jun 29, 2026 · 9:41 AM",
@@ -69,7 +60,7 @@ const initialEntries: AuditEntry[] = [
   {
     id: "AUD-2015",
     action: "VIEWED_PRIVATE_NOTES",
-    consultant: "Dr. Priya Nair",
+    consultant: "Priya Nair",
     caseRef: "CASE-0888",
     reason: "Billing dispute — confirming session was delivered",
     occurredAt: "Jun 25, 2026 · 3:22 PM",
@@ -138,10 +129,7 @@ export function AuditLogTable() {
               className="h-9 w-full pl-9 sm:w-56"
             />
           </div>
-          <Select
-            value={actionFilter}
-            onValueChange={(value) => setActionFilter(value ?? "all")}
-          >
+          <Select value={actionFilter} onValueChange={(value) => setActionFilter(value ?? "all")}>
             <SelectTrigger size="sm" className="h-9 w-48">
               <SelectValue />
             </SelectTrigger>
@@ -194,18 +182,13 @@ export function AuditLogTable() {
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                   <div className="flex flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={actionBadgeClass[entry.action]}
-                      >
+                      <Badge variant="outline" className={actionBadgeClass[entry.action]}>
                         {actionLabel[entry.action]}
                       </Badge>
                       <span className="text-sm font-medium text-foreground">
                         {entry.consultant}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        {entry.caseRef}
-                      </span>
+                      <span className="text-xs text-muted-foreground">{entry.caseRef}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">{entry.reason}</p>
                   </div>

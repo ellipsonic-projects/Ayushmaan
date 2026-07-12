@@ -1,14 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const notificationPreferences = [
   {
@@ -44,9 +39,7 @@ export default function ClientSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
-          <CardDescription>
-            Your personal details shared with your care team
-          </CardDescription>
+          <CardDescription>Your personal details shared with your care team</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-1.5">
@@ -63,7 +56,7 @@ export default function ClientSettingsPage() {
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" type="tel" defaultValue="+91 98765 43210" />
+            <PhoneInput id="phone" defaultValue="+919876543210" />
           </div>
         </CardContent>
       </Card>
@@ -71,9 +64,7 @@ export default function ClientSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
-          <CardDescription>
-            Choose how you want to hear from us
-          </CardDescription>
+          <CardDescription>Choose how you want to hear from us</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col divide-y divide-border">
           {notificationPreferences.map((pref) => (
@@ -85,9 +76,7 @@ export default function ClientSettingsPage() {
                 <Label htmlFor={pref.id} className="text-sm font-medium">
                   {pref.label}
                 </Label>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {pref.description}
-                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{pref.description}</p>
               </div>
               <Switch id={pref.id} defaultChecked={pref.defaultChecked} />
             </div>

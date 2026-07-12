@@ -11,7 +11,7 @@ import {
   Settings,
   type LucideIcon,
   Clock,
-  BotOffIcon,
+  UserCog,
   Inbox,
   BarChart3,
   Contact,
@@ -32,9 +32,9 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/scheduler", label: "Scheduler", icon: Clock},
+  { href: "/scheduler", label: "Scheduler", icon: Clock },
   { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
-  { href: "/consultants", label: "Consultants", icon: BotOffIcon},
+  { href: "/consultants", label: "Consultants", icon: UserCog },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/billing", label: "Billing", icon: Receipt },
   { href: "/insights", label: "Insights", icon: BarChart3 },
@@ -62,15 +62,15 @@ export function TenantAdminNav({
       {items.map(({ href, label, icon: Icon }) => {
         const fullHref = `${basePath}${href}`;
         const isActive =
-          pathname === fullHref ||
-          (href !== "" && pathname.startsWith(`${fullHref}/`));
+          pathname === fullHref || (href !== "" && pathname.startsWith(`${fullHref}/`));
         return (
           <Link
             key={href}
             href={fullHref}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              isActive && "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
+              isActive &&
+                "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
             )}
           >
             <Icon className="h-4 w-4" />
@@ -91,7 +91,7 @@ const superAdminTenantNavItems: NavItem[] = [
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/scheduler", label: "Scheduler", icon: Clock },
   { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
-  { href: "/consultants", label: "Consultants", icon: BotOffIcon },
+  { href: "/consultants", label: "Consultants", icon: UserCog },
   { href: "/clients", label: "Clients", icon: Users },
   { href: "/sessions", label: "Sessions", icon: CalendarClock },
   { href: "/contacts", label: "Contacts", icon: Contact },
