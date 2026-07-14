@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@ayushman/db";
 import { withTenantContext } from "@ayushman/db/rls-context";
+import { getCaseAuditedForSuperAdmin } from "../../src/services/cases.service";
 
 // Prerequisites for this test to mean anything (docs/sprints_v3.md Sprint
 // 0.3.6): supabase/policies/*.sql applied to the target database, and
@@ -14,8 +15,10 @@ describe("RLS tenant isolation", () => {
   let tenantAId: string;
   let tenantBId: string;
   let userAId: string;
+  let caseAId: string;
 
-  const superAdmin = { tenantId: null, isSuperAdmin: true, userId: randomUUID() };
+  const superAdminUserId = randomUUID();
+  const superAdmin = { tenantId: null, isSuperAdmin: true, userId: superAdminUserId };
 
   beforeAll(async () => {
     // Table *ownership* bypasses RLS, independent of rolsuper — Supabase's
@@ -66,11 +69,51 @@ describe("RLS tenant isolation", () => {
         })
     );
     userAId = userA.id;
+
+    const tenantAContext = { tenantId: tenantAId, isSuperAdmin: false, userId: randomUUID() };
+    const consultantProfile = await withTenantContext(tenantAContext, (tx) =>
+      tx.consultantProfile.create({
+        data: {
+          tenantId: tenantAId,
+          userId: userAId,
+          fullName: "RLS Test Consultant",
+          category: "MEDICAL",
+        },
+      })
+    );
+    const clientUser = await withTenantContext(tenantAContext, (tx) =>
+      tx.user.create({
+        data: {
+          supabaseAuthUserId: randomUUID(),
+          tenantId: tenantAId,
+          role: "CLIENT",
+          email: `rls-test-a-client-${suffix}@example.com`,
+        },
+      })
+    );
+    const clientProfile = await withTenantContext(tenantAContext, (tx) =>
+      tx.clientProfile.create({
+        data: { tenantId: tenantAId, userId: clientUser.id, fullName: "RLS Test Client" },
+      })
+    );
+    const caseA = await withTenantContext(tenantAContext, (tx) =>
+      tx.case.create({
+        data: {
+          tenantId: tenantAId,
+          clientId: clientProfile.id,
+          consultantId: consultantProfile.id,
+          category: "MEDICAL",
+        },
+      })
+    );
+    caseAId = caseA.id;
   });
 
   afterAll(async () => {
     if (!tenantAId || !tenantBId) return; // beforeAll bailed before creating fixtures
     await withTenantContext(superAdmin, async (tx) => {
+      await tx.auditLog.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } });
+      await tx.case.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } });
       await tx.user.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } });
       await tx.tenant.deleteMany({ where: { id: { in: [tenantAId, tenantBId] } } });
     });
@@ -97,5 +140,27 @@ describe("RLS tenant isolation", () => {
       tx.user.findMany({ where: { id: userAId } })
     );
     expect(rows).toHaveLength(1);
+  });
+
+  it("blocks a different tenant's consultant from reading a case", async () => {
+    const rows = await withTenantContext(
+      { tenantId: tenantBId, isSuperAdmin: false, userId: randomUUID() },
+      (tx) => tx.case.findMany({ where: { id: caseAId } })
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it("lets a super admin read a case across tenants and writes an audit log", async () => {
+    const found = await getCaseAuditedForSuperAdmin(caseAId, superAdminUserId);
+    expect(found.id).toBe(caseAId);
+
+    const auditRows = await withTenantContext(superAdmin, (tx) =>
+      tx.auditLog.findMany({
+        where: { entityType: "case", entityId: caseAId, actorUserId: superAdminUserId },
+      })
+    );
+    expect(auditRows).toHaveLength(1);
+    expect(auditRows[0].isCrossTenantAccess).toBe(true);
+    expect(auditRows[0].tenantId).toBe(tenantAId);
   });
 });

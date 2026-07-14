@@ -6,13 +6,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-const consultants_1 = require("./routes/consultants");
-const appointments_1 = require("./routes/appointments");
-const availability_1 = require("./routes/availability");
-const clients_1 = require("./routes/clients");
 const me_1 = require("./routes/me");
+const tenants_router_1 = require("./routes/tenants.router");
+const users_router_1 = require("./routes/users.router");
+const clients_router_1 = require("./routes/clients.router");
+const consultants_router_1 = require("./routes/consultants.router");
+const cases_router_1 = require("./routes/cases.router");
+const appointments_router_1 = require("./routes/appointments.router");
 const errorHandler_1 = require("./middleware/errorHandler");
 const auth_1 = require("./middleware/auth");
+const tenant_context_1 = require("./middleware/tenant-context");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 // Middleware
@@ -23,17 +26,31 @@ app.use(express_1.default.json());
 app.get("/health", (req, res) => {
     res.json({ status: "ok" });
 });
-// Public routes
 // apps/api has no credential routes of its own — apps/web talks to Supabase
 // Auth directly (data_api_v4.md §1.1/§3). This process only verifies tokens
-// it's handed and, via /api/auth/me below, reads the caller's own profile.
-app.use("/api/consultants", consultants_1.consultantRouter);
-// Protected routes
+// it's handed. The unauthenticated public tenant site (data_api_v4.md §9 —
+// tenant landing page, public consultant profiles, public available-slots)
+// isn't built yet; every route below requires a bearer token.
+// Protected routes — authMiddleware verifies identity, tenantContextMiddleware
+// then resolves + verifies tenant scope (see middleware/tenant-context.ts).
+// Requires apps/web to call this API through the tenant's subdomain host
+// (`{slug}.<TENANT_ROOT_HOST>`) or send an `X-Tenant-Slug` header.
 app.use(auth_1.authMiddleware);
+app.use(tenant_context_1.tenantContextMiddleware);
 app.use("/api/auth", me_1.meRouter);
-app.use("/api/appointments", appointments_1.appointmentRouter);
-app.use("/api/availability", availability_1.availabilityRouter);
-app.use("/api/clients", clients_1.clientRouter);
+app.use("/api/platform/tenants", tenants_router_1.platformTenantsRouter);
+app.use("/api/tenants/:tenantId", tenants_router_1.tenantSettingsRouter);
+app.use("/api/tenants/:tenantId/users", users_router_1.usersRouter);
+app.use("/api/tenants/:tenantId/clients", clients_router_1.clientsRouter);
+app.use("/api/tenants/:tenantId/guardian-links", clients_router_1.guardianLinksRouter);
+app.use("/api/tenants/:tenantId/consultants", consultants_router_1.consultantsRouter);
+app.use("/api/tenants/:tenantId/availability-slots", consultants_router_1.availabilitySlotsRouter);
+app.use("/api/tenants/:tenantId/out-of-office", consultants_router_1.outOfOfficeRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/appointments", appointments_router_1.caseAppointmentsRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/appointment-series", appointments_router_1.caseAppointmentSeriesRouter);
+app.use("/api/tenants/:tenantId/cases", cases_router_1.casesRouter);
+app.use("/api/tenants/:tenantId/appointment-series", appointments_router_1.appointmentSeriesRouter);
+app.use("/api/tenants/:tenantId/appointments", appointments_router_1.appointmentsRouter);
 // Error handling
 app.use(errorHandler_1.errorHandler);
 app.listen(Number(PORT), "0.0.0.0", () => {

@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import { authVerifier } from "../lib/auth";
-import { prisma } from "@ayushman/db";
+import { withTenantContext } from "@ayushman/db/rls-context";
+
+const SYSTEM_LOOKUP_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -33,9 +35,28 @@ export const authMiddleware = async (
     return res.status(401).json({ error: "Invalid token" });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { supabaseAuthUserId: identity.providerId },
-  });
+  // The caller's tenant/role isn't known yet at this point, so there's no
+  // app.tenant_id to SET LOCAL for RLS — bypass it here the same way
+  // getTenant.ts does for tenant slug lookups.
+  const user = await withTenantContext(
+    { tenantId: null, isSuperAdmin: true, userId: SYSTEM_LOOKUP_USER_ID },
+    async (tx) => {
+      const found = await tx.user.findUnique({
+        where: { supabaseAuthUserId: identity.providerId },
+      });
+      if (!found) return null;
+
+      if (identity.emailVerified && !found.emailIsVerified) {
+        await tx.user.update({
+          where: { id: found.id },
+          data: { emailIsVerified: true },
+        });
+        found.emailIsVerified = true;
+      }
+
+      return found;
+    }
+  );
 
   if (!user) {
     return res.status(401).json({ error: "No matching account" });
@@ -43,14 +64,6 @@ export const authMiddleware = async (
 
   if (user.accountStatus !== "ACTIVE") {
     return res.status(401).json({ error: "Account suspended" });
-  }
-
-  if (identity.emailVerified && !user.emailIsVerified) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { emailIsVerified: true },
-    });
-    user.emailIsVerified = true;
   }
 
   req.user = {

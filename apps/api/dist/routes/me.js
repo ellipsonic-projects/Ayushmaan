@@ -10,7 +10,7 @@ exports.meRouter.get("/me", async (req, res) => {
     const tenant = req.user.tenantId
         ? await db_1.prisma.tenant.findUnique({
             where: { id: req.user.tenantId },
-            select: { slug: true },
+            select: { slug: true, status: true },
         })
         : null;
     res.json({

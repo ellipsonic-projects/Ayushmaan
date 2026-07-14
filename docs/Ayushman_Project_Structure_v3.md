@@ -146,13 +146,15 @@ ayushman/
 │       │   │   └── settings/page.tsx
 │       │   │
 │       │   ├── (auth)/                                # PRD Phase 0 — pages call Supabase Auth directly via @supabase/ssr, not apps/api (PRD §7.3)
+│       │   │                                          # SHARED, GENERIC bundle: one login/reset-password UI, no tenant theming, wrapped only by the tenant-agnostic root layout.tsx.
+│       │   │                                          # Resolves at any tenant's subdomain ({slug}.ayushman.app/login) — middleware.ts routes it here without attaching theme_config, so it renders identically everywhere.
 │       │   │   ├── login/page.tsx
 │       │   │   ├── reset-password/page.tsx
-│       │   │   └── register/page.tsx                  # tenant-scoped client signup
+│       │   │   └── register/page.tsx                  # tenant-scoped in DATA (signs the client up under the current subdomain's tenant_id) but same generic UI as login/reset-password
 │       │   │
 │       │   ├── (tenant)/
 │       │   │   └── [slug]/
-│       │   │       ├── layout.tsx                      # theming from tenant_settings.theme_config, role-based nav shell
+│       │   │       ├── layout.tsx                      # the ONLY place theme_config/logo is injected — everything below this line (public landing, admin, consultant, client) is tenant-branded; (auth) above is not
 │       │   │       │
 │       │   │       ├── (public)/                       # no auth — PRD Phase 4
 │       │   │       │   ├── page.tsx                    # tenant landing
@@ -206,7 +208,7 @@ ayushman/
 │       │   │           ├── notifications/page.tsx
 │       │   │           └── profile/settings/page.tsx
 │       │   │
-│       │   ├── layout.tsx                              # root layout
+│       │   ├── layout.tsx                              # root layout — tenant-agnostic (fonts, providers, global CSS only); does NOT read theme_config, which is what keeps (platform) and (auth) generic
 │       │   └── globals.css
 │       │
 │       ├── components/                                 # unchanged in spirit from v2 — this layer doesn't care whether the backend is Next.js routes or Express
@@ -291,6 +293,7 @@ ayushman/
 - **`packages/types/api-contracts/`** is what keeps `apps/web`'s fetchers and `apps/api`'s request validation from drifting apart now that they're two separate deployable apps instead of one Next.js project — a schema changes once, both sides import it.
 - **`supabase/`** stays outside both apps, same as v2 — it's Supabase project configuration (Auth Hook, RLS policies, Storage policies), not application code, and needs to be deployable independently of either app's release cycle.
 - Build order still follows the PRD's Phase 0–11 sequence; within that, `packages/db`'s migrations are ordered so `0010_consultant_verification` is last, matching the phase deferral above.
+- **Per-tenant landing page, shared login — by construction, not convention.** Only `(tenant)/[slug]/layout.tsx` reads `tenant_settings.theme_config`; `(auth)` and `(platform)` sit outside that layout's subtree and are wrapped only by the tenant-agnostic root `layout.tsx`. That's the entire mechanism: there's no per-tenant `login/page.tsx` to accidentally diverge, and no conditional "if tenant X, use theme Y" branch to maintain in the auth pages. Consultants and Clients on every tenant subdomain hit the identical `/login` bundle; the only thing that changes tenant-to-tenant is what's rendered under `[slug]/(public)`.
 
 ## One open item carried forward, unresolved
 

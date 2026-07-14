@@ -26,6 +26,13 @@ const authMiddleware = async (req, res, next) => {
     if (user.accountStatus !== "ACTIVE") {
         return res.status(401).json({ error: "Account suspended" });
     }
+    if (identity.emailVerified && !user.emailIsVerified) {
+        await db_1.prisma.user.update({
+            where: { id: user.id },
+            data: { emailIsVerified: true },
+        });
+        user.emailIsVerified = true;
+    }
     req.user = {
         id: user.id,
         supabaseAuthUserId: user.supabaseAuthUserId,

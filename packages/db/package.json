@@ -24,7 +24,7 @@
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "tsx prisma/seed-superadmin.ts",
     "db:seed:tenant": "tsx prisma/seed-tenant.ts",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"

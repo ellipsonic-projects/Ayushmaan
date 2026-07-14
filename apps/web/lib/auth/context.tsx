@@ -8,7 +8,7 @@ interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthSession>;
   logout: () => Promise<void>;
 }
 
@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const s = await authProvider.signInWithPassword(email, password);
       setSession(s);
+      return s;
     } finally {
       setLoading(false);
     }

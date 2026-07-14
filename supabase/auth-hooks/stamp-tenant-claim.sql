@@ -14,7 +14,7 @@
 create or replace function public.custom_access_token_hook(event jsonb)
 returns jsonb
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public
 as $$
@@ -30,9 +30,14 @@ begin
   claims := coalesce(event->'claims', '{}'::jsonb);
 
   if found_user is null then
-    -- No matching public.users row yet (e.g. between Supabase Auth signup
-    -- and Sprint 1.2's users.router.ts provisioning the row) — issue a
-    -- claimless token rather than fail sign-in outright.
+    -- No matching public.users row yet. Under normal operation this
+    -- shouldn't happen: handle-new-client-signup.sql's trigger provisions
+    -- self-service Client signups synchronously in the same transaction as
+    -- their auth.users insert, and the admin-invite paths (tenants.router.ts,
+    -- users.router.ts) create the row via Prisma right after inviting. This
+    -- branch only fires for a bogus/inactive tenant_slug at signup, or a
+    -- genuine race — issue a claimless token rather than fail sign-in
+    -- outright.
     claims := jsonb_set(claims, '{tenant_id}', 'null'::jsonb);
     claims := jsonb_set(claims, '{is_super_admin}', 'false'::jsonb);
   elsif found_user.role = 'SUPER_ADMIN' then

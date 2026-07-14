@@ -1,7 +1,11 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createClient } from "@supabase/supabase-js";
+
+config({ path: resolve(dirname(fileURLToPath(import.meta.url)), "../../../apps/api/.env") });
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { createClient } from "@supabase/supabase-js";
 import { E164_PHONE_REGEX } from "@ayushman/shared/constants";
 
 // Seeding is administrative, not request-serving — it must run as the table

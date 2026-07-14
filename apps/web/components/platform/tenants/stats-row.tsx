@@ -1,31 +1,29 @@
-import { AlertCircle, Building2, Hourglass } from "lucide-react";
+import { Building2, Hourglass } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import type { Tenant } from "@/lib/hooks";
 
-const stats = [
-  {
-    label: "Total Tenants",
-    value: "1,248",
-    icon: Building2,
-    iconClass: "bg-muted text-foreground",
-  },
-  {
-    label: "Active Trials",
-    value: "84",
-    icon: Hourglass,
-    iconClass: "bg-primary/10 text-primary",
-  },
-  {
-    label: "Open Grievances",
-    value: "12",
-    icon: AlertCircle,
-    iconClass: "bg-destructive/10 text-destructive",
-  },
-];
+// Grievance counts aren't wired here — grievances.router.ts (data_api_v4.md
+// §? / sprints_v3.md Sprint 9.2) doesn't exist yet, so there's no real
+// number to show; the card that used to fake one has been dropped.
+export function TenantsStatsRow({ tenants }: { tenants: Tenant[] }) {
+  const stats = [
+    {
+      label: "Total Tenants",
+      value: String(tenants.length),
+      icon: Building2,
+      iconClass: "bg-muted text-foreground",
+    },
+    {
+      label: "Active Tenants",
+      value: String(tenants.filter((t) => t.status === "ACTIVE").length),
+      icon: Hourglass,
+      iconClass: "bg-primary/10 text-primary",
+    },
+  ];
 
-export function TenantsStatsRow() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {stats.map(({ label, value, icon: Icon, iconClass }) => (
         <Card key={label}>
           <CardContent className="flex items-center gap-3">

@@ -1,5 +1,5 @@
 // Authentication
-export { useAuth } from '@/lib/auth/context';
+export { useAuth } from "@/lib/auth/context";
 
 // Consultants
 export {
@@ -8,7 +8,7 @@ export {
   useConsultantAvailability,
   useConsultantCredentials,
   useConsultantReviews,
-} from './useConsultants';
+} from "./useConsultants";
 
 // Appointments
 export {
@@ -16,7 +16,7 @@ export {
   useAppointment,
   createAppointment,
   cancelAppointment,
-} from './useAppointments';
+} from "./useAppointments";
 
 // Availability
 export {
@@ -28,4 +28,8 @@ export {
   deleteAvailability,
   addBlackoutDate,
   getAvailableSlots,
-} from './useAvailability';
+} from "./useAvailability";
+
+// Tenants (platform console)
+export { useTenants, createTenant } from "./useTenants";
+export type { Tenant, TenantsQuery, CreateTenantInput } from "./useTenants";

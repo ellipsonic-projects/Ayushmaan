@@ -4,29 +4,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { authProvider } from "@/lib/auth";
 import { api } from "@/lib/api/client";
-
-interface MeResponse {
-  role: "SUPER_ADMIN" | "TENANT_ADMIN" | "CONSULTANT" | "CLIENT";
-  tenant: { slug: string } | null;
-}
-
-// Where a session lands once its role is known. Tenant-scoped roles fall
-// back to "/" since tenant routing ([slug] dynamic segment) isn't wired up
-// yet — see conversation notes on tenants being deferred.
-function destinationFor(me: MeResponse): string {
-  switch (me.role) {
-    case "SUPER_ADMIN":
-      return "/superadmin/dashboard";
-    case "TENANT_ADMIN":
-      return me.tenant ? `/${me.tenant.slug}/tenant/admin` : "/";
-    case "CONSULTANT":
-      return me.tenant ? `/${me.tenant.slug}/tenant/consultant` : "/";
-    case "CLIENT":
-      return me.tenant ? `/${me.tenant.slug}/tenant/client` : "/";
-    default:
-      return "/";
-  }
-}
+import { destinationFor, tenantOrigin, type MeResponse } from "@/lib/auth/destination";
 
 // The identity provider redirects magic-link / OTP verification here
 // (configure this as a Redirect URL in the provider's auth settings). The
@@ -44,6 +22,12 @@ export default function AuthCallbackPage() {
       settled.current = true;
       try {
         const { data } = await api.get<{ data: MeResponse }>("/api/auth/me", accessToken);
+        // This callback only exists on the main domain — a tenant-scoped user
+        // has to cross to their own subdomain, same as signin-form.tsx.
+        if (data.tenant) {
+          window.location.href = tenantOrigin(data.tenant.slug);
+          return;
+        }
         router.replace(destinationFor(data));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not verify your account");

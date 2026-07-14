@@ -25,9 +25,6 @@ for (const [key, value] of Object.entries(local.parsed ?? {})) {
 // keep working unchanged in the meantime.
 export default defineConfig({
   schema: "prisma/schema.prisma",
-  migrations: {
-    seed: "tsx prisma/seed.ts",
-  },
   datasource: {
     url: process.env.MIGRATE_DATABASE_URL ?? env("DATABASE_URL"),
   },

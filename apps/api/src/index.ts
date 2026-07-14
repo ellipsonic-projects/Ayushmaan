@@ -1,13 +1,25 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { consultantRouter } from "./routes/consultants";
-import { appointmentRouter } from "./routes/appointments";
-import { availabilityRouter } from "./routes/availability";
-import { clientRouter } from "./routes/clients";
 import { meRouter } from "./routes/me";
+import { platformTenantsRouter, tenantSettingsRouter } from "./routes/tenants.router";
+import { usersRouter } from "./routes/users.router";
+import { clientsRouter, guardianLinksRouter } from "./routes/clients.router";
+import {
+  consultantsRouter,
+  availabilitySlotsRouter,
+  outOfOfficeRouter,
+} from "./routes/consultants.router";
+import { casesRouter } from "./routes/cases.router";
+import {
+  caseAppointmentsRouter,
+  caseAppointmentSeriesRouter,
+  appointmentSeriesRouter,
+  appointmentsRouter,
+} from "./routes/appointments.router";
 import { errorHandler } from "./middleware/errorHandler";
 import { authMiddleware } from "./middleware/auth";
+import { tenantContextMiddleware } from "./middleware/tenant-context";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,18 +34,36 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Public routes
 // apps/api has no credential routes of its own — apps/web talks to Supabase
 // Auth directly (data_api_v4.md §1.1/§3). This process only verifies tokens
-// it's handed and, via /api/auth/me below, reads the caller's own profile.
-app.use("/api/consultants", consultantRouter);
+// it's handed. The unauthenticated public tenant site (data_api_v4.md §9 —
+// tenant landing page, public consultant profiles, public available-slots)
+// isn't built yet; every route below requires a bearer token.
 
-// Protected routes
+// Protected routes — authMiddleware verifies identity, tenantContextMiddleware
+// then resolves + verifies tenant scope (see middleware/tenant-context.ts).
+// Requires apps/web to call this API through the tenant's subdomain host
+// (`{slug}.<TENANT_ROOT_HOST>`) or send an `X-Tenant-Slug` header.
 app.use(authMiddleware);
+// GET /auth/me must work before a tenant slug is known — it's how the
+// generic (non-subdomain) sign-in flow discovers which tenant to redirect
+// to — so it's mounted ahead of tenantContextMiddleware. It doesn't read
+// req.tenant/req.tenantContext, only req.user.
 app.use("/api/auth", meRouter);
-app.use("/api/appointments", appointmentRouter);
-app.use("/api/availability", availabilityRouter);
-app.use("/api/clients", clientRouter);
+app.use(tenantContextMiddleware);
+app.use("/api/platform/tenants", platformTenantsRouter);
+app.use("/api/tenants/:tenantId", tenantSettingsRouter);
+app.use("/api/tenants/:tenantId/users", usersRouter);
+app.use("/api/tenants/:tenantId/clients", clientsRouter);
+app.use("/api/tenants/:tenantId/guardian-links", guardianLinksRouter);
+app.use("/api/tenants/:tenantId/consultants", consultantsRouter);
+app.use("/api/tenants/:tenantId/availability-slots", availabilitySlotsRouter);
+app.use("/api/tenants/:tenantId/out-of-office", outOfOfficeRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/appointments", caseAppointmentsRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/appointment-series", caseAppointmentSeriesRouter);
+app.use("/api/tenants/:tenantId/cases", casesRouter);
+app.use("/api/tenants/:tenantId/appointment-series", appointmentSeriesRouter);
+app.use("/api/tenants/:tenantId/appointments", appointmentsRouter);
 
 // Error handling
 app.use(errorHandler);

@@ -7,7 +7,11 @@ class SupabaseAuthVerifier {
         const { data, error } = await supabaseAdmin_1.supabaseAdmin.auth.getUser(token);
         if (error || !data.user)
             return null;
-        return { providerId: data.user.id, email: data.user.email ?? "" };
+        return {
+            providerId: data.user.id,
+            email: data.user.email ?? "",
+            emailVerified: !!data.user.email_confirmed_at,
+        };
     }
 }
 exports.SupabaseAuthVerifier = SupabaseAuthVerifier;

@@ -1,1 +1,1 @@
-export { default } from "@/app/(tenant)/slug/tenant/(admin)/admin/templates/page";
+export { default } from "@/app/(tenant)/[slug]/tenant/(admin)/admin/templates/page";
