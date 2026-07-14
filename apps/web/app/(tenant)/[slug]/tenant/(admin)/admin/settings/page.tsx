@@ -1,6 +1,7 @@
 import { SettingsHeader } from "@/components/tenant/admin/settings/settings-header";
 import { SettingsSectionNav } from "@/components/tenant/admin/settings/settings-section-nav";
 import { SettingsForm } from "@/components/tenant/admin/settings/settings-form";
+import { WebsiteContentForm } from "@/components/tenant/admin/settings/website-content-form";
 
 export default function TenantSettingsPage() {
   return (
@@ -8,7 +9,10 @@ export default function TenantSettingsPage() {
       <SettingsHeader />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr] lg:items-start">
         <SettingsSectionNav />
-        <SettingsForm />
+        <div className="flex flex-col gap-6 pb-20">
+          <WebsiteContentForm />
+          <SettingsForm />
+        </div>
       </div>
     </div>
   );

@@ -289,6 +289,9 @@ model Tenant {
   displayName    String       @map("display_name") @db.VarChar(200)
   logoUrl        String?      @map("logo_url")
   themeConfig    Json         @default("{}") @map("theme_config")
+  siteContent    Json         @default("{}") @map("site_content")
+  layoutMode     String       @default("default") @map("layout_mode") @db.VarChar(20)
+  customLayoutRequested Boolean @default(false) @map("custom_layout_requested")
   status         TenantStatus @default(ACTIVE)
   planTier       String       @default("STANDARD") @map("plan_tier") @db.VarChar(50)
   provisionedBy  String?      @map("provisioned_by") @db.Uuid

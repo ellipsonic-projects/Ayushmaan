@@ -1,7 +1,14 @@
 import "dotenv/config";
+// Patches express.Router so a rejected promise/thrown error inside an async
+// route handler reaches errorHandler via next(err) instead of becoming an
+// unhandled rejection that crashes the process — Express 4 doesn't do this
+// on its own, and every route here relies on `throw new AppError(...)`
+// inside async handlers.
+import "express-async-errors";
 import express from "express";
 import cors from "cors";
 import { meRouter } from "./routes/me";
+import { publicRouter } from "./routes/public.router";
 import { platformTenantsRouter, tenantSettingsRouter } from "./routes/tenants.router";
 import { usersRouter } from "./routes/users.router";
 import { clientsRouter, guardianLinksRouter } from "./routes/clients.router";
@@ -37,8 +44,10 @@ app.get("/health", (req, res) => {
 // apps/api has no credential routes of its own — apps/web talks to Supabase
 // Auth directly (data_api_v4.md §1.1/§3). This process only verifies tokens
 // it's handed. The unauthenticated public tenant site (data_api_v4.md §9 —
-// tenant landing page, public consultant profiles, public available-slots)
-// isn't built yet; every route below requires a bearer token.
+// tenant landing page) is served by publicRouter below; public consultant
+// profiles and public available-slots aren't built yet. Every other route
+// below requires a bearer token.
+app.use("/api/public", publicRouter);
 
 // Protected routes — authMiddleware verifies identity, tenantContextMiddleware
 // then resolves + verifies tenant scope (see middleware/tenant-context.ts).

@@ -26,6 +26,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed-superadmin.ts",
     "db:seed:tenant": "tsx prisma/seed-tenant.ts",
+    "db:seed:landing": "tsx prisma/seed-landing.ts",
     "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },

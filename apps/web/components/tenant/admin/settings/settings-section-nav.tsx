@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ImageIcon, Building2, Landmark, ShieldCheck } from "lucide-react";
+import { ImageIcon, Building2, Landmark, ShieldCheck, Globe } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const sections: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: "website", label: "Website", icon: Globe },
   { id: "branding", label: "Branding", icon: ImageIcon },
   { id: "business-identity", label: "Business Identity", icon: Building2 },
   { id: "financial-configuration", label: "Financial", icon: Landmark },
