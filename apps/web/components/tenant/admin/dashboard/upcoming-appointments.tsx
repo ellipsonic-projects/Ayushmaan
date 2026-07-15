@@ -1,50 +1,45 @@
-"use client";
-
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Video, Building2 } from "lucide-react";
+import { Video, Building2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getTenantAppointments, type AppointmentStatus } from "@/lib/api/appointments.server";
 
-const appointments = [
-  {
-    time: "10:00 AM",
-    client: "Rahul Hegde",
-    consultant: "Amit Shah",
-    mode: "Video" as const,
-    status: "Confirmed" as const,
-  },
-  {
-    time: "11:30 AM",
-    client: "Sarah Lawson",
-    consultant: "Meera Iyer",
-    mode: "In-Office" as const,
-    status: "Confirmed" as const,
-  },
-  {
-    time: "1:15 PM",
-    client: "David Kim",
-    consultant: "Karan Walia",
-    mode: "Video" as const,
-    status: "Pending" as const,
-  },
-  {
-    time: "2:30 PM",
-    client: "Mira Sethi",
-    consultant: "Amit Shah",
-    mode: "In-Office" as const,
-    status: "Confirmed" as const,
-  },
-];
-
-const statusVariant: Record<string, "secondary" | "outline"> = {
-  Confirmed: "secondary",
-  Pending: "outline",
+const statusVariant: Record<AppointmentStatus, "secondary" | "outline" | "destructive"> = {
+  REQUESTED: "outline",
+  RESCHEDULE_PROPOSED: "outline",
+  APPROVED: "secondary",
+  COMPLETED: "secondary",
+  CANCELLED: "destructive",
+  NO_SHOW: "destructive",
 };
 
-export function UpcomingAppointments() {
-  const [page] = useState(1);
+const statusLabel: Record<AppointmentStatus, string> = {
+  REQUESTED: "Pending",
+  RESCHEDULE_PROPOSED: "Pending",
+  APPROVED: "Confirmed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  NO_SHOW: "No-show",
+};
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfToday() {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+export async function UpcomingAppointments() {
+  const appointments = await getTenantAppointments({
+    from: startOfToday().toISOString(),
+    to: endOfToday().toISOString(),
+  });
 
   return (
     <Card className="h-full">
@@ -70,25 +65,29 @@ export function UpcomingAppointments() {
             </thead>
             <tbody>
               {appointments.map((appt) => (
-                <tr
-                  key={`${appt.time}-${appt.client}`}
-                  className="border-b border-border last:border-0"
-                >
-                  <td className="py-3 pr-4 font-medium text-foreground">{appt.time}</td>
-                  <td className="py-3 pr-4 text-foreground">{appt.client}</td>
-                  <td className="py-3 pr-4 text-muted-foreground">{appt.consultant}</td>
+                <tr key={appt.id} className="border-b border-border last:border-0">
+                  <td className="py-3 pr-4 font-medium text-foreground">
+                    {new Date(appt.scheduledStart).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </td>
+                  <td className="py-3 pr-4 text-foreground">{appt.case.client.fullName}</td>
+                  <td className="py-3 pr-4 text-muted-foreground">
+                    {appt.case.consultant.fullName}
+                  </td>
                   <td className="py-3 pr-4">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
-                      {appt.mode === "Video" ? (
+                      {appt.meetingLink ? (
                         <Video className="h-3.5 w-3.5" />
                       ) : (
                         <Building2 className="h-3.5 w-3.5" />
                       )}
-                      {appt.mode}
+                      {appt.meetingLink ? "Video" : "In-Office"}
                     </span>
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge variant={statusVariant[appt.status]}>{appt.status}</Badge>
+                    <Badge variant={statusVariant[appt.status]}>{statusLabel[appt.status]}</Badge>
                   </td>
                 </tr>
               ))}
@@ -97,15 +96,7 @@ export function UpcomingAppointments() {
         </div>
 
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Showing {appointments.length} of 18 appointments</span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={page === 1}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="icon-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          <span>{appointments.length} appointments today</span>
         </div>
       </CardContent>
     </Card>

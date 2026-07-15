@@ -1,6 +1,6 @@
 export interface MeResponse {
   role: "SUPER_ADMIN" | "TENANT_ADMIN" | "CONSULTANT" | "CLIENT";
-  tenant: { slug: string; status: "ACTIVE" | "SUSPENDED" | "ARCHIVED" } | null;
+  tenant: { slug: string; status: "ACTIVE" | "SUSPENDED" | "ARCHIVED"; displayName: string } | null;
 }
 
 const TENANT_ROOT_HOST = process.env.NEXT_PUBLIC_TENANT_ROOT_HOST || "localhost";

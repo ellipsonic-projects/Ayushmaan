@@ -18,15 +18,23 @@ export function TenantProfileCard({
   adminName,
   adminEmail,
   joinedOn,
+  displayName: initialDisplayName,
+  slug: initialSlug,
+  customDomain: initialCustomDomain,
+  status: initialStatus,
 }: {
   tenantId: string;
   adminName: string;
   adminEmail: string;
   joinedOn: string;
+  displayName: string;
+  slug: string;
+  customDomain: string;
+  status: "active" | "suspended" | "archived";
 }) {
-  const [displayName, setDisplayName] = useState("Acme Global Solutions");
-  const [slug, setSlug] = useState("acme-global");
-  const [customDomain, setCustomDomain] = useState("portal.acmeglobal.com");
+  const [displayName, setDisplayName] = useState(initialDisplayName);
+  const [slug, setSlug] = useState(initialSlug);
+  const [customDomain, setCustomDomain] = useState(initialCustomDomain);
 
   return (
     <Card size="sm">
@@ -59,46 +67,30 @@ export function TenantProfileCard({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Display Name
-            </Label>
-            <Input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-            />
+            <Label className="text-xs font-medium text-muted-foreground">Display Name</Label>
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Slug (Subdomain)
-            </Label>
+            <Label className="text-xs font-medium text-muted-foreground">Slug (Subdomain)</Label>
             <div className="flex items-center gap-1.5">
               <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
-              <span className="shrink-0 text-xs text-muted-foreground">
-                .platform.com
-              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">.platform.com</span>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Custom Domain
-            </Label>
-            <Input
-              value={customDomain}
-              onChange={(e) => setCustomDomain(e.target.value)}
-            />
+            <Label className="text-xs font-medium text-muted-foreground">Custom Domain</Label>
+            <Input value={customDomain} onChange={(e) => setCustomDomain(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label className="text-xs font-medium text-muted-foreground">
-              Status
-            </Label>
-            <Select defaultValue="active">
+            <Label className="text-xs font-medium text-muted-foreground">Status</Label>
+            <Select defaultValue={initialStatus}>
               <SelectTrigger className="h-8 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="trial">Trial</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
           </div>

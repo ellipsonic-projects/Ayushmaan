@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Briefcase, ScrollText, AlertTriangle, FileText, X, Ban, RotateCcw } from "lucide-react";
+import { Briefcase, ScrollText, FileText, X, Ban, RotateCcw } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,16 +25,24 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import type {
+  ConsultantProfile,
+  ConsultantVerificationDocument,
+} from "@/lib/api/consultants.server";
+import {
+  updateConsultantProfile,
+  setUserAccountStatus,
+  deleteVerificationDocument,
+} from "@/lib/api/consultants.client";
 
-// consultant_category enum — schema §3.8
-const CATEGORIES = [
-  { value: "MEDICAL", label: "Medical" },
-  { value: "LEGAL", label: "Legal" },
-  { value: "IT", label: "IT" },
-  { value: "PHYSIOTHERAPY", label: "Physiotherapy" },
-  { value: "HOMEOPATHY", label: "Homeopathy" },
-  { value: "ASTROLOGY", label: "Astrology" },
-];
+const CATEGORY_LABEL: Record<string, string> = {
+  MEDICAL: "Medical",
+  LEGAL: "Legal",
+  IT: "IT",
+  PHYSIOTHERAPY: "Physiotherapy",
+  HOMEOPATHY: "Homeopathy",
+  ASTROLOGY: "Astrology",
+};
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 
@@ -48,54 +56,27 @@ const AVAILABLE_LANGUAGES = [
   "Bengali",
 ];
 
-// consultant_verification_documents — schema §3.25
-type VerificationDocument = {
-  id: string;
-  documentType: string;
-  issuingAuthority: string;
-  expiryDate: string | null;
+const documentTypeLabel: Record<string, string> = {
+  MEDICAL_LICENSE: "Medical License",
+  BAR_REGISTRATION: "Bar Registration",
+  DEGREE_CERTIFICATE: "Degree Certificate",
+  GOVERNMENT_ID: "Government ID",
+  PROFESSIONAL_CERTIFICATE: "Professional Certificate",
+  OTHER: "Other",
 };
-
-const initialDocuments: VerificationDocument[] = [
-  {
-    id: "DOC-1",
-    documentType: "Professional License",
-    issuingAuthority: "National Board of Professional Standards",
-    expiryDate: "Mar 2028",
-  },
-  {
-    id: "DOC-2",
-    documentType: "Degree Certificate",
-    issuingAuthority: "University of Delhi",
-    expiryDate: null,
-  },
-];
 
 export function ConsultantDetailForm({
   consultant,
+  documents: initialDocuments,
 }: {
-  consultant: {
-    id: string;
-    fullName: string;
-    email: string;
-    category: string;
-    subSpecialization: string;
-    bio: string;
-    consultationFee: string;
-    currency: string;
-    languages: string[];
-    isAcceptingNewClients: boolean;
-    accountStatus: "ACTIVE" | "SUSPENDED";
-    caseCount: number;
-    disputeCount: number;
-  };
+  consultant: ConsultantProfile;
+  documents: ConsultantVerificationDocument[];
 }) {
-  const [category, setCategory] = useState(consultant.category);
-  const [subSpecialization, setSubSpecialization] = useState(consultant.subSpecialization);
-  const [bio, setBio] = useState(consultant.bio);
+  const [subSpecialization, setSubSpecialization] = useState(consultant.subSpecialization ?? "");
+  const [bio, setBio] = useState(consultant.bio ?? "");
   const [consultationFee, setConsultationFee] = useState(consultant.consultationFee);
   const [currency, setCurrency] = useState(consultant.currency);
-  const [languages, setLanguages] = useState<string[]>(consultant.languages);
+  const [languages, setLanguages] = useState<string[]>(consultant.languagesSpoken);
   const [isAcceptingNewClients, setIsAcceptingNewClients] = useState(
     consultant.isAcceptingNewClients
   );
@@ -103,7 +84,9 @@ export function ConsultantDetailForm({
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
-  const [accountStatus, setAccountStatus] = useState(consultant.accountStatus);
+  const [accountStatus, setAccountStatus] = useState<"ACTIVE" | "SUSPENDED">(
+    consultant.user.accountStatus === "SUSPENDED" ? "SUSPENDED" : "ACTIVE"
+  );
 
   function withDirty<T>(setter: (value: T) => void) {
     return (value: T) => {
@@ -122,32 +105,56 @@ export function ConsultantDetailForm({
     setDirty(true);
   }
 
-  function removeDocument(id: string) {
+  async function removeDocument(id: string) {
     setDocuments((prev) => prev.filter((d) => d.id !== id));
+    try {
+      await deleteVerificationDocument(id);
+    } catch {
+      setDocuments(initialDocuments);
+    }
   }
 
   function handleDiscard() {
+    setSubSpecialization(consultant.subSpecialization ?? "");
+    setBio(consultant.bio ?? "");
+    setConsultationFee(consultant.consultationFee);
+    setCurrency(consultant.currency);
+    setLanguages(consultant.languagesSpoken);
+    setIsAcceptingNewClients(consultant.isAcceptingNewClients);
     setDirty(false);
   }
 
-  function handleSave() {
+  async function handleSave() {
     setSaving(true);
-    // PATCH /api/tenants/:tenantId/consultants/:consultantId — apps/api owns
-    // consultant_profiles persistence.
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await updateConsultantProfile(consultant.id, {
+        subSpecialization,
+        bio,
+        consultationFee: Number(consultationFee),
+        currency,
+        languagesSpoken: languages,
+        isAcceptingNewClients,
+      });
       setDirty(false);
-    }, 600);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function confirmStatusToggle() {
-    setAccountStatus((prev) => (prev === "ACTIVE" ? "SUSPENDED" : "ACTIVE"));
+  async function confirmStatusToggle() {
+    const next = accountStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
     setSuspendDialogOpen(false);
+    setAccountStatus(next);
+    try {
+      await setUserAccountStatus(consultant.userId, next);
+    } catch {
+      setAccountStatus(accountStatus);
+    }
   }
 
   return (
     <div className="flex flex-col gap-6 pb-20">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card>
           <CardContent className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
@@ -157,26 +164,7 @@ export function ConsultantDetailForm({
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Total Cases
               </p>
-              <p className="text-xl font-bold text-foreground">{consultant.caseCount}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3">
-            <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                consultant.disputeCount > 0
-                  ? "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
-                  : "bg-muted text-foreground"
-              }`}
-            >
-              <AlertTriangle className="h-4.5 w-4.5" />
-            </span>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Open Dispute Flags
-              </p>
-              <p className="text-xl font-bold text-foreground">{consultant.disputeCount}</p>
+              <p className="text-xl font-bold text-foreground">{consultant._count.cases}</p>
             </div>
           </CardContent>
         </Card>
@@ -187,7 +175,7 @@ export function ConsultantDetailForm({
                 Accepting New Clients
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Public "Accept Bookings" toggle override
+                Public &quot;Accept Bookings&quot; toggle override
               </p>
             </div>
             <Switch
@@ -209,18 +197,11 @@ export function ConsultantDetailForm({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <Label>Category</Label>
-              <Select value={category} onValueChange={(v) => withDirty(setCategory)(v ?? category)}>
-                <SelectTrigger className="h-9 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                value={CATEGORY_LABEL[consultant.category] ?? consultant.category}
+                disabled
+                className="h-9"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="sub-specialization">Sub-specialization</Label>
@@ -231,6 +212,11 @@ export function ConsultantDetailForm({
                 className="h-9"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" value={consultant.user.email} disabled className="h-9" />
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -329,17 +315,23 @@ export function ConsultantDetailForm({
                     <FileText className="h-4 w-4" />
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-foreground">{doc.documentType}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {documentTypeLabel[doc.documentType] ?? doc.documentType}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      {doc.issuingAuthority}
-                      {doc.expiryDate ? ` · Expires ${doc.expiryDate}` : ""}
+                      {doc.issuingAuthority ?? "—"}
+                      {doc.expiryDate
+                        ? ` · Expires ${new Date(doc.expiryDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+                        : ""}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm">
-                    View
-                  </Button>
+                  <a href={doc.fileUrl} target="_blank" rel="noreferrer">
+                    <Button variant="outline" size="sm">
+                      View
+                    </Button>
+                  </a>
                   <Button
                     variant="ghost"
                     size="icon-sm"

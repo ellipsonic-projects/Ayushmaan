@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { z } from "zod";
-import type { Prisma } from "@ayushman/db";
+import { AppointmentStatus, CommitmentStatus, TaskStatus, type Prisma } from "@ayushman/db";
 import { withTenantContext } from "@ayushman/db/rls-context";
 import { TenantScopedRequest } from "../middleware/tenant-context";
 import { requireRole } from "../middleware/require-role";
@@ -28,6 +28,32 @@ clientsRouter.get(
   async (req: TenantScopedRequest, res: Response) => {
     const query = listClientsQuerySchema.parse(req.query);
 
+    const clientInclude = {
+      user: { select: { email: true, phone: true } },
+      cases: {
+        select: {
+          tags: true,
+          status: true,
+          consultant: { select: { fullName: true } },
+          // Deadline data for the quick filters below — Commitment/Task
+          // dueAt and Appointment scheduledStart, scoped to statuses that
+          // still represent an open obligation or a live booking.
+          commitments: {
+            where: { status: CommitmentStatus.ACTIVE },
+            select: { dueAt: true },
+          },
+          tasks: {
+            where: { status: { in: [TaskStatus.OPEN, TaskStatus.OVERDUE] } },
+            select: { dueAt: true, status: true },
+          },
+          appointments: {
+            where: { status: { in: [AppointmentStatus.REQUESTED, AppointmentStatus.APPROVED] } },
+            select: { scheduledStart: true },
+          },
+        },
+      },
+    };
+
     const clients = await withTenantContext(req.tenantContext!, async (tx) => {
       const searchFilter = query.search
         ? { fullName: { contains: query.search, mode: "insensitive" as const } }
@@ -42,12 +68,14 @@ clientsRouter.get(
             ...searchFilter,
             cases: { some: { consultantId, ...(query.tag && { tags: { has: query.tag } }) } },
           },
+          include: clientInclude,
         });
       }
 
       // TENANT_ADMIN — all clients in the tenant.
       return tx.clientProfile.findMany({
         where: { tenantId: req.params.tenantId, ...searchFilter },
+        include: clientInclude,
       });
     });
 

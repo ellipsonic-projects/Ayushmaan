@@ -26,6 +26,7 @@ import { ConsultantSidebarContent } from "@/components/tenant/consultant/sidebar
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiScribeOverlay } from "@/components/tenant/consultant/ai-scribe/ai-scribe-overlay";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { useMe } from "@/lib/hooks/useMe";
 
 const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "New Log", icon: Mic },
@@ -36,7 +37,9 @@ const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Workflow", icon: FileText },
 ];
 
-export function ConsultantHeader({ tenantName = "Acme Industries" }: { tenantName?: string }) {
+export function ConsultantHeader({ tenantName }: { tenantName?: string }) {
+  const { me } = useMe();
+  const orgName = tenantName ?? me?.tenant?.displayName ?? "Acme Industries";
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [scribeOpen, setScribeOpen] = useState(false);
 
@@ -67,9 +70,7 @@ export function ConsultantHeader({ tenantName = "Acme Industries" }: { tenantNam
             <ConsultantSidebarContent />
           </SheetContent>
         </Sheet>
-        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-          {tenantName}
-        </h1>
+        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">{orgName}</h1>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">

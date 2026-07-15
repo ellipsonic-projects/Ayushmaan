@@ -8,10 +8,7 @@ const TOTAL_CLIENTS = 1284;
 export default function TenantClientsPage() {
   return (
     <div className="flex flex-col gap-6">
-      <ClientDirectoryHeader
-        tenantId="TNT-88921-XQ"
-        tenantName="Acme Global Solutions"
-      />
+      <ClientDirectoryHeader tenantId="TNT-88921-XQ" tenantName="Acme Global Solutions" />
 
       <ClientStatsRow />
 

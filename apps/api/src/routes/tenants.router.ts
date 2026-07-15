@@ -297,15 +297,25 @@ platformTenantsRouter.patch(
 // tenant only; SUPER_ADMIN also allowed but that's a cross-tenant read
 // covered by the platform routes above, not duplicated here).
 export const tenantSettingsRouter: Router = Router({ mergeParams: true });
-tenantSettingsRouter.use(requireRole("TENANT_ADMIN", "SUPER_ADMIN"), requireTenantMatch);
+tenantSettingsRouter.use(requireTenantMatch);
 
-tenantSettingsRouter.get("/settings", async (req: TenantScopedRequest, res: Response) => {
-  const settings = await withTenantContext(req.tenantContext!, (tx) =>
-    tx.tenantSettings.findUnique({ where: { tenantId: req.params.tenantId } })
-  );
-  if (!settings) throw new AppError(404, "Tenant settings not found", "TENANT_SETTINGS_NOT_FOUND");
-  res.json({ data: settings });
-});
+// requireRole is applied per-route (not as a router-level .use()) because
+// this router is mounted at the bare /api/tenants/:tenantId prefix in
+// index.ts — a blanket role check here would run for every request under
+// that prefix, including sibling routers (appointments, consultants, cases,
+// ...) mounted after it, and reject them before they're ever reached.
+tenantSettingsRouter.get(
+  "/settings",
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const settings = await withTenantContext(req.tenantContext!, (tx) =>
+      tx.tenantSettings.findUnique({ where: { tenantId: req.params.tenantId } })
+    );
+    if (!settings)
+      throw new AppError(404, "Tenant settings not found", "TENANT_SETTINGS_NOT_FOUND");
+    res.json({ data: settings });
+  }
+);
 
 const patchSettingsSchema = z
   .object({
@@ -317,13 +327,17 @@ const patchSettingsSchema = z
   })
   .strict();
 
-tenantSettingsRouter.patch("/settings", async (req: TenantScopedRequest, res: Response) => {
-  const updates = patchSettingsSchema.parse(req.body);
-  const settings = await withTenantContext(req.tenantContext!, (tx) =>
-    tx.tenantSettings.update({ where: { tenantId: req.params.tenantId }, data: updates })
-  );
-  res.json({ data: settings });
-});
+tenantSettingsRouter.patch(
+  "/settings",
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const updates = patchSettingsSchema.parse(req.body);
+    const settings = await withTenantContext(req.tenantContext!, (tx) =>
+      tx.tenantSettings.update({ where: { tenantId: req.params.tenantId }, data: updates })
+    );
+    res.json({ data: settings });
+  }
+);
 
 // Tenant Admin's own subscription view — deliberately omits any
 // platform-internal figures (data_api_v4.md §5's `mrr` note; this schema's

@@ -11,6 +11,7 @@ const tenants_router_1 = require("./routes/tenants.router");
 const users_router_1 = require("./routes/users.router");
 const clients_router_1 = require("./routes/clients.router");
 const consultants_router_1 = require("./routes/consultants.router");
+const contacts_router_1 = require("./routes/contacts.router");
 const cases_router_1 = require("./routes/cases.router");
 const appointments_router_1 = require("./routes/appointments.router");
 const errorHandler_1 = require("./middleware/errorHandler");
@@ -50,6 +51,8 @@ app.use("/api/tenants/:tenantId/guardian-links", clients_router_1.guardianLinksR
 app.use("/api/tenants/:tenantId/consultants", consultants_router_1.consultantsRouter);
 app.use("/api/tenants/:tenantId/availability-slots", consultants_router_1.availabilitySlotsRouter);
 app.use("/api/tenants/:tenantId/out-of-office", consultants_router_1.outOfOfficeRouter);
+app.use("/api/tenants/:tenantId/verification-documents", consultants_router_1.verificationDocumentsRouter);
+app.use("/api/tenants/:tenantId/contacts", contacts_router_1.contactsRouter);
 app.use("/api/tenants/:tenantId/cases/:caseId/appointments", appointments_router_1.caseAppointmentsRouter);
 app.use("/api/tenants/:tenantId/cases/:caseId/appointment-series", appointments_router_1.caseAppointmentSeriesRouter);
 app.use("/api/tenants/:tenantId/cases", cases_router_1.casesRouter);

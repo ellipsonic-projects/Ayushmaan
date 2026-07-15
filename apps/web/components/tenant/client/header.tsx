@@ -1,3 +1,5 @@
+"use client";
+
 import { Bell, CalendarCheck, FileText, Menu, MessageSquare, Plus, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -8,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { ClientSidebarContent } from "@/components/tenant/client/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { useMe } from "@/lib/hooks/useMe";
 
 const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Appointment", icon: CalendarCheck },
@@ -15,7 +18,9 @@ const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Document", icon: FileText },
 ];
 
-export function ClientHeader({ tenantName = "Acme Industries" }: { tenantName?: string }) {
+export function ClientHeader({ tenantName }: { tenantName?: string }) {
+  const { me } = useMe();
+  const orgName = tenantName ?? me?.tenant?.displayName ?? "Organization console";
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
@@ -36,9 +41,7 @@ export function ClientHeader({ tenantName = "Acme Industries" }: { tenantName?: 
             <ClientSidebarContent />
           </SheetContent>
         </Sheet>
-        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-          {tenantName}
-        </h1>
+        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">{orgName}</h1>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">

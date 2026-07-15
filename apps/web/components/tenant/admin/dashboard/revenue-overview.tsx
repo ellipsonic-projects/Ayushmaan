@@ -1,16 +1,39 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { getTenantAppointments } from "@/lib/api/appointments.server";
 
-const weeklyRevenue = [
-  { day: "Mon", value: 45 },
-  { day: "Tue", value: 60 },
-  { day: "Wed", value: 38 },
-  { day: "Thu", value: 72 },
-  { day: "Fri", value: 90 },
-  { day: "Sat", value: 65 },
-  { day: "Sun", value: 30 },
-];
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function RevenueOverview() {
+function startOfDaysAgo(daysAgo: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export async function RevenueOverview() {
+  const from = startOfDaysAgo(6);
+  const appointments = await getTenantAppointments({ from: from.toISOString() });
+
+  const totalsByDay = new Map<string, number>();
+  for (const appt of appointments) {
+    for (const payment of appt.payments) {
+      if (payment.status !== "SUCCEEDED") continue;
+      const key = new Date(payment.createdAt).toDateString();
+      totalsByDay.set(key, (totalsByDay.get(key) ?? 0) + Number(payment.amount));
+    }
+  }
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = startOfDaysAgo(6 - i);
+    return {
+      date,
+      label: DAY_LABELS[date.getDay()],
+      total: totalsByDay.get(date.toDateString()) ?? 0,
+    };
+  });
+
+  const maxTotal = Math.max(1, ...days.map((d) => d.total));
+
   return (
     <Card>
       <CardHeader>
@@ -19,15 +42,14 @@ export function RevenueOverview() {
       </CardHeader>
       <CardContent>
         <div className="flex h-40 items-end gap-3">
-          {weeklyRevenue.map((day) => (
-            <div key={day.day} className="flex flex-1 flex-col items-center gap-2">
+          {days.map((day) => (
+            <div key={day.date.toDateString()} className="flex flex-1 flex-col items-center gap-2">
               <span
                 className="w-full rounded-md bg-primary/80"
-                style={{ height: `${day.value}%` }}
+                style={{ height: `${(day.total / maxTotal) * 100}%` }}
+                title={`₹${day.total.toLocaleString()}`}
               />
-              <span className="text-xs font-medium text-muted-foreground">
-                {day.day}
-              </span>
+              <span className="text-xs font-medium text-muted-foreground">{day.label}</span>
             </div>
           ))}
         </div>

@@ -4,11 +4,11 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const consultants = [
-  { name: "Jane Doe", utilization: 92 },
-  { name: "Marcus Reed", utilization: 45 },
-  { name: "Sarah Linn", utilization: 105 },
-];
+export type ConsultantUtilization = {
+  id: string;
+  name: string;
+  utilization: number;
+};
 
 function barClass(utilization: number) {
   if (utilization > 100) return "bg-destructive";
@@ -16,15 +16,18 @@ function barClass(utilization: number) {
   return "bg-emerald-500";
 }
 
-export function ResourceUtilization() {
+export function ResourceUtilization({ consultants }: { consultants: ConsultantUtilization[] }) {
   return (
     <Card className="flex h-full flex-col">
       <CardHeader>
         <CardTitle>Resource Utilization</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 space-y-4">
+        {consultants.length === 0 && (
+          <p className="text-sm text-muted-foreground">No consultants to display.</p>
+        )}
         {consultants.map((consultant) => (
-          <div key={consultant.name} className="space-y-1.5">
+          <div key={consultant.id} className="space-y-1.5">
             <div className="flex items-center justify-between text-sm">
               <span className="font-medium text-foreground">{consultant.name}</span>
               <span

@@ -15,7 +15,7 @@ meRouter.get("/me", async (req: AuthenticatedRequest, res: Response) => {
     ? await withTenantContext({ tenantId, isSuperAdmin: false, userId: req.user!.id }, (tx) =>
         tx.tenant.findUnique({
           where: { id: tenantId },
-          select: { slug: true, status: true },
+          select: { slug: true, status: true, displayName: true },
         })
       )
     : null;

@@ -1,16 +1,14 @@
-import { Contact } from "lucide-react";
+import { ContactsHeader } from "@/components/tenant/admin/contacts/contacts-header";
+import { ContactsTable } from "@/components/tenant/admin/contacts/contacts-table";
+import { getTenantContacts } from "@/lib/api/contacts.server";
 
-import { ComingSoon } from "@/components/ui/coming-soon";
+export default async function TenantAdminContactsPage() {
+  const contacts = await getTenantContacts();
 
-export default function TenantAdminContactsPage() {
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-2xl font-bold text-foreground">Contacts</h2>
-      <ComingSoon
-        icon={Contact}
-        title="A shared contacts directory is on the way"
-        description="Referral partners, vendors, and other non-client contacts, shared across your tenant."
-      />
+      <ContactsHeader />
+      <ContactsTable initialContacts={contacts} />
     </div>
   );
 }

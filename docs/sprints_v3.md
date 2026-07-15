@@ -145,10 +145,10 @@ _(PRD §7 — Tech Stack & Architecture)_
 
 ### Sprint 3.4: Appointment Lifecycle & Queue Management
 
-1. Implement Approve / Propose-Reschedule / Reject-with-reason / Cancel state transitions on `appointments.status` (schema's `appointment_status` enum).
-2. Build `apps/web/(tenant)/[slug]/(consultant)/appointments/page.tsx` (incoming request queue) and the equivalent `(client)/appointments/page.tsx` (accept/decline reschedule, cancel within cutoff).
-3. Build series-level actions: approve/cancel/manage a whole `appointment_series` in one action rather than per-occurrence.
-4. `apps/api/src/cron/`: auto-expire unresolved `REQUESTED` appointments after a configurable window (tenant-level setting, default e.g. 24h).
+1. Implement the two-stage state transitions on `appointments.status` (schema's `appointment_status` enum): `TENANT_ADMIN` Admin-Approve / Propose-Reschedule / Reject-with-reason on a `REQUESTED` appointment (checking the Consultant's availability), then `CONSULTANT` Accept / Reject-with-reason on the resulting `ADMIN_APPROVED` appointment, plus `CONSULTANT` Cancel/Complete/No-Show on an `APPROVED` one.
+2. Build `apps/web/(tenant)/[slug]/(admin)/appointments/page.tsx` (Tenant Admin's incoming request queue — first review stage), `apps/web/(tenant)/[slug]/(consultant)/appointments/page.tsx` (Consultant's queue of admin-approved requests), and the equivalent `(client)/appointments/page.tsx` (accept/decline a Tenant-Admin-proposed reschedule, cancel within cutoff).
+3. Build series-level actions: admin-approve/consultant-approve/cancel/manage a whole `appointment_series` in one action rather than per-occurrence, following the same two-stage gate.
+4. `apps/api/src/cron/`: auto-expire unresolved `REQUESTED` appointments (awaiting Tenant Admin review) after a configurable window (tenant-level setting, default e.g. 24h).
 
 ---
 

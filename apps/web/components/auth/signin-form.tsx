@@ -121,7 +121,11 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
   const routeAfterLogin = async (session: AuthSession) => {
     const { data: me } = await api.get<{ data: MeResponse }>("/api/auth/me", session.accessToken);
 
-    if (me.role !== roleToBackendRole[role]) {
+    const roleMatches =
+      role === "admin"
+        ? me.role === "TENANT_ADMIN" || me.role === "SUPER_ADMIN"
+        : me.role === roleToBackendRole[role];
+    if (!roleMatches) {
       await logout();
       setError(`This account isn't a ${roles.find((r) => r.id === role)?.title}.`);
       return;

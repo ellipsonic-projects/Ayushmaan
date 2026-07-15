@@ -5,8 +5,15 @@ import { LogOut } from "lucide-react";
 
 import { useAuth } from "@/lib/auth/context";
 import { rootOrigin } from "@/lib/auth/destination";
+import { CollapsibleLabel } from "@/components/sidebar/collapsible-label";
 
-export function LogoutButton({ variant = "icon" }: { variant?: "icon" | "row" }) {
+export function LogoutButton({
+  variant = "icon",
+  collapsible = false,
+}: {
+  variant?: "icon" | "row";
+  collapsible?: boolean;
+}) {
   const { logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -30,8 +37,8 @@ export function LogoutButton({ variant = "icon" }: { variant?: "icon" | "row" })
         onClick={handleLogout}
         className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50"
       >
-        <LogOut className="h-4 w-4" />
-        Sign Out
+        <LogOut className="h-4 w-4 shrink-0" />
+        <CollapsibleLabel collapsible={collapsible}>Sign Out</CollapsibleLabel>
       </button>
     );
   }

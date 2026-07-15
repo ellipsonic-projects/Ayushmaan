@@ -14,7 +14,7 @@ exports.meRouter.get("/me", async (req, res) => {
     const tenant = tenantId
         ? await (0, rls_context_1.withTenantContext)({ tenantId, isSuperAdmin: false, userId: req.user.id }, (tx) => tx.tenant.findUnique({
             where: { id: tenantId },
-            select: { slug: true, status: true },
+            select: { slug: true, status: true, displayName: true },
         }))
         : null;
     res.json({

@@ -13,10 +13,9 @@ import ellipsize from "ellipsize";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "@/components/tenant/consultant/sessions/calendar-overrides.css";
 
-import {
-  sessionEvents,
-  type CalendarMember,
-  type SessionEvent,
+import type {
+  CalendarMember,
+  SessionEvent,
 } from "@/components/tenant/consultant/sessions/session-data";
 import { SessionToolbar } from "@/components/tenant/consultant/sessions/session-toolbar";
 import { SessionSidebar } from "@/components/tenant/consultant/sessions/session-sidebar";
@@ -39,12 +38,12 @@ function SessionEventContent({ title }: EventProps<SessionEvent>) {
 }
 
 export function SessionCalendar({
-  events: allEvents = sessionEvents,
+  events: allEvents,
   members,
   membersLabel,
   initialChecked = { you: true },
 }: {
-  events?: SessionEvent[];
+  events: SessionEvent[];
   members?: CalendarMember[];
   membersLabel?: string;
   initialChecked?: Record<string, boolean>;

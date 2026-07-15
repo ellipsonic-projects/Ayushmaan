@@ -1,15 +1,17 @@
 # Ayushman — Data API Specification (Multi-Tenant Edition, Monorepo Stack)
 
-**Version:** 3.1.0
+**Version:** 3.2.0
 **Service:** `apps/api` (Express), consumed by `apps/web` (Next.js 16) over HTTP only
-**Auth provider:** Supabase Auth (JWT bearer tokens); RLS-enforced Postgres via Prisma
+**Auth provider:** Supabase Auth (JWT bearer tokens) for identity; role/tenant scoping resolved from the app's own `users` table — see §1.2
 **Last updated:** July 2026
 
 > Derived fresh from `PRD_v3_nextjs_express.md` (§1 Role & Tenancy, §4 Grievances, §5 Build Plan, §7 Tech Stack) and `schema_ayushman_v3.md` (§3 Tables, §4 RLS). Every endpoint below is tied to a specific table or table-cluster in the schema, and every access rule is tied to a specific line in the PRD's permission matrix (§1.4).
 >
 > **v3.1 change:** every endpoint now carries an explicit **Roles / Auth Header / Policy** block instead of leaving those implied by the general rules in §1. The general rules in §1 still apply globally — the per-endpoint blocks state how they resolve for that specific route (which role, which header requirement, which row-ownership/tenant check).
 >
-> **Two gaps inherited from the source docs, not introduced here:** `schema_ayushman_v3.md` references a `payments` table (§1 ERD, §3.3 prose) and the PRD (§2 item 7, §5 Phase 4) requires a waitlist feature, but neither table is defined in the schema's §3 table list. Endpoints for both are included and marked **PROVISIONAL — schema pending**.
+> **v3.2 change:** §1.1, §1.2, §1.8, §1.11, §2, §24, §25, and §26 are reconciled against the actual `apps/api`/`packages/db` implementation (not just the source docs) — tenant resolution, RLS enforcement status, base URL, and the payment provider all diverged from the original spec. A new **§28 API Folder Structure** maps the privilege matrix (PRD §1.4) onto the real `apps/api/src` layout.
+>
+> **One gap inherited from the source docs, not introduced here:** the PRD (§2 item 7, §5 Phase 4) requires a waitlist feature, but no `waitlist` table exists in the schema. §12 below is marked **PROVISIONAL — schema pending**. (The `payments` table gap noted in earlier versions of this doc no longer applies — see §24.)
 
 ---
 
@@ -20,18 +22,25 @@ These apply globally; §1.2's per-endpoint blocks state how each rule resolves f
 ### 1.1 Authentication
 
 - Every request (except `(public)` routes, explicitly marked) requires `Authorization: Bearer <supabase_access_token>`.
-- `apps/api` verifies the token via `supabase-js`'s `auth.getUser()` on **every** request — never cached, never trusted from a prior request.
+- `apps/api`'s `authMiddleware` (`apps/api/src/middleware/auth.ts`) verifies the token on **every** request via an `AuthVerifier` abstraction (`apps/api/src/lib/auth`) backed by Supabase — never cached, never trusted from a prior request.
+- **Role and `tenantId` are not read from JWT custom claims.** The verified token only proves _identity_ (a `supabaseAuthUserId`). `authMiddleware` then looks up the matching `users` row by that id and attaches `role`/`tenantId`/`accountStatus` from **the app's own database**, not from the token payload. This is a deliberate divergence from the PRD's original "Postgres Auth Hook stamps `tenant_id`/`is_super_admin` onto the JWT" design (PRD §1.2/§7.3) — no Auth Hook is wired up; the `users` table is the single source of truth for role/tenant on every request.
+- A request whose matching `users.accountStatus != ACTIVE` is rejected `401` regardless of token validity.
 - Tokens are short-lived and rotated by Supabase Auth; `apps/api` never issues, stores, or refreshes a token and never touches password/OTP/refresh-token data.
 - No endpoint accepts credentials in a query string; no log line ever contains a raw bearer token.
 
 ### 1.2 Tenant scoping — the real enforcement boundary
 
-- `tenant_id` and `is_super_admin` are read **only** from the verified JWT's custom claims, never from a header, cookie, query param, or URL path segment.
-- `:tenantId` in a route path is advisory (REST addressability, readable logs) — not authoritative. The `tenant-context` middleware compares `req.params.tenantId` to the JWT's `tenant_id` claim on every request:
-  - **Mismatch, non-super-admin** → `403 Forbidden`, nothing executes.
-  - **Mismatch, `is_super_admin: true`** → allowed, but writes a mandatory `audit_logs` row (`is_cross_tenant_access = true`) before the handler runs; a `reason` is required for anything beyond the tenant list/billing dashboard.
-  - **Match** → middleware opens the request's DB transaction with `SET LOCAL app.tenant_id` / `app.is_super_admin` before any query runs — Postgres RLS is the actual isolation mechanism.
-- A user can never override their tenant scope by editing the path.
+- After `authMiddleware` attaches `req.user.role`/`req.user.tenantId` (§1.1), `tenantContextMiddleware` (`apps/api/src/middleware/tenant-context.ts`) resolves and verifies the tenant for the request:
+  1. **Candidate tenant slug** is resolved by `resolveTenantSlug()` — either an explicit `X-Tenant-Slug` header (used by `apps/web`'s server-side fetches, which don't preserve the browser's Host header) or the request's subdomain (`{slug}.<TENANT_ROOT_HOST>`). This resolved slug is **advisory only**, exactly like a `:tenantId` path param — never trusted on its own.
+  2. If no slug resolves: allowed only for `SUPER_ADMIN` (acting platform-wide, `tenantContext.tenantId = null`); any other role gets `400 TENANT_REQUIRED`.
+  3. If a slug resolves, the tenant is looked up; unknown slug → `404`; `status != ACTIVE` → `403 TENANT_SUSPENDED`.
+  4. The resolved tenant's `id` is cross-checked against `req.user.tenantId` (from §1.1, i.e. the caller's own `users` row — not a JWT claim):
+     - **Mismatch, non-`SUPER_ADMIN`** → `403 TENANT_MISMATCH`, nothing executes.
+     - **Match, or caller is `SUPER_ADMIN`** → `req.tenantContext` is attached (`{ tenantId, isSuperAdmin, userId }`).
+- `:tenantId` in a route path is checked _separately and afterward_ by `requireTenantMatch` middleware (`apps/api/src/middleware/require-tenant-match.ts`), which compares `req.params.tenantId` against the already-resolved `req.tenantContext.tenantId` — a `SUPER_ADMIN` always passes this check regardless of path value; anyone else gets `403 TENANT_MISMATCH` on any path/context disagreement.
+- Every tenant-scoped query must run inside `withTenantContext()` (`packages/db/src/rls-context.ts`), which opens a DB transaction and issues `SET LOCAL app.tenant_id` / `app.is_super_admin` / `app.user_id` from `req.tenantContext` before any query runs — this is what Postgres RLS filters on (see the enforcement-status caveat in §1.11).
+- Cross-tenant `SUPER_ADMIN` access still requires an `audit_logs` row (`is_cross_tenant_access = true`) per-route, as detailed in the endpoint blocks below and enforced in `apps/api/src/services/audit.service.ts`; a `reason` is required for anything beyond the tenant list/billing dashboard.
+- A user can never override their tenant scope by editing the path, the `X-Tenant-Slug` header, or the subdomain — all three are advisory inputs cross-checked against `req.user.tenantId`, which itself comes from a DB row keyed off the verified token's `supabaseAuthUserId`, not from anything the caller supplies directly.
 
 ### 1.3 Authorization (role checks)
 
@@ -58,7 +67,7 @@ No raw Storage credentials returned. Uploads/downloads go through `apps/api`-iss
 
 ### 1.8 Payment & webhook integrity
 
-Razorpay webhooks verify `X-Razorpay-Signature` against the raw body before processing. Checkout endpoints require an `Idempotency-Key`. No card data ever transits `apps/api`.
+Stripe webhooks verify the `Stripe-Signature` header against the raw request body (via the Stripe SDK's `constructEvent`) before processing. Checkout endpoints require an `Idempotency-Key`. No card data ever transits `apps/api` — Stripe Elements/Checkout handles card capture client-side; `apps/api` only ever sees a `PaymentIntent`/`Customer` id.
 
 ### 1.9 Audit logging
 
@@ -70,7 +79,9 @@ HTTPS + HSTS only; standard security headers on every response; CORS allow-list 
 
 ### 1.11 RLS as defense-in-depth
 
-Every table below (except `grievances`) carries the standard RLS policy (`tenant_id = current_setting('app.tenant_id')::uuid OR is_super_admin`). Application-layer checks exist so a bug in one layer alone can't cause a breach.
+Every table below (except `grievances`) carries the standard RLS policy (`tenant_id = current_setting('app.tenant_id')::uuid OR is_super_admin`), defined in `supabase/policies/*.sql` and set per-request via `withTenantContext()`'s `SET LOCAL` calls (§1.2). Application-layer checks exist so a bug in one layer alone can't cause a breach.
+
+> **Known gap — RLS is code-complete but not yet live.** `supabase/roles/app-role.sql` documents that `apps/api`'s `DATABASE_URL` currently connects as the `postgres` role, which **owns** every table and therefore bypasses RLS unconditionally regardless of `SET LOCAL app.tenant_id`. The intended non-owner `app_user` role exists in that SQL file but the connection-string swap to use it is a manual deploy step not yet performed. Until that swap happens, tenant isolation is enforced **only** by the application-layer checks in §1.2 (`tenantContextMiddleware` + `requireTenantMatch`) — RLS is not currently a second line of defense in practice, only in code. Treat this as an open production-readiness item, not a resolved control.
 
 ---
 
@@ -78,7 +89,7 @@ Every table below (except `grievances`) carries the standard RLS policy (`tenant
 
 | Aspect            | Convention                                                                                                                                                                                                 |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Base URL          | `https://api.ayushman.app/api/v1`                                                                                                                                                                          |
+| Base URL          | `https://api.ayushman.app/api` (no version segment — matches `apps/api/src/index.ts`'s actual mount points, e.g. `/api/tenants/:tenantId/cases`; not yet versioned)                                        |
 | Content type      | `application/json` (except file uploads — signed-URL `PUT` direct to Storage)                                                                                                                              |
 | Pagination        | Cursor-based: `?cursor=<opaque>&limit=<n, default 20, max 100>`                                                                                                                                            |
 | Response envelope | `{ "data": ..., "meta": {...} }` (lists) / `{ "data": ... }` (single resource)                                                                                                                             |
@@ -86,6 +97,7 @@ Every table below (except `grievances`) carries the standard RLS policy (`tenant
 | Status codes      | `200/201/204` success · `400` validation · `401` missing/invalid token · `403` role/tenant failure · `404` not found · `409` conflict · `422` semantically invalid · `429` rate-limited · `500` unexpected |
 | Idempotency       | `Idempotency-Key` header on all side-effecting `POST`s; required on payment routes                                                                                                                         |
 | Soft delete       | Sets `deleted_at`/status; 30-day recovery window where noted                                                                                                                                               |
+| Tenant resolution | `X-Tenant-Slug: <slug>` header (used by `apps/web`'s server-side fetches) or a `{slug}.<TENANT_ROOT_HOST>` request host — one of the two is required on every non-platform route; see §1.2                 |
 
 ### 2.1 Per-endpoint block — field legend
 
@@ -561,10 +573,10 @@ Every endpoint from §3 onward uses this block:
 
 #### `PATCH /tenants/:tenantId/appointment-series/:seriesId`
 
-- **Roles:** `CONSULTANT` (own)
+- **Roles:** `TENANT_ADMIN` (admin-approve/reschedule/reject the series' initial `REQUESTED` occurrences), `CONSULTANT` (own — accept/reject an `ADMIN_APPROVED` series; cancel)
 - **Auth Header:** `Authorization: Bearer <supabase_access_token>` (required)
-- **Policy:** Cancelling cascades only to future `REQUESTED`/`APPROVED` occurrences — past/`COMPLETED` occurrences are untouched by this call.
-- **Description:** Approves/cancels a whole series.
+- **Policy:** Cancelling cascades only to future `REQUESTED`/`ADMIN_APPROVED`/`APPROVED` occurrences — past/`COMPLETED` occurrences are untouched by this call. Follows the same two-stage `REQUESTED` → `ADMIN_APPROVED` → `APPROVED` gate as a single appointment (below), applied to the whole series in one action.
+- **Description:** Admin-approves/Consultant-approves/cancels a whole series.
 
 #### `GET /tenants/:tenantId/appointments/:appointmentId`
 
@@ -575,10 +587,10 @@ Every endpoint from §3 onward uses this block:
 
 #### `PATCH /tenants/:tenantId/appointments/:appointmentId`
 
-- **Roles:** `CONSULTANT` (own — approve/propose-reschedule/reject/cancel/no-show/`videoLink`), self `CLIENT` (accept/decline reschedule, cancel within cutoff)
+- **Roles:** `TENANT_ADMIN` (own tenant — admin-approve/propose-reschedule/reject a `REQUESTED` appointment, checking the Consultant's availability), `CONSULTANT` (own — accept/reject an `ADMIN_APPROVED` appointment, plus cancel/complete/no-show/`videoLink` on an already-`APPROVED` one), self `CLIENT` (accept/decline a Tenant-Admin-proposed reschedule, cancel within cutoff)
 - **Auth Header:** `Authorization: Bearer <supabase_access_token>` (required)
-- **Policy:** State transitions validated against the `appointment_status` enum server-side — an illegal transition (e.g. `COMPLETED → REQUESTED`) is `422` regardless of role. A `CLIENT` cannot set `videoLink` or mark `NO_SHOW`.
-- **Description:** Appointment state-machine transitions.
+- **Policy:** State transitions validated against the `appointment_status` enum server-side — an illegal transition (e.g. `COMPLETED → REQUESTED`) is `422` regardless of role. Two-stage approval gate: a new booking starts `REQUESTED`; only the `TENANT_ADMIN` can move it to `ADMIN_APPROVED` (or `RESCHEDULE_PROPOSED`, or `CANCELLED` to reject); only then can the `CONSULTANT` accept it into `APPROVED` or reject it to `CANCELLED` — a `CONSULTANT` cannot act on a `REQUESTED` appointment the Tenant Admin hasn't reviewed yet, and a `TENANT_ADMIN` cannot skip straight to `APPROVED`. On `RESCHEDULE_PROPOSED`, the `CLIENT` accepts back into `ADMIN_APPROVED` (forwarded to the Consultant) or declines into `CANCELLED`. `autoApproveBookings` (tenant/consultant setting) still allows a booking to skip both review stages straight to `APPROVED`. A `CLIENT` cannot set `videoLink` or mark `NO_SHOW`.
+- **Description:** Appointment state-machine transitions — `REQUESTED` → (`TENANT_ADMIN`) `ADMIN_APPROVED` | `RESCHEDULE_PROPOSED` | `CANCELLED` → (`CONSULTANT`) `APPROVED` | `CANCELLED` → `COMPLETED` | `CANCELLED` | `NO_SHOW`.
 
 ---
 
@@ -1005,23 +1017,23 @@ Proposed shape: `waitlist_entries(id, tenant_id, slot_id, client_id, status[WAIT
 
 ---
 
-## 24. Payments — **PROVISIONAL, schema pending**
+## 24. Payments — `payments`
 
-Proposed shape: `payments(id, tenant_id, appointment_id, client_id, amount, currency, provider_order_id, provider_payment_id, status[CREATED|CAPTURED|FAILED|REFUNDED], commission_amount, created_at)`.
+Actual schema (`packages/db/prisma/schema.prisma`, `model Payment` → `@@map("payments")`): `id`, `tenantId`, `appointmentId`, `clientId`, `stripePaymentIntentId` (unique), `stripeCustomerId` (nullable), `amount` (`Decimal(10,2)`), `currency` (default `INR`), `status` (`PaymentStatus`: `REQUIRES_PAYMENT_METHOD` default, plus the Stripe PaymentIntent lifecycle states), `createdAt`, `updatedAt`. This table is fully migrated — it is **not** schema-pending (earlier versions of this doc incorrectly listed `payments` as provisional). No `payments` router exists yet under `apps/api/src/routes`; the endpoints below are the target shape, not yet implemented.
 
 #### `POST /tenants/:tenantId/appointments/:appointmentId/checkout`
 
 - **Roles:** self (`CLIENT`)
 - **Auth Header:** `Authorization: Bearer <supabase_access_token>` (required) **+ `Idempotency-Key` (required)**
 - **Policy:** Caller must be the appointment's `client_id`. Can cover a whole series upfront or a single occurrence, per the Consultant's configured policy.
-- **Description:** Creates a Razorpay order.
+- **Description:** Creates a Stripe `PaymentIntent` (and a `Customer` on first use) scoped to this tenant/appointment; returns the client secret for Stripe Elements/Checkout to confirm.
 
-#### `POST /webhooks/razorpay`
+#### `POST /webhooks/stripe`
 
 - **Roles:** none — provider callback, not a user-facing role
-- **Auth Header:** None — verified instead via `X-Razorpay-Signature` against the raw request body and the webhook secret; unsigned/mismatched requests are `400` and never processed
+- **Auth Header:** None — verified instead via the `Stripe-Signature` header against the raw request body and the webhook signing secret (Stripe SDK's `constructEvent`); unsigned/mismatched requests are `400` and never processed
 - **Policy:** Signature verification is mandatory and happens before any DB write.
-- **Description:** Handles `payment.captured`/`payment.failed`/`refund.processed`.
+- **Description:** Handles `payment_intent.succeeded`/`payment_intent.payment_failed`/`charge.refunded`, updating `payments.status` accordingly.
 
 #### `GET /tenants/:tenantId/clients/:clientId/payments`
 
@@ -1042,13 +1054,13 @@ Proposed shape: `payments(id, tenant_id, appointment_id, client_id, amount, curr
 - **Roles:** `TENANT_ADMIN`
 - **Auth Header:** `Authorization: Bearer <supabase_access_token>` (required)
 - **Policy:** `reason` required in the body, feeding the dispute record (PRD FR36).
-- **Description:** Issues a Razorpay refund via dispute mediation.
+- **Description:** Issues a Stripe refund (`refunds.create` against the PaymentIntent) via dispute mediation.
 
 ---
 
 ## 25. Webhooks (internal — provider-signature verified, not bearer-auth)
 
-#### `POST /webhooks/razorpay`
+#### `POST /webhooks/stripe`
 
 See §24.
 
@@ -1086,7 +1098,7 @@ See §24.
 | Notifications            | 4         | §3.22                             |
 | Audit log                | 2         | §3.23                             |
 | Push subscriptions       | 2         | §3.24                             |
-| Payments _(provisional)_ | 5         | not yet in §3                     |
+| Payments                 | 5         | §24 (schema live, router pending) |
 | Webhooks                 | 2         | n/a                               |
 | **Total**                | **~113**  |                                   |
 
@@ -1094,6 +1106,64 @@ See §24.
 
 ## 27. Open Items Carried Forward (not introduced here)
 
-1. **`payments` table** — referenced in the schema's ERD and prose, never defined in §3. §24 above is provisional pending that addition.
-2. **Waitlist** — required by PRD §2 item 7, no backing table in the schema at all. §12 above is provisional pending that addition.
-3. Both should be resolved as schema migrations (`packages/db/prisma/migrations/`) before their routers are implemented in `apps/api/src/routes/`.
+1. **Waitlist** — required by PRD §2 item 7, no backing table in the schema at all. §12 above is provisional pending a schema migration.
+2. **RLS not yet live** — policies are defined and applied via `SET LOCAL`, but `apps/api` currently connects as the table-owning `postgres` role and bypasses them entirely; see the caveat in §1.11.
+3. **Payments/Grievances/Reviews/Notifications/Documents/Interactions/Commitments-Tasks/AI-RAG/Analytics/Referrals/Public-tenant-site routers** — all have complete schema support (§24 payments included) but no router yet exists under `apps/api/src/routes/`; only auth/me, tenants, users, clients, consultants (+ availability/OOO), cases, and appointments (+ series) are implemented today. See §28 for the current routes inventory.
+4. **Auth Hook not wired up** — the PRD's original design (Postgres Auth Hook stamping `tenant_id`/`is_super_admin` onto the JWT) was not implemented; role/tenant are resolved from the `users` table per-request instead (§1.1). Decide whether to build the Auth Hook to match the PRD, or update the PRD to match this simpler DB-lookup approach.
+
+---
+
+## 28. API Folder Structure — `apps/api/src`
+
+Current tree (all paths relative to `apps/api/src/`); this is the actual layout, not a proposal:
+
+```
+apps/api/src/
+├── index.ts                        # Express app: middleware chain + route mounting (see below)
+├── lib/
+│   ├── auth/
+│   │   ├── index.ts                 # exports the active AuthVerifier implementation
+│   │   ├── supabase-verifier.ts     # AuthVerifier backed by supabase-js auth.getUser()
+│   │   └── types.ts                 # AuthVerifier / VerifiedIdentity interfaces
+│   ├── callerProfile.ts             # resolves a caller's own ConsultantProfile/ClientProfile id (self-vs-admin checks)
+│   ├── supabaseAdmin.ts             # Supabase service-role client (admin ops: user invites, storage)
+│   └── tenant/
+│       ├── getTenant.ts             # tenant row lookup by slug (bypasses RLS via withTenantContext super-admin ctx)
+│       └── resolveTenantSlug.ts     # X-Tenant-Slug header / subdomain -> candidate slug (§1.2)
+├── middleware/
+│   ├── auth.ts                      # authMiddleware — verifies token, attaches req.user {id, role, tenantId, ...} (§1.1)
+│   ├── tenant-context.ts            # tenantContextMiddleware — resolves + verifies tenant, attaches req.tenantContext (§1.2)
+│   ├── require-tenant-match.ts      # requireTenantMatch — checks :tenantId path param against req.tenantContext
+│   ├── require-role.ts              # requireRole(...roles) — role-gate factory mirroring PRD §1.4
+│   └── errorHandler.ts              # AppError -> { error: { code, message, correlationId } } envelope (§2)
+├── routes/
+│   ├── me.ts                        # GET /auth/me (§3) — mounted ahead of tenantContextMiddleware, identity-only
+│   ├── tenants.router.ts            # platformTenantsRouter (§4) + tenantSettingsRouter (§5)
+│   ├── users.router.ts              # usersRouter (§6)
+│   ├── clients.router.ts            # clientsRouter + guardianLinksRouter (§7)
+│   ├── consultants.router.ts        # consultantsRouter + availabilitySlotsRouter + outOfOfficeRouter (§8)
+│   ├── cases.router.ts              # casesRouter (§10)
+│   └── appointments.router.ts       # caseAppointmentsRouter + caseAppointmentSeriesRouter + appointmentSeriesRouter + appointmentsRouter (§11)
+└── services/
+    ├── audit.service.ts             # writes audit_logs rows for cross-tenant/escalated reads (§1.2, §1.9)
+    ├── booking.service.ts           # slot conflict-checking / appointment state transitions (§11)
+    └── cases.service.ts             # case row-ownership helpers (§10)
+```
+
+No `controllers/` layer exists — request handling lives directly in each `*.router.ts` file, calling into `services/` for shared business logic and `lib/` for cross-cutting concerns (auth, tenant resolution, RLS-scoped DB access via `@ayushman/db`).
+
+**Resources with a schema but no router yet** (§27 item 3): `grievances`, `payments`, `reviews`, `notifications` + `notification_preferences`, `documents`, `interactions`, `commitment_templates`/`commitments`, `tasks`/`task_reminders`, `chat_messages`/`ai_summaries`/`rag_citations`, `consultant_analytics_snapshot`, `referrals`/`consultant_referrals`, `push_subscriptions`, `audit_logs` (read route), and the unauthenticated public tenant site (§9). Each would follow the same `*.router.ts` + `*.service.ts` pattern as the resources above.
+
+### 28.1 Privilege matrix (PRD §1.4) → where it's enforced
+
+The four-role model (`SUPER_ADMIN` / `TENANT_ADMIN` / `CONSULTANT` / `CLIENT`) is enforced across three layers, none of which alone is sufficient:
+
+| Layer                                                       | File(s)                                                                                                 | What it enforces                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Identity**                                                | `middleware/auth.ts`                                                                                    | Who the caller is (`req.user.id`/`role`/`tenantId`), sourced from the `users` table keyed by the verified token — not the token payload itself (§1.1).                                                                                                                    |
+| **Tenant scope**                                            | `middleware/tenant-context.ts`, `middleware/require-tenant-match.ts`                                    | Which tenant's data the request may touch; blocks cross-tenant access for every role except `SUPER_ADMIN` (§1.2).                                                                                                                                                         |
+| **Role gate**                                               | `middleware/require-role.ts`, applied per-route in each `routes/*.router.ts`                            | Which roles may call a given route at all — e.g. `POST /tenants/:tenantId/consultants` is `requireRole("TENANT_ADMIN", "SUPER_ADMIN")` per PRD §1.4's "Invite/remove Consultants" row.                                                                                    |
+| **Row ownership**                                           | Inline in each router (via `lib/callerProfile.ts` self-vs-admin helpers) and in `services/*.service.ts` | The matrix's row-level qualifiers that a role check alone can't express — e.g. `CONSULTANT` may only touch a `case` where `consultant_id` matches their own profile ("own clients" in PRD §1.4), checked in `cases.router.ts`/`cases.service.ts`, not just gated by role. |
+| **RLS (defense-in-depth, not currently enforcing — §1.11)** | `supabase/policies/*.sql`, applied via `packages/db/src/rls-context.ts`'s `withTenantContext()`         | The same tenant/role rules re-expressed as Postgres policies, intended as a second line of defense if an application-layer check is ever missed. Currently bypassed in practice because `apps/api` connects as the `postgres` table-owning role — see §1.11.              |
+
+Rows of the PRD §1.4 matrix with no standing route at all (by design, not an omission) are called out explicitly where they apply: private clinical/legal notes have no `TENANT_ADMIN` route except the logged `/cases/:caseId/escalate` path (§10), and grievances have no `TENANT_ADMIN`/`CONSULTANT` route of any kind (§18, §1.3, §4.2 of the PRD).

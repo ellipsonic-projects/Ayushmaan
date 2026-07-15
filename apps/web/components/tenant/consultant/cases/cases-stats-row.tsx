@@ -1,11 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { cases } from "@/components/tenant/consultant/cases/cases-data";
+import type { TenantCase } from "@/lib/api/cases.server";
 
-export function CasesStatsRow() {
+export function CasesStatsRow({ cases }: { cases: TenantCase[] }) {
   const total = cases.length;
-  const open = cases.filter((c) => c.status === "Open").length;
-  const onHold = cases.filter((c) => c.status === "On Hold").length;
-  const closed = cases.filter((c) => c.status === "Closed").length;
+  const open = cases.filter((c) => c.status === "ACTIVE").length;
+  const onHold = cases.filter((c) => c.status === "ON_HOLD").length;
+  const closed = cases.filter((c) => c.status === "CLOSED").length;
 
   const stats = [
     { label: "Total Cases", value: String(total) },
@@ -22,7 +22,9 @@ export function CasesStatsRow() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {label}
             </p>
-            <p className={`mt-1 text-2xl font-bold tabular-nums text-foreground ${valueClass ?? ""}`}>
+            <p
+              className={`mt-1 text-2xl font-bold tabular-nums text-foreground ${valueClass ?? ""}`}
+            >
               {value}
             </p>
           </CardContent>

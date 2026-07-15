@@ -12,43 +12,19 @@ type Staff = {
   activityTone?: "danger";
 };
 
-const staff: Staff[] = [
-  {
-    name: "Arjun Sharma",
-    email: "arjun@acme.com",
-    role: "Owner",
-    activity: "Active 2m ago",
-  },
-  {
-    name: "Sarah Lopez",
-    email: "sarah.l@acme.com",
-    role: "Consultant",
-    activity: "Active yesterday",
-  },
-  {
-    name: "Michael Kim",
-    email: "m.kim@acme.com",
-    role: "Consultant",
-    activity: "Suspended",
-    activityTone: "danger",
-  },
-];
-
 const roleVariant: Record<Staff["role"], "default" | "outline"> = {
   Owner: "default",
   Consultant: "outline",
 };
 
-export function TenantStaffOverview() {
+export function TenantStaffOverview({ staff }: { staff: Staff[] }) {
   return (
     <Card size="sm">
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">
-              Staff Overview
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground">Staff Overview</h3>
           </div>
           <Button variant="ghost" size="sm" className="gap-1 text-primary">
             <Plus className="h-3.5 w-3.5" />
@@ -69,12 +45,8 @@ export function TenantStaffOverview() {
                   .join("")}
               </span>
               <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">
-                  {member.name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {member.email}
-                </p>
+                <p className="text-sm font-medium text-foreground">{member.name}</p>
+                <p className="text-xs text-muted-foreground">{member.email}</p>
               </div>
               <div className="flex flex-col items-end gap-1">
                 <Badge variant={roleVariant[member.role]}>{member.role}</Badge>
@@ -93,7 +65,7 @@ export function TenantStaffOverview() {
         </div>
 
         <Button variant="ghost" size="sm" className="text-primary">
-          View All 24 Members
+          View All {staff.length} Members
         </Button>
       </CardContent>
     </Card>

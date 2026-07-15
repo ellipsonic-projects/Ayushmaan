@@ -9,8 +9,13 @@ import {
   consultantsRouter,
   availabilitySlotsRouter,
   outOfOfficeRouter,
+  verificationDocumentsRouter,
 } from "./routes/consultants.router";
+import { contactsRouter } from "./routes/contacts.router";
 import { casesRouter } from "./routes/cases.router";
+import { caseInteractionsRouter } from "./routes/case-interactions.router";
+import { caseCommitmentsRouter } from "./routes/case-commitments.router";
+import { caseTasksRouter } from "./routes/case-tasks.router";
 import {
   caseAppointmentsRouter,
   caseAppointmentSeriesRouter,
@@ -59,8 +64,13 @@ app.use("/api/tenants/:tenantId/guardian-links", guardianLinksRouter);
 app.use("/api/tenants/:tenantId/consultants", consultantsRouter);
 app.use("/api/tenants/:tenantId/availability-slots", availabilitySlotsRouter);
 app.use("/api/tenants/:tenantId/out-of-office", outOfOfficeRouter);
+app.use("/api/tenants/:tenantId/verification-documents", verificationDocumentsRouter);
+app.use("/api/tenants/:tenantId/contacts", contactsRouter);
 app.use("/api/tenants/:tenantId/cases/:caseId/appointments", caseAppointmentsRouter);
 app.use("/api/tenants/:tenantId/cases/:caseId/appointment-series", caseAppointmentSeriesRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/interactions", caseInteractionsRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/commitments", caseCommitmentsRouter);
+app.use("/api/tenants/:tenantId/cases/:caseId/tasks", caseTasksRouter);
 app.use("/api/tenants/:tenantId/cases", casesRouter);
 app.use("/api/tenants/:tenantId/appointment-series", appointmentSeriesRouter);
 app.use("/api/tenants/:tenantId/appointments", appointmentsRouter);

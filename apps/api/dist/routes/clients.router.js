@@ -22,6 +22,12 @@ const listClientsQuerySchema = zod_1.z.object({
 // GET /tenants/:tenantId/clients
 exports.clientsRouter.get("/", (0, require_role_1.requireRole)("CONSULTANT", "TENANT_ADMIN"), async (req, res) => {
     const query = listClientsQuerySchema.parse(req.query);
+    const clientInclude = {
+        user: { select: { email: true, phone: true } },
+        cases: {
+            select: { tags: true, status: true, consultant: { select: { fullName: true } } },
+        },
+    };
     const clients = await (0, rls_context_1.withTenantContext)(req.tenantContext, async (tx) => {
         const searchFilter = query.search
             ? { fullName: { contains: query.search, mode: "insensitive" } }
@@ -36,11 +42,13 @@ exports.clientsRouter.get("/", (0, require_role_1.requireRole)("CONSULTANT", "TE
                     ...searchFilter,
                     cases: { some: { consultantId, ...(query.tag && { tags: { has: query.tag } }) } },
                 },
+                include: clientInclude,
             });
         }
         // TENANT_ADMIN — all clients in the tenant.
         return tx.clientProfile.findMany({
             where: { tenantId: req.params.tenantId, ...searchFilter },
+            include: clientInclude,
         });
     });
     res.json({ data: clients });

@@ -3,45 +3,100 @@ import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getTenantConsultants } from "@/lib/api/consultants.server";
+import { getTenantAppointments } from "@/lib/api/appointments.server";
 
-const stats: {
-  label: string;
-  value: string;
-  icon: LucideIcon;
-  badge: { text: string; variant: "outline" | "destructive" | "secondary"; dot?: boolean };
-  footnote: string;
-}[] = [
-  {
-    label: "Today's Appointments",
-    value: "18",
-    icon: CalendarCheck,
-    badge: { text: "3 Upcoming", variant: "outline" },
-    footnote: "Next at 2:30 PM",
-  },
-  {
-    label: "Active Consultants",
-    value: "9",
-    icon: Stethoscope,
-    badge: { text: "Online", variant: "secondary", dot: true },
-    footnote: "2 on leave today",
-  },
-  {
-    label: "Monthly Revenue",
-    value: "$18,240",
-    icon: Wallet,
-    badge: { text: "+8.4%", variant: "outline" },
-    footnote: "vs last month",
-  },
-  {
-    label: "Pending Approvals",
-    value: "5",
-    icon: ClipboardList,
-    badge: { text: "2 Urgent", variant: "destructive" },
-    footnote: "Onboarding & leave requests",
-  },
-];
+function startOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-export function TenantStatsRow() {
+function endOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export async function TenantStatsRow() {
+  const now = new Date();
+
+  const [consultants, todaysAppointments, monthlyAppointments, pendingAppointments] =
+    await Promise.all([
+      getTenantConsultants(),
+      getTenantAppointments({
+        from: startOfDay(now).toISOString(),
+        to: endOfDay(now).toISOString(),
+      }),
+      getTenantAppointments({ from: startOfMonth(now).toISOString(), to: now.toISOString() }),
+      getTenantAppointments({ status: "REQUESTED" }),
+    ]);
+
+  const acceptingConsultants = consultants.filter((c) => c.isAcceptingNewClients).length;
+
+  const pendingToday = todaysAppointments.filter((a) => a.status === "REQUESTED").length;
+  const nextAppointment = todaysAppointments
+    .filter((a) => new Date(a.scheduledStart) >= now)
+    .sort((a, b) => +new Date(a.scheduledStart) - +new Date(b.scheduledStart))[0];
+
+  const monthlyRevenue = monthlyAppointments
+    .flatMap((a) => a.payments)
+    .filter((p) => p.status === "SUCCEEDED")
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  const urgentApprovals = pendingAppointments.filter(
+    (a) => +new Date(a.scheduledStart) - +now < 24 * 60 * 60 * 1000
+  ).length;
+
+  const stats: {
+    label: string;
+    value: string;
+    icon: LucideIcon;
+    badge: { text: string; variant: "outline" | "destructive" | "secondary"; dot?: boolean };
+    footnote: string;
+  }[] = [
+    {
+      label: "Today's Appointments",
+      value: String(todaysAppointments.length),
+      icon: CalendarCheck,
+      badge: { text: `${pendingToday} Pending`, variant: "outline" },
+      footnote: nextAppointment
+        ? `Next at ${new Date(nextAppointment.scheduledStart).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+        : "No more appointments today",
+    },
+    {
+      label: "Active Consultants",
+      value: String(consultants.length),
+      icon: Stethoscope,
+      badge: { text: `${acceptingConsultants} Accepting`, variant: "secondary" },
+      footnote: `${consultants.length} registered`,
+    },
+    {
+      label: "Monthly Revenue",
+      value: `₹${monthlyRevenue.toLocaleString()}`,
+      icon: Wallet,
+      badge: {
+        text: `${monthlyAppointments.flatMap((a) => a.payments).length} payments`,
+        variant: "outline",
+      },
+      footnote: "This month",
+    },
+    {
+      label: "Pending Approvals",
+      value: String(pendingAppointments.length),
+      icon: ClipboardList,
+      badge: {
+        text: `${urgentApprovals} Urgent`,
+        variant: urgentApprovals > 0 ? "destructive" : "outline",
+      },
+      footnote: "Awaiting consultant approval",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map(({ label, value, icon: Icon, badge, footnote }) => (

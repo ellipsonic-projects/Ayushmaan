@@ -3,40 +3,32 @@ import { Clock3 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getOwnConsultantProfile } from "@/lib/api/consultants.server";
+import { getTenantAppointments } from "@/lib/api/appointments.server";
 
-type Appointment = {
-  time: string;
-  client: string;
-  type: string;
-  accentClass: string;
-  dotClass: string;
-};
+const ACCENT_CLASSES = ["border-l-secondary", "border-l-chart-3", "border-l-primary"];
 
-const appointments: Appointment[] = [
-  {
-    time: "09:00 AM",
-    client: "Global Logistics Corp",
-    type: "In-Person Clinic",
-    accentClass: "border-l-secondary",
-    dotClass: "bg-emerald-500",
-  },
-  {
-    time: "11:30 AM",
-    client: "MedTech Solutions",
-    type: "Video Consultation",
-    accentClass: "border-l-chart-3",
-    dotClass: "bg-amber-500",
-  },
-  {
-    time: "02:00 PM",
-    client: "Financy LP Review",
-    type: "In-Person Clinic",
-    accentClass: "border-l-primary",
-    dotClass: "bg-emerald-500",
-  },
-];
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
-export function TodaysBriefing() {
+function endOfToday() {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+export async function TodaysBriefing() {
+  const consultant = await getOwnConsultantProfile();
+  const appointments = consultant
+    ? await getTenantAppointments({
+        from: startOfToday().toISOString(),
+        to: endOfToday().toISOString(),
+      })
+    : [];
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -46,23 +38,34 @@ export function TodaysBriefing() {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {appointments.map((item) => (
+        {appointments.length === 0 && (
+          <p className="text-sm text-muted-foreground">No appointments scheduled today.</p>
+        )}
+        {appointments.map((item, index) => (
           <div
-            key={item.time}
+            key={item.id}
             className={cn(
               "flex items-center justify-between gap-3 rounded-md border-l-4 bg-muted/40 p-3",
-              item.accentClass
+              ACCENT_CLASSES[index % ACCENT_CLASSES.length]
             )}
           >
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="font-mono tabular-nums">
-                {item.time}
+                {new Date(item.scheduledStart).toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}
               </Badge>
-              <p className="text-sm font-semibold text-foreground">{item.client}</p>
+              <p className="text-sm font-semibold text-foreground">{item.case.client.fullName}</p>
             </div>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", item.dotClass)} />
-              {item.type}
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                  item.status === "APPROVED" ? "bg-emerald-500" : "bg-amber-500"
+                )}
+              />
+              {item.meetingLink ? "Video Consultation" : "In-Person"}
             </p>
           </div>
         ))}

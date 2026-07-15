@@ -7,9 +7,10 @@ const START_HOUR = 8;
 const END_HOUR = 19;
 const ROW_HEIGHT = 56;
 
-type Variant = "default" | "conflict" | "overtime";
+export type Variant = "default" | "conflict" | "overtime";
 
-type ScheduleEvent = {
+export type ScheduleEvent = {
+  id: string;
   title: string;
   time: string;
   start: number;
@@ -18,85 +19,14 @@ type ScheduleEvent = {
   tag?: string;
 };
 
-type Consultant = {
+export type ScheduleConsultant = {
+  id: string;
   name: string;
   role: string;
   initials: string;
   avatarClass: string;
   events: ScheduleEvent[];
 };
-
-const consultants: Consultant[] = [
-  {
-    name: "Jane Doe",
-    role: "Executive Coaching",
-    initials: "JD",
-    avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-    events: [
-      {
-        title: "Client Consultation",
-        time: "08:00 - 09:00 AM",
-        start: 8,
-        end: 9,
-        variant: "default",
-      },
-    ],
-  },
-  {
-    name: "Marcus Reed",
-    role: "Legal Counsel",
-    initials: "MR",
-    avatarClass: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
-    events: [
-      {
-        title: "Case Review",
-        time: "09:00 - 10:30 AM",
-        start: 9,
-        end: 10.5,
-        variant: "conflict",
-        tag: "BOOKING CONFLICT",
-      },
-    ],
-  },
-  {
-    name: "Sarah Linn",
-    role: "Tax Specialist",
-    initials: "SL",
-    avatarClass: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
-    events: [
-      {
-        title: "Corporate Audit",
-        time: "10:00 AM - 12:00 PM",
-        start: 10,
-        end: 12,
-        variant: "default",
-      },
-      {
-        title: "Board Meeting",
-        time: "01:00 - 01:45 PM",
-        start: 13,
-        end: 13.75,
-        variant: "default",
-      },
-    ],
-  },
-  {
-    name: "Alan Kross",
-    role: "Compliance",
-    initials: "AK",
-    avatarClass: "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400",
-    events: [
-      {
-        title: "Compliance Training",
-        time: "03:00 - 03:15 PM",
-        start: 15,
-        end: 15.25,
-        variant: "overtime",
-        tag: "EXISTING SLOT",
-      },
-    ],
-  },
-];
 
 const variantClass: Record<Variant, string> = {
   default:
@@ -117,7 +47,7 @@ const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_
 
 const gridHeight = (END_HOUR - START_HOUR) * ROW_HEIGHT;
 
-export function MasterScheduleGrid() {
+export function MasterScheduleGrid({ consultants }: { consultants: ScheduleConsultant[] }) {
   return (
     <Card>
       <CardContent>
@@ -137,8 +67,14 @@ export function MasterScheduleGrid() {
             </div>
           </div>
 
+          {consultants.length === 0 && (
+            <div className="flex flex-1 items-center justify-center py-12 text-sm text-muted-foreground">
+              No consultants to schedule.
+            </div>
+          )}
+
           {consultants.map((consultant) => (
-            <div key={consultant.name} className="min-w-40 flex-1 border-l border-border">
+            <div key={consultant.id} className="min-w-40 flex-1 border-l border-border">
               <div className="flex h-14 flex-col items-center justify-center gap-1 border-b border-border px-2 text-center">
                 <span
                   className={cn(
@@ -166,7 +102,7 @@ export function MasterScheduleGrid() {
               >
                 {consultant.events.map((event) => (
                   <div
-                    key={event.title}
+                    key={event.id}
                     className={cn(
                       "absolute inset-x-1 flex flex-col gap-0.5 overflow-hidden rounded-md border px-2 py-1.5 text-xs",
                       variantClass[event.variant]

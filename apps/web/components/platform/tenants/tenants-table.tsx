@@ -75,7 +75,7 @@ export function TenantsTable({ tenants, isLoading }: { tenants: Tenant[]; isLoad
                     </td>
                     <td className="py-3 pr-4">
                       <div className="flex items-center justify-end gap-1">
-                        <a href={`/superadmin/tenants/id?tenantId=${tenant.id}`}>
+                        <a href={`/superadmin/tenants/${tenant.id}`}>
                           <Button variant="ghost" size="icon-sm">
                             <Settings className="h-3.5 w-3.5" />
                           </Button>

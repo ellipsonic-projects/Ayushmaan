@@ -6,8 +6,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Star,
   Eye,
@@ -37,6 +35,8 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import type { ConsultantProfile } from "@/lib/api/consultants.server";
+import { setConsultantAcceptingClients, setUserAccountStatus } from "@/lib/api/consultants.client";
 
 // consultant_category enum — schema §3.8
 type Category = "MEDICAL" | "LEGAL" | "IT" | "PHYSIOTHERAPY" | "HOMEOPATHY" | "ASTROLOGY";
@@ -44,85 +44,6 @@ type Category = "MEDICAL" | "LEGAL" | "IT" | "PHYSIOTHERAPY" | "HOMEOPATHY" | "A
 // users.account_status — schema §3.4 (BANNED/DELETED are platform-only actions,
 // not exposed to a Tenant Admin here)
 type AccountStatus = "ACTIVE" | "SUSPENDED";
-
-type Consultant = {
-  id: string;
-  fullName: string;
-  email: string;
-  avatarClass: string;
-  category: Category;
-  subSpecialization: string;
-  consultationFee: number;
-  currency: string;
-  ratingAvg: number;
-  ratingCount: number;
-  caseCount: number;
-  isAcceptingNewClients: boolean;
-  accountStatus: AccountStatus;
-};
-
-const initialConsultants: Consultant[] = [
-  {
-    id: "CON-1042",
-    fullName: "Amit Shah",
-    email: "amit.shah@ayushman.health",
-    avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-    category: "MEDICAL",
-    subSpecialization: "Cardiology",
-    consultationFee: 1500,
-    currency: "INR",
-    ratingAvg: 4.9,
-    ratingCount: 214,
-    caseCount: 86,
-    isAcceptingNewClients: true,
-    accountStatus: "ACTIVE",
-  },
-  {
-    id: "CON-0997",
-    fullName: "Meera Iyer",
-    email: "meera.iyer@ayushman.health",
-    avatarClass: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
-    category: "PHYSIOTHERAPY",
-    subSpecialization: "Sports Injury",
-    consultationFee: 1200,
-    currency: "INR",
-    ratingAvg: 4.7,
-    ratingCount: 132,
-    caseCount: 54,
-    isAcceptingNewClients: true,
-    accountStatus: "ACTIVE",
-  },
-  {
-    id: "CON-0954",
-    fullName: "Karan Walia",
-    email: "karan.walia@ayushman.health",
-    avatarClass: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
-    category: "LEGAL",
-    subSpecialization: "Family Law",
-    consultationFee: 2200,
-    currency: "INR",
-    ratingAvg: 4.5,
-    ratingCount: 61,
-    caseCount: 29,
-    isAcceptingNewClients: false,
-    accountStatus: "ACTIVE",
-  },
-  {
-    id: "CON-0888",
-    fullName: "Priya Nair",
-    email: "priya.nair@ayushman.health",
-    avatarClass: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-    category: "HOMEOPATHY",
-    subSpecialization: "Wellness Coaching",
-    consultationFee: 900,
-    currency: "INR",
-    ratingAvg: 4.6,
-    ratingCount: 98,
-    caseCount: 41,
-    isAcceptingNewClients: true,
-    accountStatus: "SUSPENDED",
-  },
-];
 
 const CATEGORIES: { value: Category; label: string }[] = [
   { value: "MEDICAL", label: "Medical" },
@@ -142,7 +63,7 @@ const categoryLabel: Record<Category, string> = {
   ASTROLOGY: "Astrology",
 };
 
-const statusBadgeClass: Record<AccountStatus, string> = {
+const statusBadgeClass: Record<string, string> = {
   ACTIVE:
     "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
   SUSPENDED:
@@ -156,6 +77,13 @@ function initials(name: string) {
     .join("");
 }
 
+const avatarClasses = [
+  "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
+  "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-400",
+  "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
+];
+
 type SortKey = "fullName" | "consultationFee" | "ratingAvg" | "caseCount";
 type SortDirection = "asc" | "desc";
 
@@ -166,15 +94,18 @@ const columns: { key: SortKey; label: string }[] = [
   { key: "caseCount", label: "Cases" },
 ];
 
-export function ConsultantsTable() {
-  const [consultants, setConsultants] = useState<Consultant[]>(initialConsultants);
+export function ConsultantsTable({
+  initialConsultants,
+}: {
+  initialConsultants: ConsultantProfile[];
+}) {
+  const [consultants, setConsultants] = useState(initialConsultants);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("fullName");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [page] = useState(1);
-  const [pendingSuspend, setPendingSuspend] = useState<Consultant | null>(null);
+  const [pendingSuspend, setPendingSuspend] = useState<ConsultantProfile | null>(null);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -185,49 +116,65 @@ export function ConsultantsTable() {
     }
   }
 
-  function toggleAccepting(id: string) {
+  async function toggleAccepting(consultant: ConsultantProfile) {
+    const next = !consultant.isAcceptingNewClients;
     setConsultants((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, isAcceptingNewClients: !c.isAcceptingNewClients } : c))
+      prev.map((c) => (c.id === consultant.id ? { ...c, isAcceptingNewClients: next } : c))
     );
+    try {
+      await setConsultantAcceptingClients(consultant.id, next);
+    } catch {
+      setConsultants((prev) =>
+        prev.map((c) => (c.id === consultant.id ? { ...c, isAcceptingNewClients: !next } : c))
+      );
+    }
   }
 
-  function confirmSuspendToggle() {
+  async function confirmSuspendToggle() {
     if (!pendingSuspend) return;
+    const target = pendingSuspend;
+    const nextStatus: AccountStatus =
+      target.user.accountStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+    setPendingSuspend(null);
     setConsultants((prev) =>
       prev.map((c) =>
-        c.id === pendingSuspend.id
-          ? {
-              ...c,
-              accountStatus: c.accountStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
-            }
-          : c
+        c.id === target.id ? { ...c, user: { ...c.user, accountStatus: nextStatus } } : c
       )
     );
-    setPendingSuspend(null);
+    try {
+      await setUserAccountStatus(target.userId, nextStatus);
+    } catch {
+      setConsultants((prev) =>
+        prev.map((c) =>
+          c.id === target.id
+            ? { ...c, user: { ...c.user, accountStatus: target.user.accountStatus } }
+            : c
+        )
+      );
+    }
   }
 
   const filtered = useMemo(() => {
     return consultants
       .filter((c) => categoryFilter === "all" || c.category === categoryFilter)
-      .filter((c) => statusFilter === "all" || c.accountStatus === statusFilter)
+      .filter((c) => statusFilter === "all" || c.user.accountStatus === statusFilter)
       .filter((c) => {
         const query = search.trim().toLowerCase();
         if (!query) return true;
         return (
           c.fullName.toLowerCase().includes(query) ||
-          c.email.toLowerCase().includes(query) ||
-          c.subSpecialization.toLowerCase().includes(query) ||
-          c.id.toLowerCase().includes(query)
+          c.user.email.toLowerCase().includes(query) ||
+          (c.subSpecialization ?? "").toLowerCase().includes(query)
         );
       })
       .sort((a, b) => {
         const dir = sortDirection === "asc" ? 1 : -1;
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-        if (typeof aVal === "string" && typeof bVal === "string") {
-          return aVal.localeCompare(bVal) * dir;
+        if (sortKey === "fullName") return a.fullName.localeCompare(b.fullName) * dir;
+        if (sortKey === "consultationFee") {
+          return (Number(a.consultationFee) - Number(b.consultationFee)) * dir;
         }
-        return ((aVal as number) - (bVal as number)) * dir;
+        if (sortKey === "ratingAvg") return (Number(a.ratingAvg) - Number(b.ratingAvg)) * dir;
+        return (a._count.cases - b._count.cases) * dir;
       });
   }, [consultants, categoryFilter, statusFilter, search, sortKey, sortDirection]);
 
@@ -304,44 +251,48 @@ export function ConsultantsTable() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {filtered.map((c, i) => (
                 <tr key={c.id} className="border-b border-border last:border-0">
                   <td className="py-3 pr-4">
                     <div className="flex items-center gap-3">
                       <span
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${c.avatarClass}`}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${avatarClasses[i % avatarClasses.length]}`}
                       >
                         {initials(c.fullName)}
                       </span>
                       <div>
                         <p className="font-medium text-foreground">{c.fullName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {categoryLabel[c.category]} · {c.subSpecialization}
+                          {categoryLabel[c.category as Category]}
+                          {c.subSpecialization ? ` · ${c.subSpecialization}` : ""}
                         </p>
                       </div>
                     </div>
                   </td>
                   <td className="py-3 pr-4 font-mono tabular-nums text-foreground">
-                    {c.currency} {c.consultationFee.toLocaleString()}
+                    {c.currency} {Number(c.consultationFee).toLocaleString()}
                   </td>
                   <td className="py-3 pr-4">
                     <span className="flex items-center gap-1 text-foreground">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      {c.ratingAvg.toFixed(1)}
+                      {Number(c.ratingAvg).toFixed(1)}
                       <span className="text-xs text-muted-foreground">({c.ratingCount})</span>
                     </span>
                   </td>
-                  <td className="py-3 pr-4 text-foreground">{c.caseCount}</td>
+                  <td className="py-3 pr-4 text-foreground">{c._count.cases}</td>
                   <td className="py-3 pr-4">
                     <Switch
                       checked={c.isAcceptingNewClients}
-                      onCheckedChange={() => toggleAccepting(c.id)}
+                      onCheckedChange={() => toggleAccepting(c)}
                       aria-label={`Toggle accepting new clients for ${c.fullName}`}
                     />
                   </td>
                   <td className="py-3 pr-4">
-                    <Badge variant="outline" className={statusBadgeClass[c.accountStatus]}>
-                      {c.accountStatus}
+                    <Badge
+                      variant="outline"
+                      className={statusBadgeClass[c.user.accountStatus] ?? ""}
+                    >
+                      {c.user.accountStatus}
                     </Badge>
                   </td>
                   <td className="py-3 pr-4">
@@ -360,18 +311,18 @@ export function ConsultantsTable() {
                         variant="ghost"
                         size="icon-sm"
                         aria-label={
-                          c.accountStatus === "ACTIVE"
+                          c.user.accountStatus === "ACTIVE"
                             ? "Suspend consultant"
                             : "Reactivate consultant"
                         }
                         onClick={() => setPendingSuspend(c)}
                         className={
-                          c.accountStatus === "ACTIVE"
+                          c.user.accountStatus === "ACTIVE"
                             ? "text-destructive hover:text-destructive"
                             : undefined
                         }
                       >
-                        {c.accountStatus === "ACTIVE" ? (
+                        {c.user.accountStatus === "ACTIVE" ? (
                           <Ban className="h-3.5 w-3.5" />
                         ) : (
                           <RotateCcw className="h-3.5 w-3.5" />
@@ -396,14 +347,6 @@ export function ConsultantsTable() {
           <span>
             Showing {filtered.length} of {consultants.length} consultants
           </span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={page === 1}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="icon-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
         </div>
       </CardContent>
 
@@ -414,12 +357,12 @@ export function ConsultantsTable() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {pendingSuspend?.accountStatus === "ACTIVE"
+              {pendingSuspend?.user.accountStatus === "ACTIVE"
                 ? "Suspend this consultant?"
                 : "Reactivate this consultant?"}
             </DialogTitle>
             <DialogDescription>
-              {pendingSuspend?.accountStatus === "ACTIVE"
+              {pendingSuspend?.user.accountStatus === "ACTIVE"
                 ? `${pendingSuspend?.fullName} will be removed from public booking and their existing clients will be notified. This can be reversed at any time.`
                 : `${pendingSuspend?.fullName} will regain access to their account and become bookable again.`}
             </DialogDescription>
@@ -427,10 +370,10 @@ export function ConsultantsTable() {
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
             <Button
-              variant={pendingSuspend?.accountStatus === "ACTIVE" ? "destructive" : "default"}
+              variant={pendingSuspend?.user.accountStatus === "ACTIVE" ? "destructive" : "default"}
               onClick={confirmSuspendToggle}
             >
-              {pendingSuspend?.accountStatus === "ACTIVE" ? "Suspend" : "Reactivate"}
+              {pendingSuspend?.user.accountStatus === "ACTIVE" ? "Suspend" : "Reactivate"}
             </Button>
           </DialogFooter>
         </DialogContent>

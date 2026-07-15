@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { X, UserPlus } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -18,6 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  createConsultant,
+  updateConsultantProfile,
+  updateUserPhone,
+} from "@/lib/api/consultants.client";
 
 // consultant_category enum — schema_ayushman_v3.md §3.8
 const CATEGORIES = [
@@ -42,6 +48,8 @@ const AVAILABLE_LANGUAGES = [
 ];
 
 export function ConsultantOnboardingForm() {
+  const router = useRouter();
+  const params = useParams<{ slug: string }>();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -54,6 +62,7 @@ export function ConsultantOnboardingForm() {
   const [isAcceptingNewClients, setIsAcceptingNewClients] = useState(true);
   const [autoApproveBookings, setAutoApproveBookings] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const isValid =
     fullName.trim().length > 0 &&
@@ -71,12 +80,41 @@ export function ConsultantOnboardingForm() {
     setLanguages((prev) => prev.filter((l) => l !== language));
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSubmitting(true);
-    // POST /api/tenants/:tenantId/consultants — apps/api owns creation of the
-    // auth.users + public.users(role=CONSULTANT) + consultant_profiles rows.
-    setSubmitting(false);
+    setError(null);
+
+    try {
+      // POST /api/tenants/:tenantId/consultants creates the auth.users +
+      // public.users(role=CONSULTANT) + consultant_profiles rows, but only
+      // accepts email/fullName/category (createConsultantSchema is
+      // `.strict()`) — the rest is filled in via a follow-up PATCH.
+      const created = await createConsultant({
+        email: email.trim(),
+        fullName: fullName.trim(),
+        category,
+      });
+
+      await updateConsultantProfile(created.consultantProfile.id, {
+        subSpecialization: subSpecialization.trim() || undefined,
+        bio: bio.trim() || undefined,
+        consultationFee: Number(consultationFee),
+        currency,
+        languagesSpoken: languages,
+        isAcceptingNewClients,
+        autoApproveBookings,
+      });
+
+      if (phone.trim()) {
+        await updateUserPhone(created.id, phone.trim());
+      }
+
+      router.push(`/tenant/admin/consultants`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to onboard consultant");
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -293,12 +331,9 @@ export function ConsultantOnboardingForm() {
         </CardContent>
       </Card>
 
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
       <div className="flex items-center justify-end gap-2">
-        <Link href="/slug/consultants">
-          <Button type="button" variant="outline">
-            Cancel
-          </Button>
-        </Link>
         <Button type="submit" disabled={!isValid || submitting} className="gap-1.5">
           <UserPlus className="h-4 w-4" />
           {submitting ? "Sending Invite..." : "Invite Consultant"}

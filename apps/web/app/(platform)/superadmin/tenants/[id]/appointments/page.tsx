@@ -126,9 +126,7 @@ export default function TenantAppointmentsPage() {
         {stats.map((stat) => (
           <Card key={stat.label} size="sm">
             <CardContent>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                {stat.label}
-              </p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">{stat.label}</p>
               <p className="mt-1 text-2xl font-semibold">{stat.value}</p>
             </CardContent>
           </Card>

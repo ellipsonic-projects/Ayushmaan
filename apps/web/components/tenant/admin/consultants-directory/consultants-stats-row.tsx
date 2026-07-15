@@ -2,40 +2,47 @@ import { Users, CheckCircle2, Star, Layers } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import type { ConsultantProfile } from "@/lib/api/consultants.server";
 
-const stats: {
-  label: string;
-  value: string;
-  icon: LucideIcon;
-  iconClass: string;
-}[] = [
-  {
-    label: "Total Consultants",
-    value: "12",
-    icon: Users,
-    iconClass: "bg-muted text-foreground",
-  },
-  {
-    label: "Accepting New Clients",
-    value: "9",
-    icon: CheckCircle2,
-    iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
-  },
-  {
-    label: "Avg Rating",
-    value: "4.7",
-    icon: Star,
-    iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
-  },
-  {
-    label: "Categories Covered",
-    value: "4",
-    icon: Layers,
-    iconClass: "bg-primary/10 text-primary",
-  },
-];
+export function ConsultantsStatsRow({ consultants }: { consultants: ConsultantProfile[] }) {
+  const accepting = consultants.filter((c) => c.isAcceptingNewClients).length;
+  const rated = consultants.filter((c) => c.ratingCount > 0);
+  const avgRating =
+    rated.length > 0 ? rated.reduce((sum, c) => sum + Number(c.ratingAvg), 0) / rated.length : 0;
+  const categories = new Set(consultants.map((c) => c.category)).size;
 
-export function ConsultantsStatsRow() {
+  const stats: {
+    label: string;
+    value: string;
+    icon: LucideIcon;
+    iconClass: string;
+  }[] = [
+    {
+      label: "Total Consultants",
+      value: String(consultants.length),
+      icon: Users,
+      iconClass: "bg-muted text-foreground",
+    },
+    {
+      label: "Accepting New Clients",
+      value: String(accepting),
+      icon: CheckCircle2,
+      iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400",
+    },
+    {
+      label: "Avg Rating",
+      value: avgRating.toFixed(1),
+      icon: Star,
+      iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
+    },
+    {
+      label: "Categories Covered",
+      value: String(categories),
+      icon: Layers,
+      iconClass: "bg-primary/10 text-primary",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {stats.map(({ label, value, icon: Icon, iconClass }) => (

@@ -1,6 +1,9 @@
 import { TeamStatusGrid } from "@/components/tenant/consultant/team/team-status-grid";
+import { getTenantConsultants } from "@/lib/api/consultants.server";
 
-export default function ConsultantTeamPage() {
+export default async function ConsultantTeamPage() {
+  const consultants = await getTenantConsultants();
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -9,7 +12,7 @@ export default function ConsultantTeamPage() {
           Peer consultants in this practice and their current status.
         </p>
       </div>
-      <TeamStatusGrid />
+      <TeamStatusGrid consultants={consultants} />
     </div>
   );
 }

@@ -1,14 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  BadgeCheck,
-  BellRing,
-  CalendarClock,
-  CalendarOff,
-  Link2,
-  UserRound,
-} from "lucide-react";
+import { BadgeCheck, CalendarOff, UserRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -16,10 +9,7 @@ import { cn } from "@/lib/utils";
 const sections: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "public-profile", label: "Public Profile", icon: UserRound },
   { id: "credentials", label: "Credentials", icon: BadgeCheck },
-  { id: "availability-defaults", label: "Availability", icon: CalendarClock },
   { id: "out-of-office", label: "Out of Office", icon: CalendarOff },
-  { id: "calendar-sync", label: "Calendar Sync", icon: Link2 },
-  { id: "preferences", label: "Preferences", icon: BellRing },
 ];
 
 export function ConsultantSettingsSectionNav() {

@@ -21,11 +21,21 @@ consultantsRouter.get(
   "/",
   requireRole("TENANT_ADMIN", "SUPER_ADMIN", "CONSULTANT", "CLIENT"),
   async (req: TenantScopedRequest, res: Response) => {
+    const today = new Date();
     const consultants = await withTenantContext(req.tenantContext!, (tx) =>
       tx.consultantProfile.findMany({
         where: {
           tenantId: req.params.tenantId,
           ...(req.user!.role === "CLIENT" && { isAcceptingNewClients: true }),
+        },
+        include: {
+          user: { select: { email: true, accountStatus: true } },
+          _count: { select: { cases: true } },
+          outOfOfficePeriods: {
+            where: { startDate: { lte: today }, endDate: { gte: today } },
+            select: { id: true },
+            take: 1,
+          },
         },
       })
     );
@@ -111,10 +121,19 @@ consultantsRouter.get(
   requireRole("TENANT_ADMIN", "SUPER_ADMIN", "CONSULTANT"),
   async (req: TenantScopedRequest, res: Response) => {
     const consultant = await withTenantContext(req.tenantContext!, async (tx) => {
-      const found = await findConsultant(tx, req.params.tenantId, req.params.consultantId);
       if (req.user!.role === "CONSULTANT") {
         const ownId = await getOwnConsultantProfileId(tx, req.user!.id);
         assertSelfMatchesOrAdmin(req, ownId, req.params.consultantId);
+      }
+      const found = await tx.consultantProfile.findUnique({
+        where: { id: req.params.consultantId },
+        include: {
+          user: { select: { email: true, accountStatus: true } },
+          _count: { select: { cases: true } },
+        },
+      });
+      if (!found || found.tenantId !== req.params.tenantId) {
+        throw new AppError(404, "Consultant not found", "CONSULTANT_NOT_FOUND");
       }
       return found;
     });
@@ -124,6 +143,10 @@ consultantsRouter.get(
 
 const patchConsultantSchema = z
   .object({
+    fullName: z.string().min(1).max(200).optional(),
+    category: z
+      .enum(["MEDICAL", "LEGAL", "IT", "PHYSIOTHERAPY", "HOMEOPATHY", "ASTROLOGY"])
+      .optional(),
     bio: z.string().optional(),
     consultationFee: z.number().min(0).optional(),
     currency: z.string().length(3).optional(),
@@ -131,6 +154,7 @@ const patchConsultantSchema = z
     subSpecialization: z.string().max(150).optional(),
     isAcceptingNewClients: z.boolean().optional(),
     autoApproveBookings: z.boolean().optional(),
+    paymentTiming: z.enum(["PAY_ON_BOOKING", "PAY_AFTER_SESSION"]).optional(),
   })
   .strict();
 
@@ -167,6 +191,107 @@ consultantsRouter.delete(
         where: { id: consultant.userId },
         data: { accountStatus: "SUSPENDED" },
       });
+    });
+    res.status(204).send();
+  }
+);
+
+// GET /tenants/:tenantId/consultants/:consultantId/verification-documents —
+// self, TENANT_ADMIN. Display-only read; no platform approval workflow
+// exists (schema §3.25).
+consultantsRouter.get(
+  "/:consultantId/verification-documents",
+  requireRole("CONSULTANT", "TENANT_ADMIN"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const documents = await withTenantContext(req.tenantContext!, async (tx) => {
+      await findConsultant(tx, req.params.tenantId, req.params.consultantId);
+      if (req.user!.role === "CONSULTANT") {
+        const ownId = await getOwnConsultantProfileId(tx, req.user!.id);
+        assertSelfMatchesOrAdmin(req, ownId, req.params.consultantId);
+      }
+      return tx.consultantVerificationDocument.findMany({
+        where: { consultantId: req.params.consultantId },
+      });
+    });
+    res.json({ data: documents });
+  }
+);
+
+// GET /tenants/:tenantId/consultants/:consultantId/commitments — self only.
+// Not in data_api_v4.md §14, which only defines per-case commitment reads
+// (/cases/:caseId/commitments) — this aggregate mirrors the same
+// spec-deviation precedent as appointmentsRouter's tenant-wide GET /, added
+// because the consultant dashboard's "Critical Commitments" widget needs a
+// single cross-case worklist rather than one request per case.
+consultantsRouter.get(
+  "/:consultantId/commitments",
+  requireRole("CONSULTANT"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const commitments = await withTenantContext(req.tenantContext!, async (tx) => {
+      const ownId = await getOwnConsultantProfileId(tx, req.user!.id);
+      if (ownId !== req.params.consultantId)
+        throw new AppError(403, "Forbidden", "NOT_OWN_PROFILE");
+
+      return tx.commitment.findMany({
+        where: { status: "ACTIVE", case: { consultantId: req.params.consultantId } },
+        include: { case: { select: { id: true, client: { select: { fullName: true } } } } },
+        orderBy: { createdAt: "asc" },
+      });
+    });
+    res.json({ data: commitments });
+  }
+);
+
+// GET /tenants/:tenantId/consultants/:consultantId/tasks — self only. Same
+// spec-deviation precedent as the commitments aggregate above; data_api_v4.md
+// §14 only defines /cases/:caseId/tasks.
+consultantsRouter.get(
+  "/:consultantId/tasks",
+  requireRole("CONSULTANT"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const tasks = await withTenantContext(req.tenantContext!, async (tx) => {
+      const ownId = await getOwnConsultantProfileId(tx, req.user!.id);
+      if (ownId !== req.params.consultantId)
+        throw new AppError(403, "Forbidden", "NOT_OWN_PROFILE");
+
+      return tx.task.findMany({
+        where: {
+          assignedTo: "CONSULTANT",
+          status: { in: ["OPEN", "OVERDUE"] },
+          case: { consultantId: req.params.consultantId },
+        },
+        include: { case: { select: { id: true, client: { select: { fullName: true } } } } },
+        orderBy: { dueAt: { sort: "asc", nulls: "last" } },
+      });
+    });
+    res.json({ data: tasks });
+  }
+);
+
+// data_api_v4.md §8 puts this route at
+// /tenants/:tenantId/verification-documents/:docId, a sibling of
+// /consultants rather than nested under it — exported separately so
+// index.ts can mount it at the matching path.
+export const verificationDocumentsRouter: Router = Router({ mergeParams: true });
+verificationDocumentsRouter.use(requireTenantMatch);
+
+// DELETE /tenants/:tenantId/verification-documents/:docId — self, TENANT_ADMIN.
+verificationDocumentsRouter.delete(
+  "/:docId",
+  requireRole("CONSULTANT", "TENANT_ADMIN"),
+  async (req: TenantScopedRequest, res: Response) => {
+    await withTenantContext(req.tenantContext!, async (tx) => {
+      const doc = await tx.consultantVerificationDocument.findUnique({
+        where: { id: req.params.docId },
+      });
+      if (!doc || doc.tenantId !== req.params.tenantId) {
+        throw new AppError(404, "Document not found", "DOCUMENT_NOT_FOUND");
+      }
+      if (req.user!.role === "CONSULTANT") {
+        const ownId = await getOwnConsultantProfileId(tx, req.user!.id);
+        assertSelfMatchesOrAdmin(req, ownId, doc.consultantId);
+      }
+      await tx.consultantVerificationDocument.delete({ where: { id: req.params.docId } });
     });
     res.status(204).send();
   }

@@ -418,6 +418,13 @@ export default function Home() {
           <Logo />
           <p className="text-sm text-muted-foreground">
             © 2026 Ayushman. Built for the consultants your clients trust.
+            <Link
+              href="/signin"
+              aria-label="Superadmin sign in"
+              className="ml-1 text-muted-foreground/20 no-underline hover:text-muted-foreground"
+            >
+              &middot;
+            </Link>
           </p>
         </div>
       </footer>

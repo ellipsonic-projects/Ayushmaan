@@ -25,35 +25,38 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { CollapsibleLabel } from "@/components/sidebar/collapsible-label";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
+  { href: "/audit-log", label: "Audit Log", icon: ScrollText },
+  { href: "/billing", label: "Billing", icon: Receipt },
   { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/scheduler", label: "Scheduler", icon: Clock },
-  { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
   { href: "/consultants", label: "Consultants", icon: UserCog },
   { href: "/contacts", label: "Contacts", icon: Contact },
-  { href: "/billing", label: "Billing", icon: Receipt },
+  { href: "/grievance", label: "Escalate to Platform", icon: Megaphone },
+  { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/insights", label: "Insights", icon: BarChart3 },
+  { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
+  { href: "/scheduler", label: "Scheduler", icon: Clock },
   { href: "/templates", label: "Templates", icon: FileText },
   { href: "/workflows", label: "Workflows", icon: Workflow },
-  { href: "/audit-log", label: "Audit Log", icon: ScrollText },
-  { href: "/grievance", label: "Escalate to Platform", icon: Megaphone },
-  { href: "/help", label: "Help", icon: HelpCircle },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/help", label: "Help", icon: HelpCircle },
 ];
 
 export function TenantAdminNav({
-  basePath = "/slug/tenant/admin",
+  basePath = "/tenant/admin",
   items = navItems,
   className,
+  collapsible = false,
 }: {
   basePath?: string;
   items?: NavItem[];
   className?: string;
+  collapsible?: boolean;
 } = {}) {
   const pathname = usePathname();
 
@@ -73,8 +76,8 @@ export function TenantAdminNav({
                 "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
             )}
           >
-            <Icon className="h-4 w-4" />
-            {label}
+            <Icon className="h-4 w-4 shrink-0" />
+            <CollapsibleLabel collapsible={collapsible}>{label}</CollapsibleLabel>
           </Link>
         );
       })}
@@ -90,10 +93,10 @@ const superAdminTenantNavItems: NavItem[] = [
   { href: "/inbox", label: "Inbox", icon: Inbox },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/scheduler", label: "Scheduler", icon: Clock },
+  { href: "/sessions", label: "Sessions", icon: CalendarClock },
   { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
   { href: "/consultants", label: "Consultants", icon: UserCog },
   { href: "/clients", label: "Clients", icon: Users },
-  { href: "/sessions", label: "Sessions", icon: CalendarClock },
   { href: "/contacts", label: "Contacts", icon: Contact },
   { href: "/billing", label: "Billing", icon: Receipt },
   { href: "/insights", label: "Insights", icon: BarChart3 },
@@ -105,12 +108,19 @@ const superAdminTenantNavItems: NavItem[] = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function SuperAdminTenantNav() {
+export function SuperAdminTenantNav({
+  tenantId,
+  collapsible = false,
+}: {
+  tenantId: string;
+  collapsible?: boolean;
+}) {
   return (
     <TenantAdminNav
-      basePath="/superadmin/tenants/id"
+      basePath={`/superadmin/tenants/${tenantId}`}
       items={superAdminTenantNavItems}
       className="mt-2"
+      collapsible={collapsible}
     />
   );
 }

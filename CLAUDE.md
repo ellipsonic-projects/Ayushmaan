@@ -70,3 +70,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## 5. Never run the dev server by yourself
+
+** Ask me to run the dev server manually if needed.**
+
+## 6. Always describe the error or the root cause of the problem to the user
+
+** Describe the error when you see one before editing it**
+
+## 7. Refer to @/packages/db/prisma/schema.prisma for reference of the database schema

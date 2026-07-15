@@ -40,7 +40,8 @@ declare
     'consultant_referrals',
     'notifications',
     'audit_logs',
-    'payments'
+    'payments',
+    'contacts'
   ];
 begin
   foreach t in array tables loop

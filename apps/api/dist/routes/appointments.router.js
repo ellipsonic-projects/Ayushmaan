@@ -207,6 +207,63 @@ exports.appointmentSeriesRouter.patch("/:seriesId", (0, require_role_1.requireRo
 // Mounted at /api/tenants/:tenantId/appointments.
 exports.appointmentsRouter = (0, express_1.Router)({ mergeParams: true });
 exports.appointmentsRouter.use(require_tenant_match_1.requireTenantMatch);
+const listAppointmentsQuerySchema = zod_1.z.object({
+    from: zod_1.z.string().optional(),
+    to: zod_1.z.string().optional(),
+    status: zod_1.z
+        .enum(["REQUESTED", "APPROVED", "RESCHEDULE_PROPOSED", "COMPLETED", "CANCELLED", "NO_SHOW"])
+        .optional(),
+});
+// GET /tenants/:tenantId/appointments — tenant-wide list, TENANT_ADMIN (all)
+// or CONSULTANT (own only, scoped via case.consultantId below). CLIENT still
+// uses the per-case route instead. Not in data_api_v4.md §11 yet — added to
+// back the admin dashboard's "today's appointments", "pending approvals" and
+// revenue KPIs, which had no tenant-scoped read path before this; widened to
+// CONSULTANT for the same reason on the consultant dashboard.
+exports.appointmentsRouter.get("/", (0, require_role_1.requireRole)("TENANT_ADMIN", "CONSULTANT"), async (req, res) => {
+    const query = listAppointmentsQuerySchema.parse(req.query);
+    const appointments = await (0, rls_context_1.withTenantContext)(req.tenantContext, async (tx) => {
+        let consultantId;
+        if (req.user.role === "CONSULTANT") {
+            consultantId = (await (0, callerProfile_1.getOwnConsultantProfileId)(tx, req.user.id)) ?? undefined;
+            if (!consultantId)
+                return [];
+        }
+        return tx.appointment.findMany({
+            where: {
+                tenantId: req.params.tenantId,
+                ...(query.status && { status: query.status }),
+                ...((query.from || query.to) && {
+                    scheduledStart: {
+                        ...(query.from && { gte: new Date(query.from) }),
+                        ...(query.to && { lte: new Date(query.to) }),
+                    },
+                }),
+                ...(consultantId && { case: { consultantId } }),
+            },
+            include: {
+                case: {
+                    select: {
+                        status: true,
+                        client: { select: { id: true, fullName: true } },
+                        consultant: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                category: true,
+                                consultationFee: true,
+                                currency: true,
+                            },
+                        },
+                    },
+                },
+                payments: { select: { amount: true, status: true, createdAt: true } },
+            },
+            orderBy: { scheduledStart: "asc" },
+        });
+    });
+    res.json({ data: appointments });
+});
 async function loadAppointment(tx, tenantId, appointmentId) {
     const found = await tx.appointment.findUnique({
         where: { id: appointmentId },

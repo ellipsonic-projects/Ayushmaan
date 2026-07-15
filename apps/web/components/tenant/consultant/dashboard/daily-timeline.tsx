@@ -16,19 +16,6 @@ const views: { key: ViewKey; label: string }[] = [
 
 const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-type AppointmentMark = { count: number; colorClass: string };
-
-const mockAppointments: { offset: number; count: number; colorClass: string }[] = [
-  { offset: 0, count: 3, colorClass: "bg-primary" },
-  { offset: 2, count: 1, colorClass: "bg-amber-500" },
-  { offset: 4, count: 2, colorClass: "bg-blue-500" },
-  { offset: 7, count: 1, colorClass: "bg-emerald-500" },
-  { offset: 9, count: 4, colorClass: "bg-primary" },
-  { offset: 13, count: 2, colorClass: "bg-amber-500" },
-  { offset: 18, count: 1, colorClass: "bg-blue-500" },
-  { offset: 25, count: 3, colorClass: "bg-emerald-500" },
-];
-
 function startOfDay(date: Date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -45,10 +32,8 @@ function dayOffset(from: Date, to: Date) {
   return Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function getAppointmentMark(today: Date, date: Date): AppointmentMark | null {
-  const offset = dayOffset(today, date);
-  const match = mockAppointments.find((item) => item.offset === offset);
-  return match ? { count: match.count, colorClass: match.colorClass } : null;
+function dateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function buildRangeDays(today: Date, length: number) {
@@ -68,7 +53,11 @@ function buildMonthDays(today: Date) {
   });
 }
 
-export function DailyTimeline() {
+export function DailyTimeline({
+  appointmentsByDate,
+}: {
+  appointmentsByDate: Record<string, number>;
+}) {
   const [view, setView] = useState<ViewKey>("week");
   const today = startOfDay(new Date());
 
@@ -117,7 +106,7 @@ export function DailyTimeline() {
           ))}
 
           {cells.map(({ date, inCurrentMonth }) => {
-            const mark = getAppointmentMark(today, date);
+            const count = appointmentsByDate[dateKey(date)] ?? 0;
             const isToday = dayOffset(today, date) === 0;
 
             return (
@@ -129,15 +118,11 @@ export function DailyTimeline() {
                   !inCurrentMonth && "opacity-40"
                 )}
               >
-                <span className="text-xs font-medium text-foreground">
-                  {date.getDate()}
-                </span>
-                {mark ? (
+                <span className="text-xs font-medium text-foreground">{date.getDate()}</span>
+                {count > 0 ? (
                   <span className="flex items-center gap-1">
-                    <span
-                      className={cn("h-1.5 w-1.5 shrink-0 rounded-full", mark.colorClass)}
-                    />
-                    <span className="text-[10px] text-muted-foreground">{mark.count}</span>
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="text-[10px] text-muted-foreground">{count}</span>
                   </span>
                 ) : (
                   <span className="h-1.5 w-1.5" />

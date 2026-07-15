@@ -5,14 +5,27 @@ import { ClientStatsRow } from "@/components/tenant/admin/clients/client-stats-r
 import { ClientQuickFilters } from "@/components/tenant/admin/clients/client-quick-filters";
 import { ClientsTable } from "@/components/tenant/admin/clients/clients-table";
 import { Button } from "@/components/ui/button";
+import {
+  getTenantClients,
+  filterClientsByDeadline,
+  type ClientDeadlineFilter,
+} from "@/lib/api/clients.server";
 
-export default function ConsultantClientsPage() {
+export default async function ConsultantClientsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: ClientDeadlineFilter }>;
+}) {
+  const { filter } = await searchParams;
+  const clients = await getTenantClients();
+  const filteredClients = filterClientsByDeadline(clients, filter ?? null);
+
   return (
     <div className="relative flex flex-col gap-6">
       <ClientsHeader />
-      <ClientStatsRow />
+      <ClientStatsRow clients={clients} />
       <ClientQuickFilters />
-      <ClientsTable />
+      <ClientsTable clients={filteredClients} />
 
       <Button
         size="icon-lg"

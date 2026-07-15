@@ -5,9 +5,10 @@
 **ORM**: Prisma, schema lives in `packages/db`, consumed only by `apps/api` (Express) — `apps/web` (Next.js) never opens a DB connection directly (`PRD_v3_nextjs_express.md` §7.2)
 **Last Updated**: July 2026
 
-> Derived fresh from `PRD_v3_nextjs_express.md` — §1 (Role & Tenancy Model), §1.2 (Data Isolation Strategy, now a two-layer model), §1.3 (Entities), §7 (Tech Stack & Architecture: monorepo, Supabase Auth). This is a ground-up rewrite for the v3 architecture, not an edit of the v2 schema: every table below was re-derived from the v3 PRD text. The **entity set is the same business domain as v2** (tenancy, consultants, clients, cases, bookings, grievances, referrals, etc.) because the PRD's product scope didn't change — only *how the app talks to the database* changed. What's actually different from a v2-style schema:
+> Derived fresh from `PRD_v3_nextjs_express.md` — §1 (Role & Tenancy Model), §1.2 (Data Isolation Strategy, now a two-layer model), §1.3 (Entities), §7 (Tech Stack & Architecture: monorepo, Supabase Auth). This is a ground-up rewrite for the v3 architecture, not an edit of the v2 schema: every table below was re-derived from the v3 PRD text. The **entity set is the same business domain as v2** (tenancy, consultants, clients, cases, bookings, grievances, referrals, etc.) because the PRD's product scope didn't change — only _how the app talks to the database_ changed. What's actually different from a v2-style schema:
+>
 > - **No `password_hash`, `otp_verifications`, or `refresh_tokens` tables.** PRD v3 §7.3 commits to Supabase Auth as the identity provider for both apps — password hashing, OTP delivery/verification, session issuance, and refresh-token rotation all live inside Supabase's own `auth` schema. Reintroducing those concerns in `public` would duplicate a system we've deliberately chosen not to build ourselves.
-> - **Tenant/role claims are read from the verified JWT by `apps/api`, not looked up from a table on every request.** `public.users` still denormalizes `tenant_id` and `role` (needed for joins, indexes, and business queries), but the *authorization* decision no longer depends on a `users` row being reachable — it depends on the JWT's `tenant_id`/`is_super_admin` claims, stamped once at sign-in by a Postgres Auth Hook (PRD §7.3), and set into the session via `SET LOCAL app.tenant_id` by `apps/api`'s tenant-scoping middleware (PRD §1.2, §5 Phase 0) before any query runs.
+> - **Tenant/role claims are read from the verified JWT by `apps/api`, not looked up from a table on every request.** `public.users` still denormalizes `tenant_id` and `role` (needed for joins, indexes, and business queries), but the _authorization_ decision no longer depends on a `users` row being reachable — it depends on the JWT's `tenant_id`/`is_super_admin` claims, stamped once at sign-in by a Postgres Auth Hook (PRD §7.3), and set into the session via `SET LOCAL app.tenant_id` by `apps/api`'s tenant-scoping middleware (PRD §1.2, §5 Phase 0) before any query runs.
 > - Every attribute below is justified inline with **why it exists**, not just what type it is — an attribute with no stated purpose was cut.
 
 ---
@@ -385,6 +386,8 @@ CREATE INDEX idx_cases_tags ON cases USING GIN(tags); -- tag filter/bulk-message
 
 A recurring booking is a rule (`appointment_series`) plus its concrete occurrences (`appointments`), so a whole series can be approved/cancelled together while a single occurrence stays independently editable.
 
+New bookings go through a two-stage approval gate before they're confirmed: the Tenant Admin reviews a `REQUESTED` appointment first (approve/propose-reschedule/reject, checking the Consultant's availability), and only after Tenant Admin approval does it move to `ADMIN_APPROVED` for the Consultant to accept or reject. This is why `appointment_status` has a distinct `ADMIN_APPROVED` value between `REQUESTED` and `APPROVED` — see `Ayushman_data_api_v4.md` §11 for the full state machine and role table.
+
 ```sql
 CREATE TABLE appointment_series (
   id             UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -415,12 +418,14 @@ CREATE TABLE appointments (
   CONSTRAINT valid_appointment_range CHECK (scheduled_end > scheduled_start)
 );
 
-CREATE TYPE appointment_status AS ENUM ('REQUESTED', 'APPROVED', 'RESCHEDULE_PROPOSED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
+CREATE TYPE appointment_status AS ENUM ('REQUESTED', 'ADMIN_APPROVED', 'APPROVED', 'RESCHEDULE_PROPOSED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
+-- REQUESTED: awaiting Tenant Admin review. ADMIN_APPROVED: Tenant Admin approved, forwarded to the Consultant's queue.
+-- APPROVED: Consultant accepted — the only status that actually confirms the booking to the Client.
 
 CREATE INDEX idx_appointments_tenant ON appointments(tenant_id);
 CREATE INDEX idx_appointments_case ON appointments(case_id);
 CREATE INDEX idx_appointments_series ON appointments(series_id) WHERE series_id IS NOT NULL;
-CREATE INDEX idx_appointments_upcoming ON appointments(scheduled_start) WHERE status IN ('APPROVED', 'REQUESTED'); -- powers both the morning briefing and the join-reminder cron
+CREATE INDEX idx_appointments_upcoming ON appointments(scheduled_start) WHERE status IN ('APPROVED', 'ADMIN_APPROVED', 'REQUESTED'); -- powers both the morning briefing and the join-reminder cron, plus the Tenant Admin/Consultant pending-approval queues
 ```
 
 > `no_show`/`cancelled` counts against a time slot are read from this table directly (grouped by hour-of-day) to feed the "smart slot suggestions" feature — no separate log is needed since `appointments` already is the event history.
@@ -827,6 +832,38 @@ CREATE INDEX idx_verification_docs_expiry ON consultant_verification_documents(e
 
 ---
 
+### 3.26 `payments`
+
+Client-facing payment record for a session — what a client pays the tenant/consultant (distinct from `tenant_billing`, §3.3, which is what Ayushman charges the tenant). Referenced by the ERD in §1 (`appointments ──► payments`) but previously undefined here; this definition matches the actual `packages/db/prisma/schema.prisma` `Payment` model (`Ayushman_data_api_v4.md` §24) — Stripe, not Razorpay, is the payment provider actually integrated.
+
+```sql
+CREATE TABLE payments (
+  id                       UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id                UUID            NOT NULL REFERENCES tenants(id),
+  appointment_id           UUID            NOT NULL REFERENCES appointments(id),
+  client_id                UUID            NOT NULL REFERENCES client_profiles(id),
+  stripe_payment_intent_id TEXT            UNIQUE NOT NULL, -- Stripe's own id for this charge attempt; the join key the webhook handler updates against
+  stripe_customer_id       TEXT,           -- NULL until the client's first successful checkout creates one
+  amount                   NUMERIC(10,2)   NOT NULL,
+  currency                 CHAR(3)         NOT NULL DEFAULT 'INR',
+  status                   payment_status  NOT NULL DEFAULT 'REQUIRES_PAYMENT_METHOD',
+  created_at               TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+  updated_at               TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+);
+
+CREATE TYPE payment_status AS ENUM (
+  'REQUIRES_PAYMENT_METHOD', 'REQUIRES_CONFIRMATION', 'REQUIRES_ACTION',
+  'PROCESSING', 'REQUIRES_CAPTURE', 'CANCELED', 'SUCCEEDED', 'REFUNDED'
+); -- mirrors the Stripe PaymentIntent lifecycle plus REFUNDED, set by the charge.refunded webhook
+
+CREATE INDEX idx_payments_appointment ON payments(appointment_id);
+CREATE INDEX idx_payments_client ON payments(client_id);
+```
+
+> Why `appointment_id` not nullable / no `appointment_series_id` column: the API doc's checkout endpoint (`POST /tenants/:tenantId/appointments/:appointmentId/checkout`) is per-appointment even when "covering a series upfront" — that flow creates one `payments` row per occurrence rather than a series-level row, so no separate series FK exists.
+
+---
+
 ## 4. Row-Level Security
 
 ### 4.1 The standard tenant-scoped policy (applied to every table listed in §3 except `grievances`)
@@ -893,17 +930,17 @@ CREATE POLICY grievance_super_admin_all ON grievances
 
 ## 5. Data Retention
 
-| Table | Retention | Why |
-|---|---|---|
-| `tenants` (archived) | Indefinite | Compliance + potential reinstatement; never hard-deleted |
-| `users` | PII cleared 30 days after a deletion request | Matches typical data-portability/erasure SLAs |
-| `interactions` / `documents` (soft-deleted) | 30-day recovery window, then hard delete | Long enough to undo an accidental delete, short enough to honor an erasure request |
-| `chat_messages` / `ai_summaries` | 2 years | Long enough for care-continuity lookback; excluded from RAG ground truth if flagged low-quality |
-| `grievances` | 7 years | Platform compliance record; survives tenant archival since the subject may be the tenant itself |
-| `audit_logs` | 7 years | Compliance requirement |
-| `notifications` | 6 months | Operational log, not a record of care |
-| `consultant_analytics_snapshot` | 13 months rolling | Enough for year-over-year comparison; older rows pruned weekly |
-| `push_subscriptions` | Deleted on push failure (410 Gone) | A dead endpoint has no further use |
+| Table                                       | Retention                                    | Why                                                                                             |
+| ------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `tenants` (archived)                        | Indefinite                                   | Compliance + potential reinstatement; never hard-deleted                                        |
+| `users`                                     | PII cleared 30 days after a deletion request | Matches typical data-portability/erasure SLAs                                                   |
+| `interactions` / `documents` (soft-deleted) | 30-day recovery window, then hard delete     | Long enough to undo an accidental delete, short enough to honor an erasure request              |
+| `chat_messages` / `ai_summaries`            | 2 years                                      | Long enough for care-continuity lookback; excluded from RAG ground truth if flagged low-quality |
+| `grievances`                                | 7 years                                      | Platform compliance record; survives tenant archival since the subject may be the tenant itself |
+| `audit_logs`                                | 7 years                                      | Compliance requirement                                                                          |
+| `notifications`                             | 6 months                                     | Operational log, not a record of care                                                           |
+| `consultant_analytics_snapshot`             | 13 months rolling                            | Enough for year-over-year comparison; older rows pruned weekly                                  |
+| `push_subscriptions`                        | Deleted on push failure (410 Gone)           | A dead endpoint has no further use                                                              |
 
 Note what's absent from this table versus a custom-auth design: no `otp_verifications`/`refresh_tokens` retention rows, because Supabase Auth owns and expires those internally.
 

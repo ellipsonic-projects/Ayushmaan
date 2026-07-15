@@ -1,3 +1,5 @@
+import type { TenantAppointment } from "@/lib/api/appointments.server";
+
 export type CalendarMember = {
   id: string;
   label: string;
@@ -13,8 +15,9 @@ export type SessionEvent = {
   consultantName?: string;
   clientName: string;
   clientCode: string;
-  clientStatus: "Lead" | "Active" | "Wait List";
-  appointmentStatus: "Confirmed" | "Pending" | "Cancelled";
+  clientStatus: "Lead" | "Active" | "Wait List" | "Closed";
+  appointmentStatus:
+    "Confirmed" | "Pending" | "Cancelled" | "Reschedule Proposed" | "Completed" | "No Show";
   paymentStatus: "Paid" | "Unpaid";
   serviceName: string;
   serviceDuration: string;
@@ -23,6 +26,9 @@ export type SessionEvent = {
   colorClass: string;
 };
 
+// Kept for components/tenant/admin/calendar/calendar-data.ts, an already-
+// unused mock file left over from before the admin calendar was migrated to
+// real data (see admin/calendar/page.tsx) — not otherwise used here.
 export function dateAt(daysFromMonday: number, hour: number, minute = 0) {
   const now = new Date();
   const day = now.getDay();
@@ -36,37 +42,55 @@ export function dateAt(daysFromMonday: number, hour: number, minute = 0) {
   return target;
 }
 
-export const sessionEvents: SessionEvent[] = [
-  {
-    id: "sarah-initial-assessment",
-    title: "Sarah D - Initial Assessment",
-    start: dateAt(1, 10, 0),
-    end: dateAt(1, 11, 0),
-    clientName: "Sarah Doe",
-    clientCode: "000002",
-    clientStatus: "Lead",
-    appointmentStatus: "Confirmed",
-    paymentStatus: "Unpaid",
-    serviceName: "Initial Assessment",
-    serviceDuration: "60 mins",
-    servicePrice: "₹150.00",
-    description: "Initial Assessment with Sarah Doe",
-    colorClass: "bg-emerald-600",
-  },
-  {
-    id: "john-final-appointment",
-    title: "John D - Final Appointment",
-    start: dateAt(1, 13, 0),
-    end: dateAt(1, 13, 45),
-    clientName: "John Doe",
-    clientCode: "000001",
-    clientStatus: "Active",
-    appointmentStatus: "Confirmed",
-    paymentStatus: "Paid",
-    serviceName: "Standard Appointment",
-    serviceDuration: "45 mins",
-    servicePrice: "₹100.00",
-    description: "Final Appointment with John Doe",
-    colorClass: "bg-secondary",
-  },
-];
+export const APPOINTMENT_STATUS_LABEL: Record<
+  TenantAppointment["status"],
+  SessionEvent["appointmentStatus"]
+> = {
+  REQUESTED: "Pending",
+  APPROVED: "Confirmed",
+  RESCHEDULE_PROPOSED: "Reschedule Proposed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+  NO_SHOW: "No Show",
+};
+
+function formatDuration(startIso: string, endIso: string) {
+  const mins = Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
+  return `${mins} mins`;
+}
+
+function formatPrice(fee: string, currency: string) {
+  return currency === "INR" ? `₹${fee}` : `${currency} ${fee}`;
+}
+
+// Shared by the admin (all-consultants) and consultant (own-only) calendar
+// pages — both fetch TenantAppointment rows and render them through the same
+// SessionCalendar component.
+export function appointmentToSessionEvent(
+  appointment: TenantAppointment,
+  colorClass: string,
+  memberId?: string
+): SessionEvent {
+  const { case: caseRow, status } = appointment;
+  const appointmentStatus = APPOINTMENT_STATUS_LABEL[status];
+  const isPaid = appointment.payments.some((payment) => payment.status === "SUCCEEDED");
+
+  return {
+    id: appointment.id,
+    title: `${caseRow.consultant.fullName} · ${caseRow.client.fullName} - ${appointmentStatus}`,
+    start: new Date(appointment.scheduledStart),
+    end: new Date(appointment.scheduledEnd),
+    memberId,
+    consultantName: caseRow.consultant.fullName,
+    clientName: caseRow.client.fullName,
+    clientCode: caseRow.client.id.slice(0, 6).toUpperCase(),
+    clientStatus: caseRow.status === "ACTIVE" ? "Active" : "Closed",
+    appointmentStatus,
+    paymentStatus: isPaid ? "Paid" : "Unpaid",
+    serviceName: `${caseRow.consultant.category} Consultation`,
+    serviceDuration: formatDuration(appointment.scheduledStart, appointment.scheduledEnd),
+    servicePrice: formatPrice(caseRow.consultant.consultationFee, caseRow.consultant.currency),
+    description: `${appointmentStatus} appointment with ${caseRow.client.fullName}`,
+    colorClass,
+  };
+}
