@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import { useAuth } from '@/lib/auth/context';
-import { api } from '@/lib/api/client';
+import useSWR from "swr";
+import { useAuth } from "@/lib/auth/context";
+import { api } from "@/lib/api/client";
 
 interface AvailabilityWindow {
   id: string;
@@ -17,13 +17,12 @@ interface BlackoutDate {
   reason?: string;
 }
 
-const fetcher = (url: string, token?: string) =>
-  api.get(url, token);
+const fetcher = (url: string, token?: string) => api.get(url, token);
 
 export function useAvailability(consultantId: string) {
   const { data, error, isLoading } = useSWR<{ data: AvailabilityWindow[] }>(
     `/api/availability/${consultantId}`,
-    (url) => fetcher(url)
+    (url: string) => fetcher(url)
   );
 
   return {
@@ -36,7 +35,7 @@ export function useAvailability(consultantId: string) {
 export function useBlackoutDates(consultantId: string) {
   const { data, error, isLoading } = useSWR<{ data: BlackoutDate[] }>(
     `/api/availability/${consultantId}/blackout`,
-    (url) => fetcher(url)
+    (url: string) => fetcher(url)
   );
 
   return {
@@ -49,10 +48,9 @@ export function useBlackoutDates(consultantId: string) {
 export function useMyAvailability() {
   const { token } = useAuth();
 
-  const { data, error, isLoading, mutate } = useSWR<
-    { data: AvailabilityWindow[] }
-  >(token ? ['/api/availability/my', token] : null, ([url, token]) =>
-    fetcher(url, token)
+  const { data, error, isLoading, mutate } = useSWR<{ data: AvailabilityWindow[] }>(
+    token ? ["/api/availability/my", token] : null,
+    ([url, token]: [string, string]) => fetcher(url, token)
   );
 
   return {
@@ -67,8 +65,8 @@ export function useMyBlackoutDates() {
   const { token } = useAuth();
 
   const { data, error, isLoading, mutate } = useSWR<{ data: BlackoutDate[] }>(
-    token ? ['/api/availability/my/blackout', token] : null,
-    ([url, token]) => fetcher(url, token)
+    token ? ["/api/availability/my/blackout", token] : null,
+    ([url, token]: [string, string]) => fetcher(url, token)
   );
 
   return {
@@ -87,7 +85,7 @@ export async function createAvailability(
     endTime: string;
   }
 ) {
-  return api.post('/api/availability', data, token);
+  return api.post("/api/availability", data, token);
 }
 
 export async function deleteAvailability(token: string, id: string) {
@@ -106,13 +104,9 @@ export async function addBlackoutDate(
   return api.post(`/api/availability/${consultantId}/blackout`, data, token);
 }
 
-export async function getAvailableSlots(
-  consultantId: string,
-  startDate: string,
-  endDate: string
-) {
+export async function getAvailableSlots(consultantId: string, startDate: string, endDate: string) {
   return api.post(
     `/api/availability/${consultantId}/slots?startDate=${startDate}&endDate=${endDate}`,
-    {},
+    {}
   );
 }

@@ -6,6 +6,7 @@ function toAuthSession(session: Session | null): AuthSession | null {
   if (!session?.user) return null;
   return {
     accessToken: session.access_token,
+    refreshToken: session.refresh_token,
     user: { id: session.user.id, email: session.user.email ?? "" },
   };
 }

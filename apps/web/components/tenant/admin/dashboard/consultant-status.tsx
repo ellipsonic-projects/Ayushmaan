@@ -1,20 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-type Status = "Available" | "In Session" | "On Leave";
-
-const consultants: { name: string; specialty: string; status: Status }[] = [
-  { name: "Amit Shah", specialty: "Business Strategy", status: "In Session" },
-  { name: "Meera Iyer", specialty: "Financial Advisory", status: "Available" },
-  { name: "Karan Walia", specialty: "Legal Counsel", status: "In Session" },
-  { name: "Priya Nair", specialty: "Career Coaching", status: "On Leave" },
-];
-
-const statusClass: Record<Status, string> = {
-  Available: "bg-emerald-500",
-  "In Session": "bg-amber-500",
-  "On Leave": "bg-muted-foreground/40",
-};
+import { getTenantConsultants } from "@/lib/api/consultants.server";
 
 function initials(name: string) {
   return name
@@ -23,31 +9,29 @@ function initials(name: string) {
     .join("");
 }
 
-export function ConsultantStatus() {
+export async function ConsultantStatus() {
+  const consultants = await getTenantConsultants();
+
   return (
     <Card className="h-full">
       <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Consultant Status</CardTitle>
         <CardAction>
-          <Badge variant="outline">9 Total</Badge>
+          <Badge variant="outline">{consultants.length} Total</Badge>
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {consultants.map((c) => (
-          <div key={c.name} className="flex items-center justify-between gap-3">
+          <div key={c.id} className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                {initials(c.name)}
-                <span
-                  className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${statusClass[c.status]}`}
-                />
+                {initials(c.fullName)}
               </span>
               <div>
-                <p className="text-sm font-medium text-foreground">{c.name}</p>
-                <p className="text-xs text-muted-foreground">{c.specialty}</p>
+                <p className="text-sm font-medium text-foreground">{c.fullName}</p>
+                <p className="text-xs text-muted-foreground">{c.subSpecialization || c.category}</p>
               </div>
             </div>
-            <span className="text-xs text-muted-foreground">{c.status}</span>
           </div>
         ))}
       </CardContent>

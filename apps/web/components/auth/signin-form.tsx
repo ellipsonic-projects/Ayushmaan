@@ -22,17 +22,33 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth/context";
 import { api } from "@/lib/api/client";
-import { destinationFor, tenantOrigin, type MeResponse } from "@/lib/auth/destination";
+import { destinationFor, tenantHandoffUrl, type MeResponse } from "@/lib/auth/destination";
+import type { AuthSession } from "@/lib/auth/types";
 
-type Role = "consultant" | "client";
+type Role = "admin" | "consultant" | "client";
 type Method = "password" | "otp";
 
-const roles: {
+const roleToBackendRole: Record<Role, MeResponse["role"]> = {
+  admin: "TENANT_ADMIN",
+  consultant: "CONSULTANT",
+  client: "CLIENT",
+};
+
+type RoleOption = {
   id: Role;
   title: string;
   description: string;
   icon: typeof Stethoscope;
-}[] = [
+};
+
+const adminRole: RoleOption = {
+  id: "admin",
+  title: "Admin",
+  description: "Manage consultants and clients oversight.",
+  icon: ShieldCheck,
+};
+
+const tenantRoles: RoleOption[] = [
   {
     id: "consultant",
     title: "Consultant",
@@ -46,6 +62,11 @@ const roles: {
     icon: UserRound,
   },
 ];
+
+// The generic platform entry point (no tenantSlug) also fronts Super/Tenant
+// Admin sign-in, so it offers all three roles; a tenant's own /signin only
+// ever authenticates Consultant/Client for that practice.
+const platformRoles: RoleOption[] = [adminRole, ...tenantRoles];
 
 function GoogleIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -71,18 +92,20 @@ function GoogleIcon({ className = "h-4 w-4" }: { className?: string }) {
 }
 
 // Shared by app/(landing)/signin/page.tsx (tenantSlug absent — the generic
-// platform entry point) and app/(tenant)/[slug]/(public)/signin/page.tsx
-// (tenantSlug set — where the Consultant/Client role toggle now lives,
-// per docs/sprints_v3.md Sprint 1.2 task 2). When tenantSlug is set, a
-// successful login whose resolved tenant doesn't match it is rejected —
-// the explicit "detect and reject a token whose tenant_id claim doesn't
-// match the subdomain being accessed" check, on top of middleware.ts's
-// enforcement for actual navigation into /{slug}/tenant/....
+// platform entry point, offering Admin/Consultant/Client) and
+// app/(tenant)/[slug]/(public)/signin/page.tsx (tenantSlug set — scoped to
+// that practice, offering only Consultant/Client), per docs/sprints_v3.md
+// Sprint 1.2 task 2. When tenantSlug is set, a successful login whose
+// resolved tenant doesn't match it is rejected — the explicit "detect and
+// reject a token whose tenant_id claim doesn't match the subdomain being
+// accessed" check, on top of middleware.ts's enforcement for actual
+// navigation into /{slug}/tenant/....
 export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
   const router = useRouter();
   const { login, logout } = useAuth();
 
-  const [role, setRole] = useState<Role>("client");
+  const roles = tenantSlug ? tenantRoles : platformRoles;
+  const [role, setRole] = useState<Role>(tenantSlug ? "client" : "admin");
   const [method, setMethod] = useState<Method>("password");
 
   const [identifier, setIdentifier] = useState("");
@@ -95,8 +118,14 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const routeAfterLogin = async (accessToken: string) => {
-    const { data: me } = await api.get<{ data: MeResponse }>("/api/auth/me", accessToken);
+  const routeAfterLogin = async (session: AuthSession) => {
+    const { data: me } = await api.get<{ data: MeResponse }>("/api/auth/me", session.accessToken);
+
+    if (me.role !== roleToBackendRole[role]) {
+      await logout();
+      setError(`This account isn't a ${roles.find((r) => r.id === role)?.title}.`);
+      return;
+    }
 
     if (tenantSlug && me.tenant?.slug !== tenantSlug) {
       await logout();
@@ -106,9 +135,10 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
 
     // Signing in from the generic platform entry point (no tenantSlug — we're
     // on the main domain), a tenant-scoped user has to cross to their own
-    // subdomain; router.push can't navigate across origins.
+    // subdomain; router.push can't navigate across origins, and the session
+    // cookie set here isn't sent there either, hence the token handoff.
     if (!tenantSlug && me.tenant) {
-      window.location.href = tenantOrigin(me.tenant.slug);
+      window.location.href = tenantHandoffUrl(me.tenant.slug, session, destinationFor(me));
       return;
     }
 
@@ -122,7 +152,7 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
     setError(null);
     try {
       const session = await login(identifier, password);
-      await routeAfterLogin(session.accessToken);
+      await routeAfterLogin(session);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -163,47 +193,44 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
             Welcome back to Ayushman
           </h1>
           <p className="mt-3 max-w-sm text-sm leading-6 text-white/70">
-            {tenantSlug
-              ? "Tell us who you are, then sign in the way that suits you — password, one-time code, or your Google / Apple account."
-              : "Sign in to the platform console."}
+            Tell us who you are, then sign in the way that suits you — password, one-time code, or
+            your Google / Apple account.
           </p>
 
-          {tenantSlug && (
-            <div className="mt-10 space-y-3">
-              {roles.map((r) => {
-                const Icon = r.icon;
-                const active = role === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => setRole(r.id)}
-                    aria-pressed={active}
-                    className={`flex w-full items-start gap-4 rounded-xl border px-4 py-4 text-left transition-colors ${
-                      active
-                        ? "border-white bg-white/10"
-                        : "border-white/20 hover:border-white/40 hover:bg-white/5"
+          <div className="mt-10 space-y-3">
+            {roles.map((r) => {
+              const Icon = r.icon;
+              const active = role === r.id;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setRole(r.id)}
+                  aria-pressed={active}
+                  className={`flex w-full items-start gap-4 rounded-xl border px-4 py-4 text-left transition-colors ${
+                    active
+                      ? "border-white bg-white/10"
+                      : "border-white/20 hover:border-white/40 hover:bg-white/5"
+                  }`}
+                >
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                      active ? "bg-white text-primary" : "bg-white/10 text-white"
                     }`}
                   >
-                    <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                        active ? "bg-white text-primary" : "bg-white/10 text-white"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2 font-semibold">
+                      {r.title}
+                      {active && <CheckCircle2 className="h-4 w-4 shrink-0" />}
                     </span>
-                    <span className="min-w-0">
-                      <span className="flex items-center gap-2 font-semibold">
-                        {r.title}
-                        {active && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-                      </span>
-                      <span className="mt-0.5 block text-sm text-white/70">{r.description}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                    <span className="mt-0.5 block text-sm text-white/70">{r.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <p className="mt-10 text-xs text-white/60">
@@ -214,16 +241,10 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
       {/* Right — login form */}
       <div className="flex items-center justify-center bg-background px-6 py-12 sm:px-12">
         <div className="w-full max-w-sm">
-          {tenantSlug && (
-            <>
-              <p className="text-xs font-medium tracking-widest text-muted-foreground">
-                SIGNING IN AS
-              </p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-                {role === "consultant" ? "Consultant" : "Client"}
-              </h2>
-            </>
-          )}
+          <p className="text-xs font-medium tracking-widest text-muted-foreground">SIGNING IN AS</p>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+            {roles.find((r) => r.id === role)?.title}
+          </h2>
 
           <Tabs
             value={method}
@@ -231,7 +252,7 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
               setMethod(v as Method);
               setError(null);
             }}
-            className={tenantSlug ? "mt-6" : ""}
+            className="mt-6"
           >
             <TabsList className="w-full">
               <TabsTrigger value="password" className="gap-1.5">

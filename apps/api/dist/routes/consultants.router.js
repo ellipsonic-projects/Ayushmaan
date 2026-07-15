@@ -18,11 +18,13 @@ exports.consultantsRouter.get("/", (0, require_role_1.requireRole)("TENANT_ADMIN
     const consultants = await (0, rls_context_1.withTenantContext)(req.tenantContext, (tx) => tx.consultantProfile.findMany({ where: { tenantId: req.params.tenantId } }));
     res.json({ data: consultants });
 });
-const createConsultantSchema = zod_1.z.object({
+const createConsultantSchema = zod_1.z
+    .object({
     email: zod_1.z.string().email(),
     fullName: zod_1.z.string().min(1).max(200),
     category: zod_1.z.enum(["MEDICAL", "LEGAL", "IT", "PHYSIOTHERAPY", "HOMEOPATHY", "ASTROLOGY"]),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/consultants — invites a Consultant: creates users
 // (role=CONSULTANT) + consultant_profiles. invitedBy is set server-side.
 exports.consultantsRouter.post("/", (0, require_role_1.requireRole)("TENANT_ADMIN"), async (req, res) => {
@@ -75,7 +77,8 @@ exports.consultantsRouter.get("/:consultantId", (0, require_role_1.requireRole)(
     });
     res.json({ data: consultant });
 });
-const patchConsultantSchema = zod_1.z.object({
+const patchConsultantSchema = zod_1.z
+    .object({
     bio: zod_1.z.string().optional(),
     consultationFee: zod_1.z.number().min(0).optional(),
     currency: zod_1.z.string().length(3).optional(),
@@ -83,7 +86,8 @@ const patchConsultantSchema = zod_1.z.object({
     subSpecialization: zod_1.z.string().max(150).optional(),
     isAcceptingNewClients: zod_1.z.boolean().optional(),
     autoApproveBookings: zod_1.z.boolean().optional(),
-}).strict();
+})
+    .strict();
 // PATCH /tenants/:tenantId/consultants/:consultantId — self, TENANT_ADMIN.
 exports.consultantsRouter.patch("/:consultantId", (0, require_role_1.requireRole)("CONSULTANT", "TENANT_ADMIN"), async (req, res) => {
     const updates = patchConsultantSchema.parse(req.body);
@@ -103,7 +107,10 @@ exports.consultantsRouter.patch("/:consultantId", (0, require_role_1.requireRole
 exports.consultantsRouter.delete("/:consultantId", (0, require_role_1.requireRole)("TENANT_ADMIN"), async (req, res) => {
     await (0, rls_context_1.withTenantContext)(req.tenantContext, async (tx) => {
         const consultant = await findConsultant(tx, req.params.tenantId, req.params.consultantId);
-        await tx.user.update({ where: { id: consultant.userId }, data: { accountStatus: "SUSPENDED" } });
+        await tx.user.update({
+            where: { id: consultant.userId },
+            data: { accountStatus: "SUSPENDED" },
+        });
     });
     res.status(204).send();
 });
@@ -137,18 +144,22 @@ exports.consultantsRouter.get("/:consultantId/availability", (0, require_role_1.
     res.json({ data: slots });
 });
 const createSlotSchema = zod_1.z.union([
-    zod_1.z.object({
+    zod_1.z
+        .object({
         dayOfWeek: zod_1.z.number().int().min(0).max(6),
         startTime: zod_1.z.string(),
         endTime: zod_1.z.string(),
         slotDurationMins: zod_1.z.number().int().min(5).optional(),
-    }).strict(),
-    zod_1.z.object({
+    })
+        .strict(),
+    zod_1.z
+        .object({
         specificDate: zod_1.z.string(),
         startTime: zod_1.z.string(),
         endTime: zod_1.z.string(),
         slotDurationMins: zod_1.z.number().int().min(5).optional(),
-    }).strict(),
+    })
+        .strict(),
 ]);
 const createSlotsBodySchema = zod_1.z.union([createSlotSchema, zod_1.z.array(createSlotSchema)]);
 // POST /tenants/:tenantId/consultants/:consultantId/availability — self,
@@ -176,11 +187,13 @@ exports.consultantsRouter.post("/:consultantId/availability", (0, require_role_1
     });
     res.status(201).json({ data: slots });
 });
-const patchSlotSchema = zod_1.z.object({
+const patchSlotSchema = zod_1.z
+    .object({
     startTime: zod_1.z.string().optional(),
     endTime: zod_1.z.string().optional(),
     status: zod_1.z.enum(["OPEN", "BOOKED", "BLOCKED"]).optional(),
-}).strict();
+})
+    .strict();
 // data_api_v4.md §8 puts these two routes at
 // /tenants/:tenantId/availability-slots/:slotId, a sibling of /consultants
 // rather than nested under it — exported separately so index.ts can mount
@@ -243,12 +256,14 @@ exports.consultantsRouter.get("/:consultantId/out-of-office", (0, require_role_1
     });
     res.json({ data: periods });
 });
-const createOooSchema = zod_1.z.object({
+const createOooSchema = zod_1.z
+    .object({
     startDate: zod_1.z.string(),
     endDate: zod_1.z.string(),
     autoReplyMessage: zod_1.z.string().optional(),
     pausesNewBookings: zod_1.z.boolean().optional(),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/consultants/:consultantId/out-of-office
 exports.consultantsRouter.post("/:consultantId/out-of-office", (0, require_role_1.requireRole)("CONSULTANT", "TENANT_ADMIN"), async (req, res) => {
     const body = createOooSchema.parse(req.body);
@@ -265,18 +280,22 @@ exports.consultantsRouter.post("/:consultantId/out-of-office", (0, require_role_
                 startDate: new Date(body.startDate),
                 endDate: new Date(body.endDate),
                 autoReplyMessage: body.autoReplyMessage,
-                ...(body.pausesNewBookings !== undefined && { pausesNewBookings: body.pausesNewBookings }),
+                ...(body.pausesNewBookings !== undefined && {
+                    pausesNewBookings: body.pausesNewBookings,
+                }),
             },
         });
     });
     res.status(201).json({ data: period });
 });
-const patchOooSchema = zod_1.z.object({
+const patchOooSchema = zod_1.z
+    .object({
     startDate: zod_1.z.string().optional(),
     endDate: zod_1.z.string().optional(),
     autoReplyMessage: zod_1.z.string().optional(),
     pausesNewBookings: zod_1.z.boolean().optional(),
-}).strict();
+})
+    .strict();
 async function findOoo(tx, tenantId, oooId) {
     const period = await tx.outOfOfficePeriod.findUnique({ where: { id: oooId } });
     if (!period || period.tenantId !== tenantId) {
@@ -305,7 +324,9 @@ exports.outOfOfficeRouter.patch("/:oooId", (0, require_role_1.requireRole)("CONS
                 ...(body.startDate && { startDate: new Date(body.startDate) }),
                 ...(body.endDate && { endDate: new Date(body.endDate) }),
                 ...(body.autoReplyMessage !== undefined && { autoReplyMessage: body.autoReplyMessage }),
-                ...(body.pausesNewBookings !== undefined && { pausesNewBookings: body.pausesNewBookings }),
+                ...(body.pausesNewBookings !== undefined && {
+                    pausesNewBookings: body.pausesNewBookings,
+                }),
             },
         });
     });

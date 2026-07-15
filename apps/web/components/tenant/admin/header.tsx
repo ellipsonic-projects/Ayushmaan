@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { TenantAdminSidebarContent } from "@/components/tenant/admin/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 export function TenantAdminHeader({ title = "Practice Overview" }: { title?: string }) {
   return (
@@ -50,6 +51,7 @@ export function TenantAdminHeader({ title = "Practice Overview" }: { title?: str
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-destructive" />
         </button>
         <ThemeToggle />
+        <LogoutButton />
       </div>
     </header>
   );

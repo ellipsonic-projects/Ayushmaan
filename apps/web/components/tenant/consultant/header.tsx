@@ -21,16 +21,11 @@ import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ConsultantSidebarContent } from "@/components/tenant/consultant/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiScribeOverlay } from "@/components/tenant/consultant/ai-scribe/ai-scribe-overlay";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "New Log", icon: Mic },
@@ -41,11 +36,7 @@ const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Workflow", icon: FileText },
 ];
 
-export function ConsultantHeader({
-  tenantName = "Acme Industries",
-}: {
-  tenantName?: string;
-}) {
+export function ConsultantHeader({ tenantName = "Acme Industries" }: { tenantName?: string }) {
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [scribeOpen, setScribeOpen] = useState(false);
 
@@ -102,6 +93,7 @@ export function ConsultantHeader({
           <Grid3x3 className="h-4 w-4" />
         </button>
         <ThemeToggle />
+        <LogoutButton />
         <Popover open={quickCreateOpen} onOpenChange={setQuickCreateOpen}>
           <PopoverTrigger
             render={

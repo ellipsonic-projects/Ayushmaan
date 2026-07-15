@@ -14,12 +14,18 @@ const audit_service_1 = require("../services/audit.service");
 // reaching into any given tenant IS the point, and is audit-logged instead.
 exports.platformTenantsRouter = (0, express_1.Router)();
 exports.platformTenantsRouter.use((0, require_role_1.requireRole)("SUPER_ADMIN"));
-const createTenantSchema = zod_1.z.object({
-    slug: zod_1.z.string().min(2).max(63).regex(/^[a-z0-9-]+$/, "slug must be lowercase alphanumeric/hyphens"),
+const createTenantSchema = zod_1.z
+    .object({
+    slug: zod_1.z
+        .string()
+        .min(2)
+        .max(63)
+        .regex(/^[a-z0-9-]+$/, "slug must be lowercase alphanumeric/hyphens"),
     displayName: zod_1.z.string().min(1).max(200),
     adminEmail: zod_1.z.string().email(),
     planTier: zod_1.z.enum(["STANDARD", "PRO", "ENTERPRISE"]).default("STANDARD"),
-}).strict();
+})
+    .strict();
 // POST /platform/tenants — provisions the tenant + tenant_settings +
 // tenant_billing + a default TENANT_ADMIN user, in one transaction
 // (sprints_v3.md Sprint 1.1).
@@ -104,13 +110,15 @@ exports.platformTenantsRouter.get("/:tenantId", async (req, res) => {
         throw new errorHandler_1.AppError(404, "Tenant not found", "TENANT_NOT_FOUND");
     res.json({ data: tenant });
 });
-const patchTenantSchema = zod_1.z.object({
+const patchTenantSchema = zod_1.z
+    .object({
     displayName: zod_1.z.string().min(1).max(200).optional(),
     logoUrl: zod_1.z.string().url().optional(),
     themeConfig: zod_1.z.record(zod_1.z.string(), zod_1.z.unknown()).optional(),
     planTier: zod_1.z.enum(["STANDARD", "PRO", "ENTERPRISE"]).optional(),
     reason: zod_1.z.string().min(1),
-}).strict();
+})
+    .strict();
 // PATCH /platform/tenants/:tenantId — cross-tenant write, audit-logged;
 // `reason` is mandatory in the body (data_api_v4.md §4).
 exports.platformTenantsRouter.patch("/:tenantId", async (req, res) => {
@@ -163,7 +171,9 @@ exports.platformTenantsRouter.delete("/:tenantId", (req, res) => setTenantStatus
 // GET /platform/tenants/:tenantId/billing, PATCH .../billing
 exports.platformTenantsRouter.get("/:tenantId/billing", async (req, res) => {
     const billing = await (0, rls_context_1.withTenantContext)({ tenantId: null, isSuperAdmin: true, userId: req.user.id }, async (tx) => {
-        const found = await tx.tenantBilling.findUnique({ where: { tenantId: req.params.tenantId } });
+        const found = await tx.tenantBilling.findUnique({
+            where: { tenantId: req.params.tenantId },
+        });
         if (found) {
             await (0, audit_service_1.writeAuditLog)(tx, {
                 tenantId: req.params.tenantId,
@@ -181,11 +191,13 @@ exports.platformTenantsRouter.get("/:tenantId/billing", async (req, res) => {
         throw new errorHandler_1.AppError(404, "Billing record not found", "TENANT_BILLING_NOT_FOUND");
     res.json({ data: billing });
 });
-const patchBillingSchema = zod_1.z.object({
+const patchBillingSchema = zod_1.z
+    .object({
     planName: zod_1.z.string().min(1).max(100).optional(),
     status: zod_1.z.enum(["TRIALING", "ACTIVE", "PAST_DUE", "CANCELLED"]).optional(),
     platformCommissionPct: zod_1.z.number().min(0).max(100).optional(),
-}).strict();
+})
+    .strict();
 exports.platformTenantsRouter.patch("/:tenantId/billing", async (req, res) => {
     const updates = patchBillingSchema.parse(req.body);
     const billing = await (0, rls_context_1.withTenantContext)({ tenantId: null, isSuperAdmin: true, userId: req.user.id }, async (tx) => {
@@ -217,13 +229,15 @@ exports.tenantSettingsRouter.get("/settings", async (req, res) => {
         throw new errorHandler_1.AppError(404, "Tenant settings not found", "TENANT_SETTINGS_NOT_FOUND");
     res.json({ data: settings });
 });
-const patchSettingsSchema = zod_1.z.object({
+const patchSettingsSchema = zod_1.z
+    .object({
     defaultCurrency: zod_1.z.string().length(3).optional(),
     payoutCycle: zod_1.z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]).optional(),
     bookingCutoffHours: zod_1.z.number().int().min(0).optional(),
     autoApproveBookings: zod_1.z.boolean().optional(),
     supportedLanguages: zod_1.z.array(zod_1.z.string()).optional(),
-}).strict();
+})
+    .strict();
 exports.tenantSettingsRouter.patch("/settings", async (req, res) => {
     const updates = patchSettingsSchema.parse(req.body);
     const settings = await (0, rls_context_1.withTenantContext)(req.tenantContext, (tx) => tx.tenantSettings.update({ where: { tenantId: req.params.tenantId }, data: updates }));

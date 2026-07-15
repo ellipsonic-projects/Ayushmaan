@@ -46,11 +46,13 @@ exports.casesRouter.get("/", (0, require_role_1.requireRole)("CONSULTANT", "TENA
     });
     res.json({ data: cases });
 });
-const createCaseSchema = zod_1.z.object({
+const createCaseSchema = zod_1.z
+    .object({
     clientId: zod_1.z.string().uuid(),
     category: zod_1.z.enum(["MEDICAL", "LEGAL", "IT", "PHYSIOTHERAPY", "HOMEOPATHY", "ASTROLOGY"]),
     matterKey: zod_1.z.string().max(150).optional(),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/cases — CONSULTANT. consultantId is forced to the
 // caller's own profile id — a Consultant can never create a case on
 // another consultant's behalf.

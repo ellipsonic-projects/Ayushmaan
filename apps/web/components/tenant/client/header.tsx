@@ -1,26 +1,13 @@
-import {
-  Bell,
-  CalendarCheck,
-  FileText,
-  Menu,
-  MessageSquare,
-  Plus,
-  Search,
-} from "lucide-react";
+import { Bell, CalendarCheck, FileText, Menu, MessageSquare, Plus, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ClientSidebarContent } from "@/components/tenant/client/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Appointment", icon: CalendarCheck },
@@ -28,11 +15,7 @@ const quickCreateItems: { label: string; icon: LucideIcon }[] = [
   { label: "Document", icon: FileText },
 ];
 
-export function ClientHeader({
-  tenantName = "Acme Industries",
-}: {
-  tenantName?: string;
-}) {
+export function ClientHeader({ tenantName = "Acme Industries" }: { tenantName?: string }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
@@ -72,6 +55,7 @@ export function ClientHeader({
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-destructive" />
         </button>
         <ThemeToggle />
+        <LogoutButton />
         <Popover>
           <PopoverTrigger
             render={

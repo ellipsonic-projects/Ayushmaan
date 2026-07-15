@@ -39,7 +39,9 @@ exports.clientsRouter.get("/", (0, require_role_1.requireRole)("CONSULTANT", "TE
             });
         }
         // TENANT_ADMIN — all clients in the tenant.
-        return tx.clientProfile.findMany({ where: { tenantId: req.params.tenantId, ...searchFilter } });
+        return tx.clientProfile.findMany({
+            where: { tenantId: req.params.tenantId, ...searchFilter },
+        });
     });
     res.json({ data: clients });
 });
@@ -72,14 +74,16 @@ exports.clientsRouter.get("/:clientId", (0, require_role_1.requireRole)("CONSULT
     const client = await (0, rls_context_1.withTenantContext)(req.tenantContext, (tx) => assertClientReadAccess(tx, req, req.params.clientId));
     res.json({ data: client });
 });
-const patchClientSchema = zod_1.z.object({
+const patchClientSchema = zod_1.z
+    .object({
     fullName: zod_1.z.string().min(1).max(200).optional(),
     preferredLanguage: zod_1.z.string().max(50).optional(),
     timezone: zod_1.z.string().max(50).optional(),
     emergencyContactName: zod_1.z.string().max(200).optional(),
     emergencyContactPhone: zod_1.z.string().max(20).optional(),
     dob: zod_1.z.string().optional(), // rejected below if a consented guardian link already exists
-}).strict();
+})
+    .strict();
 // PATCH /tenants/:tenantId/clients/:clientId — self (CLIENT), TENANT_ADMIN
 // (support edits). dob is immutable once a guardian consent row exists.
 exports.clientsRouter.patch("/:clientId", (0, require_role_1.requireRole)("CLIENT", "TENANT_ADMIN"), async (req, res) => {
@@ -138,23 +142,32 @@ exports.clientsRouter.put("/:clientId/category-profiles/:category", (0, require_
         else {
             const consultantId = await (0, callerProfile_1.getOwnConsultantProfileId)(tx, req.user.id);
             const activeCase = consultantId
-                ? await tx.case.findFirst({ where: { clientId: req.params.clientId, consultantId, category } })
+                ? await tx.case.findFirst({
+                    where: { clientId: req.params.clientId, consultantId, category },
+                })
                 : null;
             if (!activeCase)
                 throw new errorHandler_1.AppError(403, "Forbidden", "NO_ACTIVE_CASE_IN_CATEGORY");
         }
         return tx.clientCategoryProfile.upsert({
             where: { clientId_category: { clientId: req.params.clientId, category } },
-            create: { tenantId: req.params.tenantId, clientId: req.params.clientId, category, data: body.data },
+            create: {
+                tenantId: req.params.tenantId,
+                clientId: req.params.clientId,
+                category,
+                data: body.data,
+            },
             update: { data: body.data },
         });
     });
     res.json({ data: profile });
 });
-const createGuardianLinkSchema = zod_1.z.object({
+const createGuardianLinkSchema = zod_1.z
+    .object({
     minorClientId: zod_1.z.string().uuid(),
     relationship: zod_1.z.string().min(1).max(50),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/clients/:clientId/guardians — self (adult CLIENT).
 // `:clientId` in the doc's path is the caller's own profile; the dependent's
 // existing client_profiles row id is supplied in the body as minorClientId.
@@ -204,7 +217,10 @@ exports.guardianLinksRouter.post("/:linkId/consent", (0, require_role_1.requireR
         if (target.guardianUserId !== req.user.id) {
             throw new errorHandler_1.AppError(403, "Forbidden", "NOT_THE_GUARDIAN");
         }
-        return tx.guardianLink.update({ where: { id: req.params.linkId }, data: { consentGivenAt: new Date() } });
+        return tx.guardianLink.update({
+            where: { id: req.params.linkId },
+            data: { consentGivenAt: new Date() },
+        });
     });
     res.json({ data: link });
 });

@@ -6,9 +6,7 @@ import { ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-function Accordion({
-  ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Root>) {
+function Accordion({ ...props }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
   return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 
@@ -19,7 +17,7 @@ function AccordionItem({
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      className={cn("border-b border-slate-100 dark:border-slate-800", className)}
+      className={cn("border-b border-border", className)}
       {...props}
     />
   );
@@ -35,13 +33,13 @@ function AccordionTrigger({
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
         className={cn(
-          "group flex flex-1 items-center justify-between py-5 text-left text-sm font-medium text-slate-900 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400",
+          "group flex flex-1 items-center justify-between py-5 text-left text-sm font-medium text-foreground transition-colors hover:text-primary",
           className
         )}
         {...props}
       >
         {children}
-        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-blue-600 dark:text-slate-500 dark:group-data-[state=open]:text-blue-400" />
+        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-primary" />
       </AccordionPrimitive.Trigger>
     </AccordionPrimitive.Header>
   );
@@ -58,7 +56,7 @@ function AccordionContent({
       className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
       {...props}
     >
-      <div className={cn("max-w-2xl pb-5 leading-6 text-slate-500 dark:text-slate-400", className)}>
+      <div className={cn("max-w-2xl pb-5 leading-6 text-muted-foreground", className)}>
         {children}
       </div>
     </AccordionPrimitive.Content>

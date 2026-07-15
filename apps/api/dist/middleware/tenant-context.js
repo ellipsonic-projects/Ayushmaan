@@ -39,7 +39,12 @@ const tenantContextMiddleware = async (req, res, next) => {
     if (!isSuperAdmin && req.user.tenantId !== tenant.id) {
         return next(new errorHandler_1.AppError(403, "Forbidden", "TENANT_MISMATCH"));
     }
-    req.tenant = { id: tenant.id, slug: tenant.slug, displayName: tenant.displayName, status: tenant.status };
+    req.tenant = {
+        id: tenant.id,
+        slug: tenant.slug,
+        displayName: tenant.displayName,
+        status: tenant.status,
+    };
     req.tenantContext = { tenantId: tenant.id, isSuperAdmin, userId: req.user.id };
     next();
 };

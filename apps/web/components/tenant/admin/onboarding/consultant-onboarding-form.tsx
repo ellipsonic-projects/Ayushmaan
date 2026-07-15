@@ -62,7 +62,8 @@ export function ConsultantOnboardingForm() {
     consultationFee.trim().length > 0 &&
     languages.length > 0;
 
-  function addLanguage(language: string) {
+  function addLanguage(language: string | null) {
+    if (!language) return;
     setLanguages((prev) => (prev.includes(language) ? prev : [...prev, language]));
   }
 
@@ -146,7 +147,7 @@ export function ConsultantOnboardingForm() {
               <Label>
                 Category <span className="text-destructive">*</span>
               </Label>
-              <Select value={category} onValueChange={setCategory}>
+              <Select value={category} onValueChange={(value) => setCategory(value ?? "")}>
                 <SelectTrigger className="h-9 w-full">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
@@ -204,7 +205,7 @@ export function ConsultantOnboardingForm() {
               <Label>
                 Currency <span className="text-destructive">*</span>
               </Label>
-              <Select value={currency} onValueChange={setCurrency}>
+              <Select value={currency} onValueChange={(value) => setCurrency(value ?? "")}>
                 <SelectTrigger className="h-9 w-full">
                   <SelectValue />
                 </SelectTrigger>

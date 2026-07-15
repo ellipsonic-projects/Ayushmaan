@@ -1,38 +1,86 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+const illustrationContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } },
+};
+
+const popIn: Variants = {
+  hidden: { opacity: 0, scale: 0.6 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.35, ease: "easeOut" } },
+};
+
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.4, ease: "easeOut" } },
+};
+
+const drawPath: Variants = {
+  hidden: { pathLength: 0, opacity: 0 },
+  show: { pathLength: 1, opacity: 1, transition: { duration: 0.8, ease: "easeInOut" } },
+};
+
 function TenantIllustration() {
   return (
-    <svg viewBox="0 0 120 80" className="h-full w-full">
-      <rect x="8" y="34" width="26" height="38" rx="4" fill="#d1e2d9" />
-      <rect x="47" y="20" width="26" height="52" rx="4" fill="#2f5741" />
-      <rect x="86" y="40" width="26" height="32" rx="4" fill="#a9c4b3" />
-      <circle cx="60" cy="10" r="6" fill="#1f3b2c" />
-      <circle cx="21" cy="24" r="4" fill="#a9c4b3" />
-      <circle cx="99" cy="30" r="4" fill="#a9c4b3" />
-    </svg>
+    <motion.svg
+      viewBox="0 0 120 80"
+      className="h-full w-full"
+      variants={illustrationContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-40px" }}
+    >
+      <motion.rect variants={popIn} x="8" y="34" width="26" height="38" rx="4" fill="#d1e2d9" />
+      <motion.rect variants={popIn} x="47" y="20" width="26" height="52" rx="4" fill="#2f5741" />
+      <motion.rect variants={popIn} x="86" y="40" width="26" height="32" rx="4" fill="#a9c4b3" />
+      <motion.circle variants={popIn} cx="60" cy="10" r="6" fill="#1f3b2c" />
+      <motion.circle variants={popIn} cx="21" cy="24" r="4" fill="#a9c4b3" />
+      <motion.circle variants={popIn} cx="99" cy="30" r="4" fill="#a9c4b3" />
+    </motion.svg>
   );
 }
 
 function IsolationIllustration() {
   return (
-    <svg viewBox="0 0 120 80" className="h-full w-full">
-      <rect x="10" y="14" width="44" height="52" rx="10" fill="#d1e2d9" />
-      <rect x="66" y="14" width="44" height="52" rx="10" fill="#eef2ee" />
-      <path d="M60 14v52" stroke="#a9c4b3" strokeWidth="2" strokeDasharray="4 4" />
-      <rect x="24" y="32" width="16" height="16" rx="4" fill="#2f5741" />
-      <rect x="80" y="32" width="16" height="16" rx="4" fill="#5c8a6e" />
-    </svg>
+    <motion.svg
+      viewBox="0 0 120 80"
+      className="h-full w-full"
+      variants={illustrationContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-40px" }}
+    >
+      <motion.rect variants={fadeIn} x="10" y="14" width="44" height="52" rx="10" fill="#d1e2d9" />
+      <motion.rect variants={fadeIn} x="66" y="14" width="44" height="52" rx="10" fill="#eef2ee" />
+      <motion.path
+        variants={drawPath}
+        d="M60 14v52"
+        stroke="#a9c4b3"
+        strokeWidth="2"
+        strokeDasharray="4 4"
+      />
+      <motion.rect variants={popIn} x="24" y="32" width="16" height="16" rx="4" fill="#2f5741" />
+      <motion.rect variants={popIn} x="80" y="32" width="16" height="16" rx="4" fill="#5c8a6e" />
+    </motion.svg>
   );
 }
 
 function TimelineIllustration() {
   return (
-    <svg viewBox="0 0 120 80" className="h-full w-full">
-      <path
+    <motion.svg
+      viewBox="0 0 120 80"
+      className="h-full w-full"
+      variants={illustrationContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-40px" }}
+    >
+      <motion.path
+        variants={drawPath}
         d="M14 60 34 40 54 52 76 26 106 20"
         fill="none"
         stroke="#2f5741"
@@ -40,45 +88,87 @@ function TimelineIllustration() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="14" cy="60" r="4" fill="#1f3b2c" />
-      <circle cx="34" cy="40" r="4" fill="#1f3b2c" />
-      <circle cx="54" cy="52" r="4" fill="#1f3b2c" />
-      <circle cx="76" cy="26" r="4" fill="#1f3b2c" />
-      <circle cx="106" cy="20" r="5" fill="#5c8a6e" />
-      <rect x="90" y="34" width="26" height="14" rx="4" fill="#d1e2d9" />
-    </svg>
+      <motion.circle variants={popIn} cx="14" cy="60" r="4" fill="#1f3b2c" />
+      <motion.circle variants={popIn} cx="34" cy="40" r="4" fill="#1f3b2c" />
+      <motion.circle variants={popIn} cx="54" cy="52" r="4" fill="#1f3b2c" />
+      <motion.circle variants={popIn} cx="76" cy="26" r="4" fill="#1f3b2c" />
+      <motion.circle
+        cx="106"
+        cy="20"
+        r="5"
+        fill="#5c8a6e"
+        variants={popIn}
+        animate={{
+          scale: [1, 1.25, 1],
+          transition: { duration: 1.6, repeat: Infinity, ease: "easeInOut", delay: 1 },
+        }}
+      />
+      <motion.rect variants={fadeIn} x="90" y="34" width="26" height="14" rx="4" fill="#d1e2d9" />
+    </motion.svg>
   );
 }
 
 function SeriesIllustration() {
   return (
-    <svg viewBox="0 0 120 80" className="h-full w-full">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <rect
-          key={i}
-          x={10 + i * 17}
-          y={i < 2 ? 20 : 34}
-          width="12"
-          height={i < 2 ? 46 : 32}
-          rx="3"
-          fill={i < 2 ? "#2f5741" : "#d1e2d9"}
-        />
-      ))}
-    </svg>
+    <motion.svg
+      viewBox="0 0 120 80"
+      className="h-full w-full"
+      variants={illustrationContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-40px" }}
+    >
+      {Array.from({ length: 6 }).map((_, i) => {
+        const height = i < 2 ? 46 : 32;
+        const y = i < 2 ? 20 : 34;
+        return (
+          <motion.rect
+            key={i}
+            x={10 + i * 17}
+            width="12"
+            rx="3"
+            fill={i < 2 ? "#2f5741" : "#d1e2d9"}
+            variants={
+              {
+                hidden: { height: 0, y: y + height },
+                show: {
+                  height,
+                  y,
+                  transition: { duration: 0.45, ease: "easeOut" },
+                },
+              } satisfies Variants
+            }
+          />
+        );
+      })}
+    </motion.svg>
   );
 }
 
 function TrustIllustration() {
   return (
-    <svg viewBox="0 0 120 80" className="h-full w-full">
-      <path d="M60 10 96 22v20c0 22-15 32-36 38-21-6-36-16-36-38V22Z" fill="#d1e2d9" />
-      <path
+    <motion.svg
+      viewBox="0 0 120 80"
+      className="h-full w-full"
+      variants={illustrationContainer}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-40px" }}
+    >
+      <motion.path
+        variants={fadeIn}
+        d="M60 10 96 22v20c0 22-15 32-36 38-21-6-36-16-36-38V22Z"
+        fill="#d1e2d9"
+      />
+      <motion.path
+        variants={drawPath}
         d="M60 10 96 22v20c0 22-15 32-36 38-21-6-36-16-36-38V22Z"
         fill="none"
         stroke="#2f5741"
         strokeWidth="2"
       />
-      <path
+      <motion.path
+        variants={drawPath}
         d="M46 42l10 10 20-20"
         fill="none"
         stroke="#1f3b2c"
@@ -86,7 +176,7 @@ function TrustIllustration() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-    </svg>
+    </motion.svg>
   );
 }
 
@@ -135,6 +225,7 @@ export function CapabilitiesSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6, delay: i * 0.06, ease: "easeOut" }}
+            whileHover={{ y: -4 }}
           >
             <Card className="h-full overflow-hidden border-stone-200 bg-white/70 transition-shadow hover:shadow-md dark:border-stone-800 dark:bg-stone-900/70">
               <div className="h-24 w-full bg-linear-to-br from-emerald-50 to-white p-4 dark:from-emerald-950/20 dark:to-stone-900">

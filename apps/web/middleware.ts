@@ -15,8 +15,13 @@ import { NextResponse, type NextRequest } from "next/server";
 //    direct path, or `{slug}.{TENANT_ROOT_HOST}/tenant/...` reached via
 //    subdomain) must belong to a signed-in user whose own tenant (from
 //    apps/api's verified /auth/me, never the URL/host) matches `slug`, and
-//    that tenant must be ACTIVE. /superadmin, /signin and the public
-//    landing pages aren't tenant-scoped and don't go through this.
+//    that tenant must be ACTIVE. It must also belong in the specific
+//    tenant/{admin,consultant,client}/... section for that user's role —
+//    a CONSULTANT can't wander into /tenant/admin/..., etc. SUPER_ADMIN is
+//    for /superadmin/... only, and is rejected from tenant dashboards the
+//    same way. /superadmin/... itself requires a signed-in SUPER_ADMIN.
+//    /signin and the public landing pages aren't scoped and don't go
+//    through this.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const TENANT_ROOT_HOST = process.env.NEXT_PUBLIC_TENANT_ROOT_HOST || "localhost";
 
@@ -24,6 +29,12 @@ interface MeResponse {
   role: "SUPER_ADMIN" | "TENANT_ADMIN" | "CONSULTANT" | "CLIENT";
   tenant: { slug: string; status: "ACTIVE" | "SUSPENDED" | "ARCHIVED" } | null;
 }
+
+const ROLE_BY_TENANT_SECTION: Record<string, MeResponse["role"]> = {
+  admin: "TENANT_ADMIN",
+  consultant: "CONSULTANT",
+  client: "CLIENT",
+};
 
 function tenantSlugFromHost(host: string): string | null {
   const hostname = host.split(":")[0];
@@ -50,8 +61,9 @@ export async function middleware(request: NextRequest) {
   const isTenantDashboard = subdomainSlug
     ? pathname.startsWith("/tenant/")
     : pathname.split("/")[2] === "tenant";
+  const isSuperAdmin = !subdomainSlug && pathname.startsWith("/superadmin");
 
-  if (!isTenantDashboard) {
+  if (!isTenantDashboard && !isSuperAdmin) {
     return response;
   }
 
@@ -80,7 +92,17 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  const signInUrl = new URL("/signin", request.url);
+  // Tenant subdomains no longer have their own /signin page — sign-in only
+  // exists on the main domain, so a subdomain-scoped redirect must cross
+  // origins rather than resolve to `{slug}.{TENANT_ROOT_HOST}/signin`.
+  const signInUrl = subdomainSlug
+    ? new URL(
+        `/signin`,
+        `${request.nextUrl.protocol}//${TENANT_ROOT_HOST}${
+          request.nextUrl.port ? `:${request.nextUrl.port}` : ""
+        }`
+      )
+    : new URL("/signin", request.url);
 
   if (!session) {
     return NextResponse.redirect(signInUrl);
@@ -94,8 +116,17 @@ export async function middleware(request: NextRequest) {
   }
   const { data: me }: { data: MeResponse } = await meRes.json();
 
-  if (me.role === "SUPER_ADMIN") {
+  if (isSuperAdmin) {
+    if (me.role !== "SUPER_ADMIN") {
+      return NextResponse.redirect(signInUrl);
+    }
     return response;
+  }
+
+  // Past this point we're guarding a tenant dashboard — SUPER_ADMIN belongs
+  // in /superadmin/... only.
+  if (me.role === "SUPER_ADMIN") {
+    return NextResponse.redirect(signInUrl);
   }
 
   if (!me.tenant || me.tenant.slug !== slug) {
@@ -104,6 +135,14 @@ export async function middleware(request: NextRequest) {
 
   if (me.tenant.status !== "ACTIVE") {
     signInUrl.searchParams.set("error", "tenant_" + me.tenant.status.toLowerCase());
+    return NextResponse.redirect(signInUrl);
+  }
+
+  // Section-level role check: /tenant/{admin,consultant,client}/... must
+  // match the signed-in user's own role, not just their tenant.
+  const section = pathname.split("/tenant/")[1]?.split("/")[0];
+  const requiredRole = section ? ROLE_BY_TENANT_SECTION[section] : undefined;
+  if (requiredRole && me.role !== requiredRole) {
     return NextResponse.redirect(signInUrl);
   }
 

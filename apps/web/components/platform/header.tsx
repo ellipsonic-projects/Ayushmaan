@@ -1,21 +1,12 @@
 import { Bell, Menu, Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { PlatformSidebarContent } from "@/components/platform/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LogoutButton } from "@/components/auth/logout-button";
 
-export function PlatformHeader({
-  title = "SUPER ADMIN DASHBOARD",
-}: {
-  title?: string;
-}) {
+export function PlatformHeader({ title = "SUPER ADMIN DASHBOARD" }: { title?: string }) {
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
@@ -36,17 +27,12 @@ export function PlatformHeader({
             <PlatformSidebarContent />
           </SheetContent>
         </Sheet>
-        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-          {title}
-        </h1>
+        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">{title}</h1>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="relative hidden w-40 sm:block md:w-56 lg:w-72">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search system logs, tenants..."
-            className="h-9 pl-9"
-          />
+          <Input placeholder="Search system logs, tenants..." className="h-9 pl-9" />
         </div>
         <button
           type="button"
@@ -57,6 +43,7 @@ export function PlatformHeader({
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-destructive" />
         </button>
         <ThemeToggle />
+        <LogoutButton />
       </div>
     </header>
   );

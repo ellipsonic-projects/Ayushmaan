@@ -5,6 +5,7 @@ export interface AuthUser {
 
 export interface AuthSession {
   accessToken: string;
+  refreshToken: string;
   user: AuthUser;
 }
 

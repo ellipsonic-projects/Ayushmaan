@@ -6,7 +6,10 @@ exports.getOwnClientProfileId = getOwnClientProfileId;
 // need "which consultant_profiles/client_profiles row belongs to the caller"
 // — resolved from the verified req.user.id, never client-supplied.
 async function getOwnConsultantProfileId(tx, userId) {
-    const profile = await tx.consultantProfile.findUnique({ where: { userId }, select: { id: true } });
+    const profile = await tx.consultantProfile.findUnique({
+        where: { userId },
+        select: { id: true },
+    });
     return profile?.id ?? null;
 }
 async function getOwnClientProfileId(tx, userId) {

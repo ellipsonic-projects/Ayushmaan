@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { authProvider } from "@/lib/auth";
 import { api } from "@/lib/api/client";
-import { destinationFor, tenantOrigin, type MeResponse } from "@/lib/auth/destination";
+import { destinationFor, tenantHandoffUrl, type MeResponse } from "@/lib/auth/destination";
+import type { AuthSession } from "@/lib/auth/types";
 
 // The identity provider redirects magic-link / OTP verification here
 // (configure this as a Redirect URL in the provider's auth settings). The
@@ -17,15 +18,15 @@ export default function AuthCallbackPage() {
   const settled = useRef(false);
 
   useEffect(() => {
-    const routeSession = async (accessToken: string) => {
+    const routeSession = async (session: AuthSession) => {
       if (settled.current) return;
       settled.current = true;
       try {
-        const { data } = await api.get<{ data: MeResponse }>("/api/auth/me", accessToken);
+        const { data } = await api.get<{ data: MeResponse }>("/api/auth/me", session.accessToken);
         // This callback only exists on the main domain — a tenant-scoped user
         // has to cross to their own subdomain, same as signin-form.tsx.
         if (data.tenant) {
-          window.location.href = tenantOrigin(data.tenant.slug);
+          window.location.href = tenantHandoffUrl(data.tenant.slug, session, destinationFor(data));
           return;
         }
         router.replace(destinationFor(data));
@@ -35,11 +36,11 @@ export default function AuthCallbackPage() {
     };
 
     authProvider.getSession().then((session) => {
-      if (session) routeSession(session.accessToken);
+      if (session) routeSession(session);
     });
 
     const unsubscribe = authProvider.onAuthStateChange((session) => {
-      if (session) routeSession(session.accessToken);
+      if (session) routeSession(session);
     });
 
     return unsubscribe;

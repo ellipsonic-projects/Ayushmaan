@@ -1,23 +1,6 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "motion/react";
-import {
-  ArrowUpRight,
-  Menu,
-  Stethoscope,
-  Scale,
-  HeartPulse,
-  Laptop2,
-  Leaf,
-  Sparkles,
-  ClipboardList,
-  UserPlus,
-  CalendarCheck,
-  TrendingUp,
-  Quote,
-} from "lucide-react";
+import { ArrowUpRight, Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
@@ -38,106 +21,29 @@ import {
 import { CapabilitiesSection } from "@/components/capabilities-section";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const fadeUp = {
-  initial: { opacity: 0, y: 16 },
-  whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true, margin: "-80px" },
-  transition: { duration: 0.6, ease: "easeOut" as const },
-};
-
 function Logo({ className = "" }: { className?: string }) {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden>
-        <rect width="30" height="30" rx="8" fill="#1F3B2C" />
+        <rect width="30" height="30" rx="8" fill="#155DFC" />
         <path
           d="M9 21.5 14 8.5h2l5 13h-2.3l-1.15-3.1h-5.1L11.3 21.5H9Zm3.15-5h3.7L14 10.9l-1.85 5.6Z"
           fill="white"
         />
       </svg>
-      <span className="font-display text-lg tracking-tight text-stone-900 dark:text-white">
-        Ayushman
-      </span>
+      <span className="text-lg font-semibold tracking-tight text-foreground">Ayushman</span>
     </div>
   );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 text-xs font-medium tracking-widest text-emerald-800 dark:text-emerald-400">
-      <span className="h-px w-8 bg-emerald-800/40 dark:bg-emerald-400/40" />
+    <div className="flex items-center gap-3 text-xs font-medium tracking-widest text-primary">
+      <span className="h-px w-8 bg-primary/40" />
       {children}
     </div>
   );
 }
-
-const industries = [
-  { label: "Medical", description: "Clinics and physicians", icon: Stethoscope },
-  { label: "Legal", description: "Advocates and firms", icon: Scale },
-  { label: "Physiotherapy", description: "Rehab practices", icon: HeartPulse },
-  { label: "IT Consulting", description: "Independent consultants", icon: Laptop2 },
-  { label: "Homeopathy", description: "Alternative medicine", icon: Leaf },
-  { label: "Astrology", description: "Personal advisory", icon: Sparkles },
-];
-
-const process = [
-  {
-    step: "01",
-    title: "Onboard your practice",
-    description:
-      "Set up your branded workspace, business details, and billing in a single guided flow.",
-    icon: ClipboardList,
-  },
-  {
-    step: "02",
-    title: "Invite your consultants",
-    description:
-      "Add each consultant with their own profile, fee, availability, and specialization.",
-    icon: UserPlus,
-  },
-  {
-    step: "03",
-    title: "Clients book with confidence",
-    description:
-      "Clients see real availability and book directly — confirmations and reminders are automatic.",
-    icon: CalendarCheck,
-  },
-  {
-    step: "04",
-    title: "Grow with clear insight",
-    description:
-      "Revenue, retention, and utilization surface on one dashboard, so decisions stay evidence-led.",
-    icon: TrendingUp,
-  },
-];
-
-const results = [
-  { value: "1,200+", label: "Practices onboarded" },
-  { value: "40%", label: "Fewer missed sessions" },
-  { value: "100%", label: "Tenant data isolation" },
-  { value: "4.8/5", label: "Average consultant rating" },
-];
-
-const testimonials = [
-  {
-    quote:
-      "We moved six consultants and four years of client history over in an afternoon. Nothing felt like a compromise — it felt like the system we should have had from day one.",
-    name: "Meera Iyer",
-    role: "Tenant Admin, Iyer Family Practice",
-  },
-  {
-    quote:
-      "The session recaps alone changed how I show up for clients. I spend less time reconstructing what happened last time, and more time on what matters this time.",
-    name: "Karan Walia",
-    role: "Independent Legal Consultant",
-  },
-  {
-    quote:
-      "Booking used to be three phone calls and a paper diary. Now I see a slot, I take it, and I get a reminder the day before. It's calmer for everyone.",
-    name: "Sarah Lawson",
-    role: "Client",
-  },
-];
 
 const faqs = [
   {
@@ -166,29 +72,26 @@ const faqs = [
   },
 ];
 
-const pricing = [
+const reviews = [
   {
-    tier: "STANDARD",
-    description: "For solo consultants getting started.",
-    monthly: 20,
-    annual: 10,
-    featured: false,
+    name: "Dr. Meera Nair",
+    role: "Physiotherapist",
+    quote:
+      "Session logging and recurring bookings used to eat my evenings. Now clients book, get reminders, and I get an AI recap ready before the next visit.",
   },
   {
-    tier: "PRO",
-    description: "For growing practices with multiple consultants.",
-    monthly: 40,
-    annual: 25,
-    featured: true,
+    name: "Arjun Kapoor",
+    role: "IT Consultant",
+    quote:
+      "Every client's history is isolated and searchable. Onboarding a new consultant to my practice took minutes, not days.",
   },
   {
-    tier: "ENTERPRISE",
-    description: "For large, multi-tenant organizations.",
-    monthly: 100,
-    annual: 75,
-    featured: false,
+    name: "Sana Iyer",
+    role: "Legal Advocate",
+    quote:
+      "The trust and grievance oversight gave my clients confidence from day one. It feels built for how consultants actually work.",
   },
-] as const;
+];
 
 const insights = [
   {
@@ -216,32 +119,50 @@ const insights = [
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-screen flex-col text-stone-900 dark:text-stone-100">
+    <div className="relative flex min-h-screen flex-col text-foreground">
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <Image
+          src="/landing_page.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover opacity-100 dark:opacity-30"
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_60%_at_50%_-10%,color-mix(in_oklab,var(--primary)_15%,transparent),transparent)]" />
+        <div className="absolute inset-0 bg-background/0 dark:bg-background/60" />
+        <div className="animate-blob absolute -left-24 -top-24 h-96 w-96 rounded-full bg-primary/25 blur-3xl" />
+        <div
+          className="animate-blob absolute -right-24 top-1/3 h-96 w-96 rounded-full bg-secondary/20 blur-3xl"
+          style={{ animationDelay: "-6s" }}
+        />
+        <div
+          className="animate-blob absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-accent/25 blur-3xl"
+          style={{ animationDelay: "-12s" }}
+        />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-stone-200/70 bg-stone-50/80 backdrop-blur-md dark:border-stone-800/60 dark:bg-stone-950/80">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo />
-          <nav className="hidden items-center gap-8 text-sm font-medium text-stone-600 dark:text-stone-300 md:flex">
-            <a href="#about" className="hover:text-emerald-800 dark:hover:text-emerald-400">
-              About
+          <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
+            <a href="#capabilities" className="hover:text-primary">
+              Capabilities
             </a>
-            <a href="#capabilities" className="hover:text-emerald-800 dark:hover:text-emerald-400">
-              Services
-            </a>
-            <a href="#process" className="hover:text-emerald-800 dark:hover:text-emerald-400">
-              Process
-            </a>
-            <a href="#faq" className="hover:text-emerald-800 dark:hover:text-emerald-400">
+            <a href="#faq" className="hover:text-primary">
               FAQ
             </a>
-            <a href="#pricing" className="hover:text-emerald-800 dark:hover:text-emerald-400">
-              Pricing
+            <a href="#insights" className="hover:text-primary">
+              Insights
+            </a>
+            <a href="#reviews" className="hover:text-primary">
+              Reviews
             </a>
           </nav>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-              <Link href="/billing">Book a consultation</Link>
+              <Link href="/billing">Get in touch</Link>
             </Button>
             <Button asChild size="sm">
               <Link href="/signin">Sign in</Link>
@@ -249,52 +170,32 @@ export default function Home() {
             <Sheet>
               <SheetTrigger
                 aria-label="Open menu"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-stone-600 transition-colors hover:bg-emerald-50 hover:text-emerald-800 dark:text-stone-300 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400 md:hidden"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary md:hidden"
               >
                 <Menu className="h-4 w-4" />
               </SheetTrigger>
-              <SheetContent side="right" className="gap-6 bg-stone-50 px-6 py-8 dark:bg-stone-950">
+              <SheetContent side="right" className="gap-6 px-6 py-8">
                 <SheetHeader className="p-0">
                   <SheetTitle>
                     <Logo />
                   </SheetTitle>
                 </SheetHeader>
-                <nav className="flex flex-col gap-1 text-base font-medium text-stone-700 dark:text-stone-200">
-                  <SheetClose
-                    render={
-                      <a
-                        href="#about"
-                        className="rounded-md px-2 py-2 hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
-                      />
-                    }
-                  >
-                    About
-                  </SheetClose>
+                <nav className="flex flex-col gap-1 text-base font-medium text-foreground">
                   <SheetClose
                     render={
                       <a
                         href="#capabilities"
-                        className="rounded-md px-2 py-2 hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+                        className="rounded-md px-2 py-2 hover:bg-primary/10 hover:text-primary"
                       />
                     }
                   >
-                    Services
-                  </SheetClose>
-                  <SheetClose
-                    render={
-                      <a
-                        href="#process"
-                        className="rounded-md px-2 py-2 hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
-                      />
-                    }
-                  >
-                    Process
+                    Capabilities
                   </SheetClose>
                   <SheetClose
                     render={
                       <a
                         href="#faq"
-                        className="rounded-md px-2 py-2 hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+                        className="rounded-md px-2 py-2 hover:bg-primary/10 hover:text-primary"
                       />
                     }
                   >
@@ -303,12 +204,22 @@ export default function Home() {
                   <SheetClose
                     render={
                       <a
-                        href="#pricing"
-                        className="rounded-md px-2 py-2 hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-400"
+                        href="#insights"
+                        className="rounded-md px-2 py-2 hover:bg-primary/10 hover:text-primary"
                       />
                     }
                   >
-                    Pricing
+                    Insights
+                  </SheetClose>
+                  <SheetClose
+                    render={
+                      <a
+                        href="#reviews"
+                        className="rounded-md px-2 py-2 hover:bg-primary/10 hover:text-primary"
+                      />
+                    }
+                  >
+                    Reviews
                   </SheetClose>
                 </nav>
                 <div className="mt-auto flex flex-col gap-2">
@@ -316,7 +227,7 @@ export default function Home() {
                     <Link href="/signin">Sign in</Link>
                   </Button>
                   <Button asChild variant="outline">
-                    <Link href="/billing">Book a consultation</Link>
+                    <Link href="/billing">Get in touch</Link>
                   </Button>
                 </div>
               </SheetContent>
@@ -326,349 +237,140 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="mx-auto w-full max-w-6xl px-6 pb-20 pt-16 sm:pt-24">
-        <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <motion.div {...fadeUp} className="max-w-xl">
-            <SectionLabel>PRACTICE MANAGEMENT, DONE CALMLY</SectionLabel>
-            <h1 className="font-display mt-5 text-4xl font-normal leading-[1.15] tracking-tight text-stone-900 dark:text-white sm:text-5xl">
-              One trusted platform for every consultant your clients rely on.
+      <section className="mx-auto w-full max-w-6xl px-6 pb-16 pt-14 sm:pt-20">
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+          <div className="flex max-w-xl flex-col justify-center">
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl">
+              Coordinate with confidence
             </h1>
-            <p className="mt-6 text-lg leading-8 text-stone-600 dark:text-stone-300">
-              Ayushman gives medical, legal, physiotherapy, IT, homeopathy, and astrology practices
-              a single, orderly home for bookings, session notes, and client trust — with every
-              tenant&apos;s data fully isolated from every other.
+            <p className="mt-6 text-lg leading-8 text-muted-foreground">
+              Connect with peer consultants and clients on one unified platform. Manage projects,
+              share updates, and collaborate seamlessly.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="justify-between bg-emerald-900 hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600"
-              >
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="default" className="justify-between">
                 <Link href="/billing">
-                  Book a consultation
+                  Start Free Trial
                   <ArrowUpRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="justify-between border-stone-300 dark:border-stone-700"
-              >
-                <a href="#process">
-                  See how it works
+              <Button asChild variant="outline" className="justify-between">
+                <a href="#capabilities">
+                  View Demo
                   <ArrowUpRight className="h-4 w-4" />
                 </a>
               </Button>
             </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative"
-          >
-            <div className="relative aspect-4/5 overflow-hidden rounded-2xl border border-stone-200 shadow-sm dark:border-stone-800 sm:aspect-square lg:aspect-4/5">
-              <Image
-                src="/landing_page.jpg"
-                alt="A consultant preparing notes ahead of a client session"
-                fill
-                priority
-                className="object-cover"
-              />
+            <div className="mt-10 rounded-xl border border-primary/20 bg-primary/5 p-5">
+              <p className="text-xs font-medium tracking-widest text-primary">/BUILT FOR</p>
+              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-foreground">
+                <span>MEDICAL</span>
+                <span>LEGAL</span>
+                <span>PHYSIOTHERAPY</span>
+                <span>HOMEOPATHY</span>
+                <span>ASTROLOGY</span>
+              </div>
             </div>
-            <div className="absolute -bottom-6 left-6 right-6 rounded-xl border border-stone-200 bg-white/95 p-5 shadow-md backdrop-blur-sm dark:border-stone-800 dark:bg-stone-900/95 sm:right-auto sm:w-72">
-              <p className="font-display text-sm italic leading-6 text-stone-700 dark:text-stone-200">
-                &ldquo;It felt like the system we should have had from day one.&rdquo;
-              </p>
-              <p className="mt-2 text-xs font-medium text-stone-400 dark:text-stone-500">
-                Meera Iyer · Tenant Admin
-              </p>
+          </div>
+
+          <Card className="overflow-hidden border-border bg-card/60 shadow-sm">
+            <div className="grid grid-cols-3 gap-2 p-4">
+              <Card className="col-span-2 border-none shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-xs font-medium text-muted-foreground">Today&apos;s briefing</p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">
+                    4 sessions · 2 overdue tasks
+                  </p>
+                  <div className="mt-3 space-y-1.5">
+                    <div className="h-1.5 w-full rounded-full bg-primary/15" />
+                    <div className="h-1.5 w-3/4 rounded-full bg-primary/15" />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-none bg-primary text-primary-foreground shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-xs font-medium text-primary-foreground/70">Case</p>
+                  <p className="mt-2 text-sm font-semibold">AI recap ready</p>
+                </CardContent>
+              </Card>
+              <Card className="col-span-3 border-none shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-xs font-medium text-muted-foreground">Recurring series</p>
+                  <div className="mt-2 flex gap-1.5">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`h-6 flex-1 rounded-md ${
+                          i < 2 ? "bg-primary" : "bg-primary/15"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </motion.div>
+          </Card>
         </div>
-
-        {/* Trust bar */}
-        <motion.div
-          {...fadeUp}
-          className="mt-20 border-t border-stone-200 pt-8 dark:border-stone-800"
-        >
-          <p className="text-xs font-medium tracking-widest text-stone-400 dark:text-stone-500">
-            TRUSTED ACROSS EVERY PRACTICE TYPE
-          </p>
-          <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm font-medium text-stone-500 dark:text-stone-400">
-            <span>Medical</span>
-            <span>Legal</span>
-            <span>Physiotherapy</span>
-            <span>IT Consulting</span>
-            <span>Homeopathy</span>
-            <span>Astrology</span>
-          </div>
-        </motion.div>
       </section>
 
-      {/* About */}
-      <section id="about" className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp} className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div>
-            <SectionLabel>ABOUT AYUSHMAN</SectionLabel>
-            <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-              Built by people who understand practices, not just software.
-            </h2>
-          </div>
-          <div className="space-y-5 text-base leading-7 text-stone-600 dark:text-stone-300">
-            <p>
-              Every practice we spoke with before building Ayushman had the same quiet frustration:
-              booking tools built for one kind of business, forced onto a completely different one.
-              A physician's calendar doesn't work like a lawyer's caseload. A homeopath's intake
-              isn't a physiotherapist's treatment plan.
-            </p>
-            <p>
-              So we built one platform with tenant isolation at its core — not bolted on. Each
-              practice gets its own branded workspace, its own consultants, its own client
-              relationships, and its own data boundary, enforced at the database level rather than
-              trusted to application code.
-            </p>
-            <p className="font-display text-xl italic text-stone-800 dark:text-stone-100">
-              The result is software that gets out of the way, so the work of consulting can stay
-              the focus.
-            </p>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* Services */}
+      {/* Capabilities */}
       <section id="capabilities" className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp} className="grid gap-6 sm:grid-cols-2 sm:items-end">
+        <div className="grid gap-6 sm:grid-cols-2 sm:items-end">
           <div>
-            <SectionLabel>SERVICES</SectionLabel>
-            <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-              What Ayushman handles for you
+            <SectionLabel>OUR SERVICES</SectionLabel>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
+              Capabilities
             </h2>
           </div>
-          <p className="text-sm leading-6 text-stone-500 dark:text-stone-400 sm:justify-self-end sm:max-w-sm">
+          <p className="text-sm leading-6 text-muted-foreground sm:justify-self-end sm:max-w-sm">
             Every tenant gets the same core loop — booking, session logging, AI recap, and trust
             oversight — tuned to the way each profession actually works.
           </p>
-        </motion.div>
+        </div>
 
         <CapabilitiesSection />
       </section>
 
-      {/* Industries served */}
-      <section className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp}>
-          <SectionLabel>WHO WE SERVE</SectionLabel>
-          <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-            One platform, six kinds of practice
-          </h2>
-        </motion.div>
-
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {industries.map((industry, i) => {
-            const Icon = industry.icon;
-            return (
-              <motion.div
-                key={industry.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.6, delay: i * 0.05, ease: "easeOut" }}
-              >
-                <Card className="flex-row items-center gap-4 border-stone-200 bg-white/70 p-5 dark:border-stone-800 dark:bg-stone-900/70">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="font-display text-base text-stone-900 dark:text-white">
-                      {industry.label}
-                    </p>
-                    <p className="text-sm text-stone-500 dark:text-stone-400">
-                      {industry.description}
-                    </p>
-                  </div>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Process */}
-      <section id="process" className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp}>
-          <SectionLabel>PROCESS</SectionLabel>
-          <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-            How a practice comes on board
-          </h2>
-        </motion.div>
-
-        <div className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {process.map((p, i) => {
-            const Icon = p.icon;
-            return (
-              <motion.div
-                key={p.step}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-80px" }}
-                transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-                className="relative"
-              >
-                <span className="font-display text-4xl text-stone-200 dark:text-stone-800">
-                  {p.step}
-                </span>
-                <span className="mt-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  <Icon className="h-4.5 w-4.5" />
-                </span>
-                <h3 className="font-display mt-4 text-lg text-stone-900 dark:text-white">
-                  {p.title}
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-stone-500 dark:text-stone-400">
-                  {p.description}
-                </p>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Results */}
-      <section className="border-y border-stone-200 bg-white/60 dark:border-stone-800 dark:bg-stone-900/40">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-8 px-6 py-14 lg:grid-cols-4">
-          {results.map((r, i) => (
-            <motion.div
-              key={r.label}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, delay: i * 0.06, ease: "easeOut" }}
-            >
-              <p className="font-display text-4xl text-emerald-900 dark:text-emerald-400">
-                {r.value}
-              </p>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{r.label}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp}>
-          <SectionLabel>IN THEIR WORDS</SectionLabel>
-          <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-            What practices and clients say
-          </h2>
-        </motion.div>
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={t.name}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-            >
-              <Card className="h-full border-stone-200 bg-white/70 p-6 dark:border-stone-800 dark:bg-stone-900/70">
-                <Quote className="h-5 w-5 text-emerald-800/50 dark:text-emerald-400/50" />
-                <p className="mt-4 text-sm leading-7 text-stone-700 dark:text-stone-200">
-                  {t.quote}
-                </p>
-                <p className="mt-5 text-sm font-medium text-stone-900 dark:text-white">{t.name}</p>
-                <p className="text-xs text-stone-400 dark:text-stone-500">{t.role}</p>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp} className="grid gap-6 sm:grid-cols-2 sm:items-end">
+      {/* Reviews */}
+      <section id="reviews" className="mx-auto w-full max-w-6xl px-6 py-20">
+        <div className="grid gap-6 sm:grid-cols-2 sm:items-end">
           <div>
-            <SectionLabel>PRICING</SectionLabel>
-            <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-              Simple plans for every practice
+            <SectionLabel>REVIEWS</SectionLabel>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
+              What consultants say
             </h2>
           </div>
-          <p className="text-sm leading-6 text-stone-500 dark:text-stone-400 sm:justify-self-end sm:max-w-sm">
-            Pay monthly or save by billing annually. Upgrade or downgrade anytime as your practice
-            grows.
+          <p className="text-sm leading-6 text-muted-foreground sm:justify-self-end sm:max-w-sm">
+            Real feedback from the consultants running their practice on Ayushman.
           </p>
-        </motion.div>
+        </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          {pricing.map((plan, i) => (
-            <motion.div
-              key={plan.tier}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-            >
-              <Card
-                className={`relative flex h-full flex-col border-stone-200 shadow-sm dark:border-stone-800 ${
-                  plan.featured
-                    ? "border-emerald-900 ring-1 ring-emerald-900 dark:border-emerald-400 dark:ring-emerald-400"
-                    : ""
-                }`}
-              >
-                {plan.featured && (
-                  <span className="absolute -top-3 right-6 rounded-full bg-emerald-900 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm dark:bg-emerald-700">
-                    Most Chosen
-                  </span>
-                )}
-                <CardContent className="flex flex-1 flex-col p-6">
-                  <p className="text-xs font-medium tracking-widest text-emerald-800 dark:text-emerald-400">
-                    {plan.tier}
-                  </p>
-                  <CardTitle className="font-display mt-3 text-3xl font-normal">
-                    ${plan.monthly}
-                    <span className="text-sm font-normal text-stone-400 dark:text-stone-500">
-                      {" "}
-                      /mo
-                    </span>
-                  </CardTitle>
-                  <CardDescription className="mt-2">{plan.description}</CardDescription>
-                  <p className="mt-4 text-xs text-stone-400 dark:text-stone-500">
-                    or ${plan.annual}/mo billed annually
-                  </p>
-                  <Button
-                    asChild
-                    variant={plan.featured ? "default" : "outline"}
-                    className={`mt-6 justify-between ${plan.featured ? "bg-emerald-900 hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600" : "border-stone-300 dark:border-stone-700"}`}
-                  >
-                    <Link href="/billing">
-                      Get started
-                      <ArrowUpRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {reviews.map((review) => (
+            <Card key={review.name} className="flex flex-col shadow-sm">
+              <CardContent className="flex flex-1 flex-col p-6">
+                <CardDescription className="flex-1 text-muted-foreground">
+                  &ldquo;{review.quote}&rdquo;
+                </CardDescription>
+                <p className="mt-6 text-sm font-semibold text-foreground">{review.name}</p>
+                <p className="text-xs text-muted-foreground">{review.role}</p>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
 
       {/* FAQ */}
       <section id="faq" className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp}>
-          <SectionLabel>FAQ</SectionLabel>
-          <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-            Frequently Asked Questions
-          </h2>
-        </motion.div>
+        <SectionLabel>FAQ</SectionLabel>
+        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
+          Frequently Asked Questions
+        </h2>
 
-        <Accordion
-          type="single"
-          collapsible
-          className="mt-8 border-t border-stone-200 dark:border-stone-800"
-        >
+        <Accordion type="single" collapsible className="mt-8 border-t border-border">
           {faqs.map((f) => (
-            <AccordionItem key={f.q} value={f.q} className="border-stone-200 dark:border-stone-800">
+            <AccordionItem key={f.q} value={f.q} className="border-border">
               <AccordionTrigger>{f.q}</AccordionTrigger>
               <AccordionContent>{f.a}</AccordionContent>
             </AccordionItem>
@@ -677,93 +379,44 @@ export default function Home() {
       </section>
 
       {/* Insights */}
-      <section className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div {...fadeUp} className="flex items-end justify-between gap-4">
+      <section id="insights" className="mx-auto w-full max-w-6xl px-6 py-20">
+        <div className="flex items-end justify-between gap-4">
           <div>
             <SectionLabel>FROM THE TEAM</SectionLabel>
-            <h2 className="font-display mt-4 text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
               Latest insights
             </h2>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden border-stone-300 sm:inline-flex dark:border-stone-700"
-            asChild
-          >
+          <Button variant="outline" size="sm" className="hidden sm:inline-flex" asChild>
             <a href="#">
               Discover more
               <ArrowUpRight className="h-4 w-4" />
             </a>
           </Button>
-        </motion.div>
+        </div>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-3">
-          {insights.map((post, i) => (
-            <motion.div
-              key={post.title}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 0.6, delay: i * 0.08, ease: "easeOut" }}
-            >
-              <Card className="border-none bg-transparent shadow-none">
-                <div className="aspect-4/3 rounded-xl bg-linear-to-br from-emerald-900 to-stone-800 dark:to-stone-700" />
-                <CardContent className="px-0 pb-0">
-                  <div className="mt-4 flex items-center gap-2 text-xs font-medium text-stone-400 dark:text-stone-500">
-                    <span className="text-emerald-800 dark:text-emerald-400">{post.tag}</span>
-                    <span>/{post.date}</span>
-                  </div>
-                  <CardTitle className="font-display mt-2 font-normal">{post.title}</CardTitle>
-                  <CardDescription className="mt-2">{post.blurb}</CardDescription>
-                </CardContent>
-              </Card>
-            </motion.div>
+          {insights.map((post) => (
+            <Card key={post.title} className="border-none bg-transparent shadow-none">
+              <div className="aspect-4/3 rounded-xl bg-linear-to-br from-primary to-foreground" />
+              <CardContent className="px-0 pb-0">
+                <div className="mt-4 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                  <span className="text-primary">{post.tag}</span>
+                  <span>/{post.date}</span>
+                </div>
+                <CardTitle className="mt-2">{post.title}</CardTitle>
+                <CardDescription className="mt-2">{post.blurb}</CardDescription>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </section>
 
-      {/* Consultation booking / contact */}
-      <section id="contact" className="mx-auto w-full max-w-6xl px-6 py-20">
-        <motion.div
-          {...fadeUp}
-          className="rounded-2xl border border-stone-200 bg-white/70 px-8 py-14 text-center dark:border-stone-800 dark:bg-stone-900/50 sm:px-16"
-        >
-          <div className="flex justify-center">
-            <SectionLabel>GET STARTED</SectionLabel>
-          </div>
-          <h2 className="font-display mx-auto mt-4 max-w-xl text-3xl font-normal tracking-tight text-stone-900 dark:text-white">
-            Ready to bring calm to your practice?
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-sm leading-6 text-stone-500 dark:text-stone-400">
-            Tell us about your practice and we&apos;ll set up a short call to walk through
-            onboarding — no pressure, no obligation.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              asChild
-              size="lg"
-              className="bg-emerald-900 hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600"
-            >
-              <Link href="/billing">Book a consultation</Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="border-stone-300 dark:border-stone-700"
-            >
-              <a href="mailto:hello@ayushman.health">Email us</a>
-            </Button>
-          </div>
-        </motion.div>
-      </section>
-
       {/* Footer */}
-      <footer className="border-t border-stone-200 bg-stone-50/80 dark:border-stone-800 dark:bg-stone-950/80">
+      <footer id="contact" className="border-t border-border bg-background/70">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
           <Logo />
-          <p className="text-sm text-stone-500 dark:text-stone-400">
+          <p className="text-sm text-muted-foreground">
             © 2026 Ayushman. Built for the consultants your clients trust.
           </p>
         </div>

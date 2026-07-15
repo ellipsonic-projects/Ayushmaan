@@ -31,11 +31,13 @@ exports.usersRouter.get("/", (0, require_role_1.requireRole)("TENANT_ADMIN", "SU
     }));
     res.json({ data: users });
 });
-const createUserSchema = zod_1.z.object({
+const createUserSchema = zod_1.z
+    .object({
     email: zod_1.z.string().email(),
     role: zod_1.z.enum(["TENANT_ADMIN", "CONSULTANT", "CLIENT"]),
     phone: zod_1.z.string().max(20).optional(),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/users — invites via Supabase Admin API + creates
 // the public.users row. A TENANT_ADMIN may only invite role=CONSULTANT
 // (self-escalation guard, data_api_v4.md §6); SUPER_ADMIN may invite any role.
@@ -75,10 +77,12 @@ exports.usersRouter.get("/:userId", requireSelfOrAdmin, async (req, res) => {
     }
     res.json({ data: user });
 });
-const patchUserSchema = zod_1.z.object({
+const patchUserSchema = zod_1.z
+    .object({
     accountStatus: zod_1.z.enum(["ACTIVE", "SUSPENDED", "BANNED", "DELETED"]).optional(),
     phone: zod_1.z.string().max(20).optional(),
-}).strict();
+})
+    .strict();
 // PATCH /tenants/:tenantId/users/:userId — a TENANT_ADMIN cannot target a
 // SUPER_ADMIN or another TENANT_ADMIN row (checked against the target row's
 // role, not just the tenant match).
@@ -110,7 +114,10 @@ exports.usersRouter.delete("/:userId", (0, require_role_1.requireRole)("TENANT_A
             (target.role === "TENANT_ADMIN" || target.role === "SUPER_ADMIN")) {
             throw new errorHandler_1.AppError(403, "A Tenant Admin cannot deactivate an admin-level account", "SELF_ESCALATION_BLOCKED");
         }
-        return tx.user.update({ where: { id: req.params.userId }, data: { accountStatus: "DELETED" } });
+        return tx.user.update({
+            where: { id: req.params.userId },
+            data: { accountStatus: "DELETED" },
+        });
     });
     res.json({ data: user });
 });

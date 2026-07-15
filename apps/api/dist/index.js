@@ -36,8 +36,12 @@ app.get("/health", (req, res) => {
 // Requires apps/web to call this API through the tenant's subdomain host
 // (`{slug}.<TENANT_ROOT_HOST>`) or send an `X-Tenant-Slug` header.
 app.use(auth_1.authMiddleware);
-app.use(tenant_context_1.tenantContextMiddleware);
+// GET /auth/me must work before a tenant slug is known — it's how the
+// generic (non-subdomain) sign-in flow discovers which tenant to redirect
+// to — so it's mounted ahead of tenantContextMiddleware. It doesn't read
+// req.tenant/req.tenantContext, only req.user.
 app.use("/api/auth", me_1.meRouter);
+app.use(tenant_context_1.tenantContextMiddleware);
 app.use("/api/platform/tenants", tenants_router_1.platformTenantsRouter);
 app.use("/api/tenants/:tenantId", tenants_router_1.tenantSettingsRouter);
 app.use("/api/tenants/:tenantId/users", users_router_1.usersRouter);

@@ -1,25 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-import { LifeBuoy, Plus, LogOut } from "lucide-react";
+import { LifeBuoy, Plus } from "lucide-react";
 
 import { TenantAdminNav } from "@/components/tenant/admin/nav";
 import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 export function TenantAdminSidebarContent() {
   return (
     <>
       <Link href="/slug/tenant/dashboard" className="flex items-center gap-2.5 px-2">
-        <Image
-          src="/icon.svg"
-          alt="Ayushman"
-          width={32}
-          height={32}
-          className="rounded-lg"
-        />
+        <Image src="/icon.svg" alt="Ayushman" width={32} height={32} className="rounded-lg" />
         <div className="leading-tight">
-          <p className="text-base font-semibold text-sidebar-foreground">
-            Ayushman
-          </p>
+          <p className="text-base font-semibold text-sidebar-foreground">Ayushman</p>
           <p className="text-[11px] font-medium uppercase tracking-wider text-sidebar-foreground/60">
             Tenant Admin
           </p>
@@ -44,13 +37,7 @@ export function TenantAdminSidebarContent() {
             <LifeBuoy className="h-4 w-4" />
             Support
           </Link>
-          <Link
-            href="/logout"
-            className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Link>
+          <LogoutButton variant="row" />
         </div>
       </div>
     </>

@@ -34,7 +34,10 @@ async function assertCaseParty(tx, req, caseRow) {
 }
 async function resolveAutoApprove(tx, tenantId, consultantId) {
     const [consultant, settings] = await Promise.all([
-        tx.consultantProfile.findUnique({ where: { id: consultantId }, select: { autoApproveBookings: true } }),
+        tx.consultantProfile.findUnique({
+            where: { id: consultantId },
+            select: { autoApproveBookings: true },
+        }),
         tx.tenantSettings.findUnique({ where: { tenantId }, select: { autoApproveBookings: true } }),
     ]);
     return consultant?.autoApproveBookings || settings?.autoApproveBookings || false;
@@ -54,11 +57,13 @@ exports.caseAppointmentsRouter.get("/", (0, require_role_1.requireRole)("CONSULT
     });
     res.json({ data: appointments });
 });
-const createAppointmentSchema = zod_1.z.object({
+const createAppointmentSchema = zod_1.z
+    .object({
     scheduledStart: zod_1.z.string(),
     scheduledEnd: zod_1.z.string(),
     meetingLink: zod_1.z.string().url().optional(),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/cases/:caseId/appointments — single-occurrence
 // booking. Conflict-checked against existing appointments; 409 on double-book.
 exports.caseAppointmentsRouter.post("/", (0, require_role_1.requireRole)("CLIENT", "CONSULTANT"), async (req, res) => {
@@ -68,7 +73,11 @@ exports.caseAppointmentsRouter.post("/", (0, require_role_1.requireRole)("CLIENT
     const appointment = await (0, rls_context_1.withTenantContext)(req.tenantContext, async (tx) => {
         const caseRow = await loadCaseForBooking(tx, req.params.tenantId, req.params.caseId);
         await assertCaseParty(tx, req, caseRow);
-        await (0, booking_service_1.assertNoConflict)(tx, { consultantId: caseRow.consultantId, scheduledStart, scheduledEnd });
+        await (0, booking_service_1.assertNoConflict)(tx, {
+            consultantId: caseRow.consultantId,
+            scheduledStart,
+            scheduledEnd,
+        });
         const autoApprove = await resolveAutoApprove(tx, req.params.tenantId, caseRow.consultantId);
         return tx.appointment.create({
             data: {
@@ -83,7 +92,8 @@ exports.caseAppointmentsRouter.post("/", (0, require_role_1.requireRole)("CLIENT
     });
     res.status(201).json({ data: appointment });
 });
-const createSeriesSchema = zod_1.z.object({
+const createSeriesSchema = zod_1.z
+    .object({
     recurrenceRule: zod_1.z.object({
         dayOfWeek: zod_1.z.number().int().min(0).max(6),
         startTime: zod_1.z.string(),
@@ -92,7 +102,8 @@ const createSeriesSchema = zod_1.z.object({
         endDate: zod_1.z.string().optional(),
         occurrenceCount: zod_1.z.number().int().min(1).optional(),
     }),
-}).strict();
+})
+    .strict();
 // POST /tenants/:tenantId/cases/:caseId/appointment-series — recurring
 // booking. Creates appointment_series + expands appointments atomically.
 // data_api_v4.md's path for series creation is a sibling of /appointments
@@ -161,9 +172,11 @@ exports.appointmentSeriesRouter.get("/:seriesId", (0, require_role_1.requireRole
     });
     res.json({ data: series });
 });
-const patchSeriesSchema = zod_1.z.object({
+const patchSeriesSchema = zod_1.z
+    .object({
     status: zod_1.z.enum(["ACTIVE", "COMPLETED", "CANCELLED"]),
-}).strict();
+})
+    .strict();
 // PATCH /tenants/:tenantId/appointment-series/:seriesId — CONSULTANT (own).
 // Cancelling cascades only to future REQUESTED/APPROVED occurrences.
 exports.appointmentSeriesRouter.patch("/:seriesId", (0, require_role_1.requireRole)("CONSULTANT"), async (req, res) => {
@@ -223,20 +236,17 @@ const LEGAL_TRANSITIONS = {
     CANCELLED: [],
     NO_SHOW: [],
 };
-const patchAppointmentSchema = zod_1.z.object({
-    status: zod_1.z.enum([
-        "REQUESTED",
-        "APPROVED",
-        "RESCHEDULE_PROPOSED",
-        "COMPLETED",
-        "CANCELLED",
-        "NO_SHOW",
-    ]).optional(),
+const patchAppointmentSchema = zod_1.z
+    .object({
+    status: zod_1.z
+        .enum(["REQUESTED", "APPROVED", "RESCHEDULE_PROPOSED", "COMPLETED", "CANCELLED", "NO_SHOW"])
+        .optional(),
     meetingLink: zod_1.z.string().url().optional(),
     cancellationReason: zod_1.z.string().optional(),
     scheduledStart: zod_1.z.string().optional(),
     scheduledEnd: zod_1.z.string().optional(),
-}).strict();
+})
+    .strict();
 // PATCH /tenants/:tenantId/appointments/:appointmentId — appointment
 // state-machine transitions. CONSULTANT: approve/propose-reschedule/reject/
 // cancel/no-show/videoLink. CLIENT: accept/decline reschedule, cancel within
@@ -258,7 +268,9 @@ exports.appointmentsRouter.patch("/:appointmentId", (0, require_role_1.requireRo
         if (body.scheduledStart || body.scheduledEnd) {
             await (0, booking_service_1.assertNoConflict)(tx, {
                 consultantId: found.case.consultantId,
-                scheduledStart: body.scheduledStart ? new Date(body.scheduledStart) : found.scheduledStart,
+                scheduledStart: body.scheduledStart
+                    ? new Date(body.scheduledStart)
+                    : found.scheduledStart,
                 scheduledEnd: body.scheduledEnd ? new Date(body.scheduledEnd) : found.scheduledEnd,
                 excludeAppointmentId: found.id,
             });
@@ -268,7 +280,9 @@ exports.appointmentsRouter.patch("/:appointmentId", (0, require_role_1.requireRo
             data: {
                 ...(body.status && { status: body.status }),
                 ...(body.meetingLink !== undefined && { meetingLink: body.meetingLink }),
-                ...(body.cancellationReason !== undefined && { cancellationReason: body.cancellationReason }),
+                ...(body.cancellationReason !== undefined && {
+                    cancellationReason: body.cancellationReason,
+                }),
                 ...(body.scheduledStart && { scheduledStart: new Date(body.scheduledStart) }),
                 ...(body.scheduledEnd && { scheduledEnd: new Date(body.scheduledEnd) }),
             },

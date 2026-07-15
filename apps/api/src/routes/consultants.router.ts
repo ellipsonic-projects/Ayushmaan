@@ -14,13 +14,20 @@ import { getOwnConsultantProfileId } from "../lib/callerProfile";
 export const consultantsRouter: Router = Router({ mergeParams: true });
 consultantsRouter.use(requireTenantMatch);
 
-// GET /tenants/:tenantId/consultants
+// GET /tenants/:tenantId/consultants — CLIENT sees only consultants
+// currently accepting new clients (booking-relevant); TENANT_ADMIN,
+// SUPER_ADMIN and CONSULTANT see the full tenant roster.
 consultantsRouter.get(
   "/",
-  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN", "CONSULTANT", "CLIENT"),
   async (req: TenantScopedRequest, res: Response) => {
     const consultants = await withTenantContext(req.tenantContext!, (tx) =>
-      tx.consultantProfile.findMany({ where: { tenantId: req.params.tenantId } })
+      tx.consultantProfile.findMany({
+        where: {
+          tenantId: req.params.tenantId,
+          ...(req.user!.role === "CLIENT" && { isAcceptingNewClients: true }),
+        },
+      })
     );
     res.json({ data: consultants });
   }
