@@ -1,94 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-type Client = {
-  name: string;
-  clientId: string;
-  email: string;
-  phone: string;
-  consultant: string;
-  totalSessions: number;
-  lastSessionDate: string;
-  status: "Active" | "On Hold" | "Inactive";
-  avatarClass: string;
-};
-
-const clients: Client[] = [
-  {
-    name: "Jonathan Sterling",
-    clientId: "98234-AX",
-    email: "j.sterling@example.com",
-    phone: "+1 (555) 012-3456",
-    consultant: "Sarah Drummand",
-    totalSessions: 128,
-    lastSessionDate: "Oct 24, 2023",
-    status: "Active",
-    avatarClass: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400",
-  },
-  {
-    name: "Elena Lopez",
-    clientId: "77211-BQ",
-    email: "elena.l@solutions.net",
-    phone: "+1 (555) 987-6543",
-    consultant: "Marcus Vance",
-    totalSessions: 45,
-    lastSessionDate: "Oct 21, 2023",
-    status: "On Hold",
-    avatarClass:
-      "bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-400",
-  },
-  {
-    name: "Thomas Wright",
-    clientId: "44302-MK",
-    email: "t.wright@enterprise.com",
-    phone: "+1 (555) 234-5678",
-    consultant: "Dr. Linda Chen",
-    totalSessions: 210,
-    lastSessionDate: "Oct 25, 2023",
-    status: "Active",
-    avatarClass:
-      "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400",
-  },
-  {
-    name: "Beatrice Walsh",
-    clientId: "11094-ZZ",
-    email: "b.walsh@domain.org",
-    phone: "+1 (555) 444-3322",
-    consultant: "Kevin Patel",
-    totalSessions: 12,
-    lastSessionDate: "Oct 12, 2023",
-    status: "Inactive",
-    avatarClass:
-      "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400",
-  },
-  {
-    name: "Arthur Miller",
-    clientId: "66531-HY",
-    email: "a.miller@corp.com",
-    phone: "+1 (555) 001-2233",
-    consultant: "Sarah Drummand",
-    totalSessions: 89,
-    lastSessionDate: "Oct 25, 2023",
-    status: "Active",
-    avatarClass:
-      "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  },
-];
-
-const statusClass: Record<Client["status"], string> = {
-  Active:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
-  "On Hold":
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
-  Inactive:
-    "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
-};
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import type { TenantClient } from "@/lib/api/clients.server";
+import {
+  updatePlatformTenantClient,
+  deletePlatformTenantClient,
+} from "@/lib/api/platform-clients.client";
 
 function initials(name: string) {
   return name
@@ -97,8 +31,69 @@ function initials(name: string) {
     .join("");
 }
 
-export function ClientsTable() {
-  const [page] = useState(1);
+export function ClientsTable({
+  clients: initialClients,
+  tenantId,
+  tenantSlug,
+}: {
+  clients: TenantClient[];
+  tenantId: string;
+  tenantSlug: string;
+}) {
+  const router = useRouter();
+  const [clients, setClients] = useState(initialClients);
+  const [editTarget, setEditTarget] = useState<TenantClient | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TenantClient | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [preferredLanguage, setPreferredLanguage] = useState("");
+  const [timezone, setTimezone] = useState("");
+  const [emergencyContactName, setEmergencyContactName] = useState("");
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  function openEdit(client: TenantClient) {
+    setEditTarget(client);
+    setFullName(client.fullName);
+    setPreferredLanguage(client.preferredLanguage ?? "");
+    setTimezone("");
+    setEmergencyContactName("");
+    setEmergencyContactPhone("");
+  }
+
+  async function handleSaveEdit() {
+    if (!editTarget) return;
+    setSaving(true);
+    try {
+      await updatePlatformTenantClient(tenantId, tenantSlug, editTarget.id, {
+        fullName,
+        preferredLanguage,
+        timezone,
+        emergencyContactName,
+        emergencyContactPhone,
+      });
+      setEditTarget(null);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleting(true);
+    setClients((prev) => prev.filter((c) => c.id !== target.id));
+    setDeleteTarget(null);
+    try {
+      await deletePlatformTenantClient(tenantId, tenantSlug, target.id);
+      router.refresh();
+    } catch {
+      setClients((prev) => [...prev, target]);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <Card size="sm">
@@ -110,113 +105,175 @@ export function ClientsTable() {
                 <th className="py-2 pr-4 font-medium">Client Name</th>
                 <th className="py-2 pr-4 font-medium">Contact Details</th>
                 <th className="py-2 pr-4 font-medium">Assigned Consultant</th>
-                <th className="py-2 pr-4 font-medium">Total Sessions</th>
-                <th className="py-2 pr-4 font-medium">Last Session Date</th>
-                <th className="py-2 pr-4 font-medium">Status</th>
+                <th className="py-2 pr-4 font-medium">CRM Tags</th>
+                <th className="py-2 pr-4 font-medium">Joined</th>
                 <th className="py-2 pr-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {clients.map((client) => (
-                <tr
-                  key={client.clientId}
-                  className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
-                >
-                  <td className="py-2.5 pr-4">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${client.avatarClass}`}
-                      >
-                        {initials(client.name)}
-                      </span>
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {client.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ID: {client.clientId}
-                        </p>
+              {clients.map((client) => {
+                const tags = Array.from(new Set(client.cases.flatMap((c) => c.tags)));
+                const consultantNames = Array.from(
+                  new Set(client.cases.map((c) => c.consultant.fullName))
+                );
+                return (
+                  <tr
+                    key={client.id}
+                    className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
+                  >
+                    <td className="py-2.5 pr-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-400">
+                          {initials(client.fullName)}
+                        </span>
+                        <div>
+                          <p className="font-medium text-foreground">{client.fullName}</p>
+                          <p className="text-xs text-muted-foreground">ID: {client.id}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="py-2.5 pr-4">
-                    <p className="text-foreground">{client.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {client.phone}
-                    </p>
-                  </td>
-                  <td className="py-2.5 pr-4">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-foreground">
-                        {initials(client.consultant)}
-                      </span>
-                      <span className="text-foreground">
-                        {client.consultant}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-2.5 pr-4 tabular-nums text-foreground">
-                    {client.totalSessions}
-                  </td>
-                  <td className="py-2.5 pr-4 tabular-nums text-muted-foreground">
-                    {client.lastSessionDate}
-                  </td>
-                  <td className="py-2.5 pr-4">
-                    <Badge
-                      variant="outline"
-                      className={statusClass[client.status]}
-                    >
-                      {client.status.toUpperCase()}
-                    </Badge>
-                  </td>
-                  <td className="py-2.5 pr-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon-sm">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      <p className="text-foreground">{client.user.email}</p>
+                      <p className="text-xs text-muted-foreground">{client.user.phone ?? "—"}</p>
+                    </td>
+                    <td className="py-2.5 pr-4 text-foreground">
+                      {consultantNames.length > 0 ? consultantNames.join(", ") : "—"}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      <div className="flex flex-wrap gap-1">
+                        {tags.length > 0 ? (
+                          tags.map((tag) => (
+                            <Badge key={tag} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2.5 pr-4 tabular-nums text-muted-foreground">
+                      {new Date(client.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={`Edit ${client.fullName}`}
+                          onClick={() => openEdit(client)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-destructive hover:text-destructive"
+                          aria-label={`Delete ${client.fullName}`}
+                          onClick={() => setDeleteTarget(client)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon-sm">
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
         <div className="mt-4 flex items-center justify-between px-4 text-xs text-muted-foreground">
-          <span>Showing 1 to {clients.length} of 142 clients</span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={page === 1}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            {[1, 2, 3].map((n) => (
-              <Button
-                key={n}
-                variant={page === n ? "default" : "outline"}
-                size="icon-sm"
-              >
-                {n}
-              </Button>
-            ))}
-            <span className="px-1">...</span>
-            <Button variant="outline" size="icon-sm">
-              15
-            </Button>
-            <Button variant="outline" size="icon-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          <span>{clients.length} clients</span>
         </div>
       </CardContent>
+
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+            <DialogDescription>Update {editTarget?.fullName}&apos;s profile.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-full-name">Full Name</Label>
+              <Input
+                id="edit-full-name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-preferred-language">Preferred Language</Label>
+              <Input
+                id="edit-preferred-language"
+                value={preferredLanguage}
+                onChange={(e) => setPreferredLanguage(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-timezone">Timezone</Label>
+              <Input
+                id="edit-timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-emergency-name">Emergency Contact Name</Label>
+              <Input
+                id="edit-emergency-name"
+                value={emergencyContactName}
+                onChange={(e) => setEmergencyContactName(e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-emergency-phone">Emergency Contact Phone</Label>
+              <Input
+                id="edit-emergency-phone"
+                value={emergencyContactPhone}
+                onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                className="h-9"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button disabled={!fullName || saving} onClick={handleSaveEdit}>
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove this client?</DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.fullName} will be suspended and lose access to their account. Their
+              case history is preserved. This can be reversed by reactivating their account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" disabled={deleting} onClick={handleConfirmDelete}>
+              {deleting ? "Removing..." : "Remove"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

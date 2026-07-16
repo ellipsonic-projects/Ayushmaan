@@ -23,9 +23,9 @@ export function SessionDetailHeader({ caseSummary }: { caseSummary: CaseSummary 
   return (
     <div className="flex flex-col gap-3">
       <Button variant="ghost" size="sm" asChild className="w-fit text-muted-foreground">
-        <Link href="/slug/tenant/consultant/sessions">
+        <Link href="/slug/tenant/consultant/calendar">
           <ChevronLeft className="h-4 w-4" />
-          Back to sessions
+          Back to calendar
         </Link>
       </Button>
 

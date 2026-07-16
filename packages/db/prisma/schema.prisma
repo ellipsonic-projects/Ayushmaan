@@ -78,6 +78,7 @@ enum SlotStatus {
 }
 
 enum CaseStatus {
+  PENDING_ASSIGNMENT
   ACTIVE
   ON_HOLD
   CLOSED
@@ -95,6 +96,7 @@ enum SeriesStatus {
 
 enum AppointmentStatus {
   REQUESTED
+  ADMIN_APPROVED
   APPROVED
   RESCHEDULE_PROPOSED
   COMPLETED
@@ -340,7 +342,7 @@ model TenantBilling {
 model User {
   id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   supabaseAuthUserId String        @unique @map("supabase_auth_user_id") @db.Uuid
-  tenantId           String?       @map("tenant_id") @db.Uuid
+  tenantId           String?       @map("tenant_id") @db.Uuid // always null for role=CLIENT — clients are platform-level
   role               UserRole
   email              String        @db.Citext
   emailIsVerified    Boolean       @default(false) @map("email_is_verified")
@@ -364,9 +366,11 @@ model User {
 // Client
 // -----------------------------------------------------------------------------
 
+// Clients are platform-level: one profile per person, not scoped to a tenant.
+// Their relationship to a given tenant is expressed through Case.tenantId
+// (the consultant's tenant) rather than a column here.
 model ClientProfile {
   id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId              String    @map("tenant_id") @db.Uuid
   userId                String    @unique @map("user_id") @db.Uuid
   fullName              String    @map("full_name") @db.VarChar(200)
   dob                   DateTime? @db.Date
@@ -383,7 +387,6 @@ model ClientProfile {
   guardianLinks    GuardianLink[]
   cases            Case[]
 
-  @@index([tenantId])
   @@map("client_profiles")
 }
 
@@ -391,7 +394,6 @@ model ClientProfile {
 // in a query/view, not a stored generated column duplicated per Prisma version).
 model ClientCategoryProfile {
   id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId String             @map("tenant_id") @db.Uuid
   clientId String             @map("client_id") @db.Uuid
   category ConsultantCategory
   data     Json               @default("{}") // category-owned intake shape — new categories never need a migration
@@ -399,13 +401,11 @@ model ClientCategoryProfile {
   client ClientProfile @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@unique([clientId, category])
-  @@index([tenantId])
   @@map("client_category_profiles")
 }
 
 model GuardianLink {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String    @map("tenant_id") @db.Uuid
   minorClientId  String    @map("minor_client_id") @db.Uuid
   guardianUserId String    @map("guardian_user_id") @db.Uuid
   relationship   String    @db.VarChar(50)
@@ -415,7 +415,6 @@ model GuardianLink {
   minorClient ClientProfile @relation(fields: [minorClientId], references: [id], onDelete: Cascade)
 
   @@unique([minorClientId, guardianUserId])
-  @@index([tenantId])
   @@map("guardian_links")
 }
 
@@ -518,17 +517,18 @@ model Case {
   id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId     String             @map("tenant_id") @db.Uuid
   clientId     String             @map("client_id") @db.Uuid
-  consultantId String             @map("consultant_id") @db.Uuid
+  consultantId String?            @map("consultant_id") @db.Uuid
   category     ConsultantCategory
   matterKey    String?            @map("matter_key") @db.VarChar(150) // disambiguates 2 concurrent cases for the same pair
   tags         String[]           @default([]) // consultant's own CRM segmentation; per-consultant, never tenant-shared
   status       CaseStatus         @default(ACTIVE)
   requirements String?            // consultant-authored brief describing what the client needs
+  deletedAt    DateTime?          @map("deleted_at") @db.Timestamptz(6) // soft-delete
   createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   client       ClientProfile              @relation(fields: [clientId], references: [id])
-  consultant   ConsultantProfile          @relation(fields: [consultantId], references: [id])
+  consultant   ConsultantProfile?         @relation(fields: [consultantId], references: [id])
   series       AppointmentSeries[]
   appointments Appointment[]
   interactions Interaction[]

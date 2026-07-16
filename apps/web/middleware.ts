@@ -16,12 +16,14 @@ import { NextResponse, type NextRequest } from "next/server";
 //    subdomain) must belong to a signed-in user whose own tenant (from
 //    apps/api's verified /auth/me, never the URL/host) matches `slug`, and
 //    that tenant must be ACTIVE. It must also belong in the specific
-//    tenant/{admin,consultant,client}/... section for that user's role —
-//    a CONSULTANT can't wander into /tenant/admin/..., etc. SUPER_ADMIN is
+//    tenant/{admin,consultant}/... section for that user's role — a
+//    CONSULTANT can't wander into /tenant/admin/..., etc. SUPER_ADMIN is
 //    for /superadmin/... only, and is rejected from tenant dashboards the
 //    same way. /superadmin/... itself requires a signed-in SUPER_ADMIN.
-//    /signin and the public landing pages aren't scoped and don't go
-//    through this.
+//    CLIENT accounts are platform-level (no home tenant, no subdomain) —
+//    their /client/... section just requires a signed-in CLIENT, checked
+//    separately below. /signin and the public landing pages aren't scoped
+//    and don't go through any of this.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const TENANT_ROOT_HOST = process.env.NEXT_PUBLIC_TENANT_ROOT_HOST || "localhost";
 
@@ -33,7 +35,6 @@ interface MeResponse {
 const ROLE_BY_TENANT_SECTION: Record<string, MeResponse["role"]> = {
   admin: "TENANT_ADMIN",
   consultant: "CONSULTANT",
-  client: "CLIENT",
 };
 
 function tenantSlugFromHost(host: string): string | null {
@@ -62,8 +63,11 @@ export async function middleware(request: NextRequest) {
     ? pathname.startsWith("/tenant/")
     : pathname.split("/")[2] === "tenant";
   const isSuperAdmin = !subdomainSlug && pathname.startsWith("/superadmin");
+  // Platform-level, main-domain only — a client never reaches this via a
+  // tenant subdomain since they have no home tenant to be on.
+  const isClientDashboard = !subdomainSlug && pathname.startsWith("/client");
 
-  if (!isTenantDashboard && !isSuperAdmin) {
+  if (!isTenantDashboard && !isSuperAdmin && !isClientDashboard) {
     return response;
   }
 
@@ -108,9 +112,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
-  const meRes = await fetch(`${API_BASE_URL}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  });
+  let meRes: Response;
+  try {
+    meRes = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+  } catch {
+    // API unreachable (down, network error) — fetch throws rather than
+    // resolving with a non-ok response, so this must be caught separately
+    // from the !meRes.ok case below.
+    return NextResponse.redirect(signInUrl);
+  }
   if (!meRes.ok) {
     return NextResponse.redirect(signInUrl);
   }
@@ -123,9 +135,16 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  if (isClientDashboard) {
+    if (me.role !== "CLIENT") {
+      return NextResponse.redirect(signInUrl);
+    }
+    return response;
+  }
+
   // Past this point we're guarding a tenant dashboard — SUPER_ADMIN belongs
-  // in /superadmin/... only.
-  if (me.role === "SUPER_ADMIN") {
+  // in /superadmin/... only, CLIENT in /client/... only.
+  if (me.role === "SUPER_ADMIN" || me.role === "CLIENT") {
     return NextResponse.redirect(signInUrl);
   }
 

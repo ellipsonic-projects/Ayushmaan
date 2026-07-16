@@ -12,7 +12,8 @@ const resolveTenantSlug_1 = require("../lib/tenant/resolveTenantSlug");
 // exactly like a `:tenantId` path param. It is cross-checked against the
 // caller's verified JWT `tenant_id` claim (req.user.tenantId) before being
 // trusted for anything; a mismatch is rejected outright for anyone but a
-// SUPER_ADMIN. Only once that check passes does this middleware attach the
+// SUPER_ADMIN or CLIENT (platform-level, no single home tenant — see
+// isClient below). Only once that check passes does this middleware attach the
 // TenantContext that every route handler must pass into withTenantContext()
 // to open its RLS-scoped transaction.
 const tenantContextMiddleware = async (req, res, next) => {
@@ -20,6 +21,11 @@ const tenantContextMiddleware = async (req, res, next) => {
         return next(new errorHandler_1.AppError(401, "Unauthorized"));
     }
     const isSuperAdmin = req.user.role === "SUPER_ADMIN";
+    // CLIENT accounts are platform-level (schema_ayushman_v3.md §4.2) — they
+    // carry no home tenant_id claim and can hold Cases across many tenants —
+    // so they're exempt from the tenant-mismatch check below, same as a Super
+    // Admin, rather than being locked out of every tenant-scoped route.
+    const isClient = req.user.role === "CLIENT";
     const slug = (0, resolveTenantSlug_1.resolveTenantSlug)(req);
     if (!slug) {
         // No tenant to resolve — only valid for a Super Admin acting platform-wide.
@@ -36,7 +42,7 @@ const tenantContextMiddleware = async (req, res, next) => {
     if (tenant.status !== "ACTIVE") {
         return next(new errorHandler_1.AppError(403, "This practice is unavailable", "TENANT_SUSPENDED"));
     }
-    if (!isSuperAdmin && req.user.tenantId !== tenant.id) {
+    if (!isSuperAdmin && !isClient && req.user.tenantId !== tenant.id) {
         return next(new errorHandler_1.AppError(403, "Forbidden", "TENANT_MISMATCH"));
     }
     req.tenant = {

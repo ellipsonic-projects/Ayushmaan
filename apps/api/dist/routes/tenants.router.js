@@ -222,8 +222,13 @@ exports.platformTenantsRouter.patch("/:tenantId/billing", async (req, res) => {
 // tenant only; SUPER_ADMIN also allowed but that's a cross-tenant read
 // covered by the platform routes above, not duplicated here).
 exports.tenantSettingsRouter = (0, express_1.Router)({ mergeParams: true });
-exports.tenantSettingsRouter.use((0, require_role_1.requireRole)("TENANT_ADMIN", "SUPER_ADMIN"), require_tenant_match_1.requireTenantMatch);
-exports.tenantSettingsRouter.get("/settings", async (req, res) => {
+exports.tenantSettingsRouter.use(require_tenant_match_1.requireTenantMatch);
+// requireRole is applied per-route (not as a router-level .use()) because
+// this router is mounted at the bare /api/tenants/:tenantId prefix in
+// index.ts — a blanket role check here would run for every request under
+// that prefix, including sibling routers (appointments, consultants, cases,
+// ...) mounted after it, and reject them before they're ever reached.
+exports.tenantSettingsRouter.get("/settings", (0, require_role_1.requireRole)("TENANT_ADMIN", "SUPER_ADMIN"), async (req, res) => {
     const settings = await (0, rls_context_1.withTenantContext)(req.tenantContext, (tx) => tx.tenantSettings.findUnique({ where: { tenantId: req.params.tenantId } }));
     if (!settings)
         throw new errorHandler_1.AppError(404, "Tenant settings not found", "TENANT_SETTINGS_NOT_FOUND");
@@ -238,7 +243,7 @@ const patchSettingsSchema = zod_1.z
     supportedLanguages: zod_1.z.array(zod_1.z.string()).optional(),
 })
     .strict();
-exports.tenantSettingsRouter.patch("/settings", async (req, res) => {
+exports.tenantSettingsRouter.patch("/settings", (0, require_role_1.requireRole)("TENANT_ADMIN", "SUPER_ADMIN"), async (req, res) => {
     const updates = patchSettingsSchema.parse(req.body);
     const settings = await (0, rls_context_1.withTenantContext)(req.tenantContext, (tx) => tx.tenantSettings.update({ where: { tenantId: req.params.tenantId }, data: updates }));
     res.json({ data: settings });

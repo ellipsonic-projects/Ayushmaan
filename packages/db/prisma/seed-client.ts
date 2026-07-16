@@ -62,12 +62,13 @@ async function main() {
     throw new Error(`No TENANT_ADMIN user found for tenant "${tenantSlug}".`);
   }
 
-  const tenantCtx = { tenantId: tenant.id, isSuperAdmin: false, userId: tenantAdmin.id };
-
+  // Clients are platform-level (no tenantId) — dedup/create runs with the
+  // same elevated context used for the tenant lookup above, not a
+  // tenant-scoped one, since a seeded client isn't tied to this tenant.
   for (const { email, fullName } of clients) {
     const existing = await withTenantContext(
-      tenantCtx,
-      (tx) => tx.user.findFirst({ where: { tenantId: tenant.id, email } }),
+      superAdminCtx,
+      (tx) => tx.user.findFirst({ where: { role: "CLIENT", email } }),
       prisma
     );
     if (existing) {
@@ -85,17 +86,15 @@ async function main() {
     }
 
     const user = await withTenantContext(
-      tenantCtx,
+      superAdminCtx,
       (tx) =>
         tx.user.create({
           data: {
             supabaseAuthUserId: authUser.user.id,
-            tenantId: tenant.id,
             role: "CLIENT",
             email,
             clientProfile: {
               create: {
-                tenantId: tenant.id,
                 fullName,
               },
             },

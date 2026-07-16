@@ -21,7 +21,7 @@ import {
   Building2,
   Users,
   Calendar,
-  CalendarClock,
+  FileStack,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -89,23 +89,9 @@ export function TenantAdminNav({
 // workspace at /superadmin/tenants/:id.
 const superAdminTenantNavItems: NavItem[] = [
   { href: "", label: "Overview", icon: Building2 },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/inbox", label: "Inbox", icon: Inbox },
-  { href: "/calendar", label: "Calendar", icon: Calendar },
-  { href: "/scheduler", label: "Scheduler", icon: Clock },
-  { href: "/sessions", label: "Sessions", icon: CalendarClock },
-  { href: "/onboarding", label: "Onboarding", icon: ClipboardList },
   { href: "/consultants", label: "Consultants", icon: UserCog },
   { href: "/clients", label: "Clients", icon: Users },
-  { href: "/contacts", label: "Contacts", icon: Contact },
-  { href: "/billing", label: "Billing", icon: Receipt },
-  { href: "/insights", label: "Insights", icon: BarChart3 },
-  { href: "/templates", label: "Templates", icon: FileText },
-  { href: "/workflows", label: "Workflows", icon: Workflow },
-  { href: "/audit-log", label: "Audit Log", icon: ScrollText },
-  { href: "/grievance", label: "Grievances", icon: Megaphone },
-  { href: "/help", label: "Help", icon: HelpCircle },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/cases", label: "Cases", icon: FileStack },
 ];
 
 export function SuperAdminTenantNav({

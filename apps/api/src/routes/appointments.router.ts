@@ -8,8 +8,14 @@ import { requireTenantMatch } from "../middleware/require-tenant-match";
 import { AppError } from "../middleware/errorHandler";
 import { getOwnClientProfileId, getOwnConsultantProfileId } from "../lib/callerProfile";
 import { assertNoConflict, expandOccurrences, RecurrenceRule } from "../services/booking.service";
+import { writeAuditLog } from "../services/audit.service";
 
-// data_api_v4.md §11 — appointment_series, appointments.
+// data_api_v4.md §11 — appointment_series, appointments. Two-stage approval:
+// REQUESTED -> (TENANT_ADMIN) ADMIN_APPROVED/RESCHEDULE_PROPOSED/CANCELLED
+// -> (CONSULTANT) APPROVED -> COMPLETED/CANCELLED/NO_SHOW. Only TENANT_ADMIN
+// can ever cancel/reject; a CONSULTANT who doesn't want an ADMIN_APPROVED
+// appointment transfers the case to a peer via POST /cases/:caseId/reassign
+// instead of rejecting it.
 
 async function loadCaseForBooking(tx: Prisma.TransactionClient, tenantId: string, caseId: string) {
   const found = await tx.case.findUnique({ where: { id: caseId } });
@@ -22,8 +28,11 @@ async function loadCaseForBooking(tx: Prisma.TransactionClient, tenantId: string
 async function assertCaseParty(
   tx: Prisma.TransactionClient,
   req: TenantScopedRequest,
-  caseRow: { consultantId: string; clientId: string }
+  caseRow: { consultantId: string | null; clientId: string }
 ) {
+  if (req.user!.role === "TENANT_ADMIN" || req.user!.role === "SUPER_ADMIN") {
+    return; // tenant-scoped via requireTenantMatch + RLS, not tied to case ownership.
+  }
   if (req.user!.role === "CONSULTANT") {
     const consultantId = await getOwnConsultantProfileId(tx, req.user!.id);
     if (consultantId !== caseRow.consultantId) throw new AppError(403, "Forbidden", "NOT_OWN_CASE");
@@ -83,9 +92,12 @@ const createAppointmentSchema = z
 
 // POST /tenants/:tenantId/cases/:caseId/appointments — single-occurrence
 // booking. Conflict-checked against existing appointments; 409 on double-book.
+// TENANT_ADMIN may book directly on a client's behalf against an existing
+// case — that appointment starts ADMIN_APPROVED (the admin creating it IS
+// the admin-review stage) instead of REQUESTED, and is audit-logged.
 caseAppointmentsRouter.post(
   "/",
-  requireRole("CLIENT", "CONSULTANT"),
+  requireRole("CLIENT", "CONSULTANT", "TENANT_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const body = createAppointmentSchema.parse(req.body);
     const scheduledStart = new Date(body.scheduledStart);
@@ -93,25 +105,48 @@ caseAppointmentsRouter.post(
 
     const appointment = await withTenantContext(req.tenantContext!, async (tx) => {
       const caseRow = await loadCaseForBooking(tx, req.params.tenantId, req.params.caseId);
+      if (!caseRow.consultantId) {
+        throw new AppError(
+          409,
+          "This case has no consultant assigned yet",
+          "CASE_PENDING_ASSIGNMENT"
+        );
+      }
+      const consultantId = caseRow.consultantId;
       await assertCaseParty(tx, req, caseRow);
       await assertNoConflict(tx, {
-        consultantId: caseRow.consultantId,
+        consultantId,
         scheduledStart,
         scheduledEnd,
       });
 
-      const autoApprove = await resolveAutoApprove(tx, req.params.tenantId, caseRow.consultantId);
+      const autoApprove = await resolveAutoApprove(tx, req.params.tenantId, consultantId);
+      const isAdminCreated = req.user!.role === "TENANT_ADMIN";
 
-      return tx.appointment.create({
+      const created = await tx.appointment.create({
         data: {
           tenantId: req.params.tenantId,
           caseId: req.params.caseId,
           scheduledStart,
           scheduledEnd,
           meetingLink: body.meetingLink,
-          status: autoApprove ? "APPROVED" : "REQUESTED",
+          status: autoApprove ? "APPROVED" : isAdminCreated ? "ADMIN_APPROVED" : "REQUESTED",
         },
       });
+
+      if (isAdminCreated) {
+        await writeAuditLog(tx, {
+          tenantId: req.params.tenantId,
+          actorUserId: req.user!.id,
+          actorRole: "TENANT_ADMIN",
+          isCrossTenantAccess: false,
+          action: "CREATE_APPOINTMENT",
+          entityType: "appointment",
+          entityId: created.id,
+        });
+      }
+
+      return created;
     });
 
     res.status(201).json({ data: appointment });
@@ -152,17 +187,25 @@ caseAppointmentSeriesRouter.post(
 
     const series = await withTenantContext(req.tenantContext!, async (tx) => {
       const caseRow = await loadCaseForBooking(tx, req.params.tenantId, req.params.caseId);
+      if (!caseRow.consultantId) {
+        throw new AppError(
+          409,
+          "This case has no consultant assigned yet",
+          "CASE_PENDING_ASSIGNMENT"
+        );
+      }
+      const consultantId = caseRow.consultantId;
       await assertCaseParty(tx, req, caseRow);
 
       for (const occ of occurrences) {
         await assertNoConflict(tx, {
-          consultantId: caseRow.consultantId,
+          consultantId,
           scheduledStart: occ.start,
           scheduledEnd: occ.end,
         });
       }
 
-      const autoApprove = await resolveAutoApprove(tx, req.params.tenantId, caseRow.consultantId);
+      const autoApprove = await resolveAutoApprove(tx, req.params.tenantId, consultantId);
       const status = autoApprove ? "APPROVED" : "REQUESTED";
 
       return tx.appointmentSeries.create({
@@ -268,7 +311,15 @@ const listAppointmentsQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   status: z
-    .enum(["REQUESTED", "APPROVED", "RESCHEDULE_PROPOSED", "COMPLETED", "CANCELLED", "NO_SHOW"])
+    .enum([
+      "REQUESTED",
+      "ADMIN_APPROVED",
+      "APPROVED",
+      "RESCHEDULE_PROPOSED",
+      "COMPLETED",
+      "CANCELLED",
+      "NO_SHOW",
+    ])
     .optional(),
 });
 
@@ -280,7 +331,7 @@ const listAppointmentsQuerySchema = z.object({
 // CONSULTANT for the same reason on the consultant dashboard.
 appointmentsRouter.get(
   "/",
-  requireRole("TENANT_ADMIN", "CONSULTANT"),
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN", "CONSULTANT"),
   async (req: TenantScopedRequest, res: Response) => {
     const query = listAppointmentsQuerySchema.parse(req.query);
 
@@ -306,7 +357,9 @@ appointmentsRouter.get(
         include: {
           case: {
             select: {
+              id: true,
               status: true,
+              category: true,
               client: { select: { id: true, fullName: true } },
               consultant: {
                 select: {
@@ -347,7 +400,7 @@ async function loadAppointment(
 // GET /tenants/:tenantId/appointments/:appointmentId
 appointmentsRouter.get(
   "/:appointmentId",
-  requireRole("CONSULTANT", "CLIENT"),
+  requireRole("CONSULTANT", "CLIENT", "TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const appointment = await withTenantContext(req.tenantContext!, async (tx) => {
       const found = await loadAppointment(tx, req.params.tenantId, req.params.appointmentId);
@@ -358,21 +411,54 @@ appointmentsRouter.get(
   }
 );
 
-// data_api_v4.md §11 — legal transitions per role. COMPLETED/CANCELLED/
-// NO_SHOW are terminal; an illegal transition is 422 regardless of role.
-const LEGAL_TRANSITIONS: Record<string, string[]> = {
-  REQUESTED: ["APPROVED", "RESCHEDULE_PROPOSED", "CANCELLED"],
-  APPROVED: ["RESCHEDULE_PROPOSED", "CANCELLED", "COMPLETED", "NO_SHOW"],
-  RESCHEDULE_PROPOSED: ["APPROVED", "CANCELLED"],
-  COMPLETED: [],
-  CANCELLED: [],
-  NO_SHOW: [],
+// data_api_v4.md §11 — legal transitions per role AND current status. Only
+// TENANT_ADMIN can ever reject/cancel; a CONSULTANT who doesn't want an
+// ADMIN_APPROVED appointment transfers the case to a peer consultant via
+// POST /cases/:caseId/reassign instead — there is no CONSULTANT->CANCELLED
+// path here. COMPLETED/CANCELLED/NO_SHOW are terminal; an illegal
+// transition (wrong status, wrong role, or both) is 422.
+const TRANSITIONS_BY_ROLE: Record<string, Record<string, string[]>> = {
+  TENANT_ADMIN: {
+    REQUESTED: ["ADMIN_APPROVED", "RESCHEDULE_PROPOSED", "CANCELLED"],
+    ADMIN_APPROVED: ["CANCELLED"],
+    RESCHEDULE_PROPOSED: ["CANCELLED"],
+    APPROVED: ["CANCELLED"],
+  },
+  SUPER_ADMIN: {
+    REQUESTED: ["ADMIN_APPROVED", "RESCHEDULE_PROPOSED", "CANCELLED"],
+    ADMIN_APPROVED: ["CANCELLED"],
+    RESCHEDULE_PROPOSED: ["CANCELLED"],
+    APPROVED: ["CANCELLED"],
+  },
+  CONSULTANT: {
+    ADMIN_APPROVED: ["APPROVED"],
+    APPROVED: ["COMPLETED", "NO_SHOW"],
+  },
+  CLIENT: {
+    RESCHEDULE_PROPOSED: ["ADMIN_APPROVED", "CANCELLED"],
+    REQUESTED: ["CANCELLED"],
+    APPROVED: ["CANCELLED"],
+  },
+};
+
+const ADMIN_ACTION_BY_TARGET_STATUS: Record<string, string> = {
+  ADMIN_APPROVED: "APPROVE_APPOINTMENT",
+  RESCHEDULE_PROPOSED: "PROPOSE_RESCHEDULE",
+  CANCELLED: "REJECT_APPOINTMENT",
 };
 
 const patchAppointmentSchema = z
   .object({
     status: z
-      .enum(["REQUESTED", "APPROVED", "RESCHEDULE_PROPOSED", "COMPLETED", "CANCELLED", "NO_SHOW"])
+      .enum([
+        "REQUESTED",
+        "ADMIN_APPROVED",
+        "APPROVED",
+        "RESCHEDULE_PROPOSED",
+        "COMPLETED",
+        "CANCELLED",
+        "NO_SHOW",
+      ])
       .optional(),
     meetingLink: z.string().url().optional(),
     cancellationReason: z.string().optional(),
@@ -382,12 +468,15 @@ const patchAppointmentSchema = z
   .strict();
 
 // PATCH /tenants/:tenantId/appointments/:appointmentId — appointment
-// state-machine transitions. CONSULTANT: approve/propose-reschedule/reject/
-// cancel/no-show/videoLink. CLIENT: accept/decline reschedule, cancel within
-// cutoff — never videoLink or NO_SHOW.
+// state-machine transitions. TENANT_ADMIN: admin-approve/propose-reschedule/
+// reject a REQUESTED appointment, or cancel at any later stage — the only
+// role that can ever cancel/reject. CONSULTANT: accept an ADMIN_APPROVED
+// appointment, mark complete/no-show/videoLink on an APPROVED one. CLIENT:
+// accept/decline a Tenant-Admin-proposed reschedule, cancel within cutoff —
+// never videoLink or NO_SHOW.
 appointmentsRouter.patch(
   "/:appointmentId",
-  requireRole("CONSULTANT", "CLIENT"),
+  requireRole("CONSULTANT", "CLIENT", "TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const body = patchAppointmentSchema.parse(req.body);
 
@@ -400,7 +489,7 @@ appointmentsRouter.patch(
       await assertCaseParty(tx, req, found.case);
 
       if (body.status) {
-        const allowed = LEGAL_TRANSITIONS[found.status] ?? [];
+        const allowed = TRANSITIONS_BY_ROLE[req.user!.role]?.[found.status] ?? [];
         if (!allowed.includes(body.status)) {
           throw new AppError(
             422,
@@ -410,7 +499,7 @@ appointmentsRouter.patch(
         }
       }
 
-      if (body.scheduledStart || body.scheduledEnd) {
+      if ((body.scheduledStart || body.scheduledEnd) && found.case.consultantId) {
         await assertNoConflict(tx, {
           consultantId: found.case.consultantId,
           scheduledStart: body.scheduledStart
@@ -421,7 +510,7 @@ appointmentsRouter.patch(
         });
       }
 
-      return tx.appointment.update({
+      const updated = await tx.appointment.update({
         where: { id: req.params.appointmentId },
         data: {
           ...(body.status && { status: body.status }),
@@ -433,6 +522,21 @@ appointmentsRouter.patch(
           ...(body.scheduledEnd && { scheduledEnd: new Date(body.scheduledEnd) }),
         },
       });
+
+      if ((req.user!.role === "TENANT_ADMIN" || req.user!.role === "SUPER_ADMIN") && body.status) {
+        await writeAuditLog(tx, {
+          tenantId: req.params.tenantId,
+          actorUserId: req.user!.id,
+          actorRole: req.user!.role,
+          isCrossTenantAccess: req.user!.role === "SUPER_ADMIN",
+          action: ADMIN_ACTION_BY_TARGET_STATUS[body.status] ?? "UPDATE_APPOINTMENT",
+          entityType: "appointment",
+          entityId: updated.id,
+          reason: body.cancellationReason,
+        });
+      }
+
+      return updated;
     });
 
     res.json({ data: appointment });

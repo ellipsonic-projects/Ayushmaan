@@ -29,7 +29,7 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
 
 export function ClientSidebarContent({ collapsible = false }: { collapsible?: boolean }) {
   const pathname = usePathname();
-  const base = "/slug/tenant/client";
+  const base = "/client";
 
   return (
     <>

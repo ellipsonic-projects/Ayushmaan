@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { CalendarClock } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardAction, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { updateAppointmentStatus } from "@/lib/api/appointments.client";
+import { updateAppointment, assignConsultant } from "@/lib/api/appointments.client";
+import { listConsultants, type ConsultantListItem } from "@/lib/api/consultants.client";
 
 export type PendingAppointment = {
   id: string;
-  consultantName: string;
+  caseId: string;
+  consultantName: string | null;
+  consultantCategory: string;
   clientName: string;
   scheduledStart: string;
   kind: "REQUESTED" | "RESCHEDULE_PROPOSED";
@@ -21,12 +31,36 @@ export type PendingAppointment = {
 export function ConflictResolutionQueue({ initialItems }: { initialItems: PendingAppointment[] }) {
   const [items, setItems] = useState(initialItems);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [consultants, setConsultants] = useState<ConsultantListItem[]>([]);
+  const [selectedConsultantId, setSelectedConsultantId] = useState<Record<string, string>>({});
 
-  async function resolve(id: string, status: "APPROVED" | "CANCELLED") {
+  useEffect(() => {
+    if (items.some((item) => item.consultantName === null)) {
+      listConsultants().then(setConsultants);
+    }
+  }, [items]);
+
+  // REQUESTED is the Tenant Admin's own review stage: approving forwards it
+  // to the Consultant's queue as ADMIN_APPROVED, never straight to APPROVED.
+  // RESCHEDULE_PROPOSED is the Client's decision to accept/decline, not the
+  // admin's — those items render read-only below instead of getting buttons.
+  async function resolve(id: string, status: "ADMIN_APPROVED" | "CANCELLED") {
     setPendingId(id);
     try {
-      await updateAppointmentStatus(id, status);
+      await updateAppointment(id, { status });
       setItems((prev) => prev.filter((item) => item.id !== id));
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  async function assign(item: PendingAppointment) {
+    const consultantId = selectedConsultantId[item.id];
+    if (!consultantId) return;
+    setPendingId(item.id);
+    try {
+      await assignConsultant(item.caseId, consultantId);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
     } finally {
       setPendingId(null);
     }
@@ -64,7 +98,7 @@ export function ConflictResolutionQueue({ initialItems }: { initialItems: Pendin
               </span>
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  {item.consultantName} · {item.clientName}
+                  {item.consultantName ?? "Awaiting consultant assignment"} · {item.clientName}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {item.kind === "RESCHEDULE_PROPOSED"
@@ -74,23 +108,60 @@ export function ConflictResolutionQueue({ initialItems }: { initialItems: Pendin
                 </p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pendingId === item.id}
-                onClick={() => resolve(item.id, "CANCELLED")}
-              >
-                Decline
-              </Button>
-              <Button
-                size="sm"
-                disabled={pendingId === item.id}
-                onClick={() => resolve(item.id, "APPROVED")}
-              >
-                Approve
-              </Button>
-            </div>
+            {item.kind === "RESCHEDULE_PROPOSED" ? (
+              <Badge variant="secondary" className="shrink-0">
+                Awaiting client response
+              </Badge>
+            ) : (
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pendingId === item.id}
+                  onClick={() => resolve(item.id, "CANCELLED")}
+                >
+                  Reject
+                </Button>
+                {item.consultantName === null ? (
+                  <>
+                    <Select
+                      value={selectedConsultantId[item.id] ?? ""}
+                      onValueChange={(value) =>
+                        setSelectedConsultantId((prev) => ({ ...prev, [item.id]: value ?? "" }))
+                      }
+                    >
+                      <SelectTrigger size="sm">
+                        <SelectValue placeholder="Choose consultant" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {consultants
+                          .filter((c) => c.category === item.consultantCategory)
+                          .map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.fullName}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      disabled={pendingId === item.id || !selectedConsultantId[item.id]}
+                      onClick={() => assign(item)}
+                    >
+                      Assign
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={pendingId === item.id}
+                    onClick={() => resolve(item.id, "ADMIN_APPROVED")}
+                  >
+                    Approve
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </CardContent>

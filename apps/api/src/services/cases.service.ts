@@ -31,3 +31,42 @@ export async function getCaseAuditedForSuperAdmin(caseId: string, actorUserId: s
     }
   );
 }
+
+// SUPER_ADMIN listing all cases for an arbitrary tenant is cross-tenant by
+// definition, same rationale as getCaseAuditedForSuperAdmin above — logged
+// once per list call rather than once per row.
+export async function listCasesAuditedForSuperAdmin(tenantId: string, actorUserId: string) {
+  return withTenantContext(
+    { tenantId: null, isSuperAdmin: true, userId: actorUserId },
+    async (tx) => {
+      const cases = await tx.case.findMany({
+        where: { tenantId, deletedAt: null },
+        select: {
+          id: true,
+          matterKey: true,
+          category: true,
+          tags: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          client: { select: { fullName: true } },
+          consultant: { select: { fullName: true } },
+          _count: {
+            select: { interactions: true, commitments: true, tasks: true, documents: true },
+          },
+        },
+      });
+
+      await writeAuditLog(tx, {
+        tenantId,
+        actorUserId,
+        actorRole: "SUPER_ADMIN",
+        isCrossTenantAccess: true,
+        action: "LIST_CASES",
+        entityType: "case",
+      });
+
+      return cases;
+    }
+  );
+}

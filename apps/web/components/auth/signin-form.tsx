@@ -22,7 +22,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth/context";
 import { api } from "@/lib/api/client";
-import { destinationFor, tenantHandoffUrl, type MeResponse } from "@/lib/auth/destination";
+import {
+  destinationFor,
+  rootHandoffUrl,
+  tenantHandoffUrl,
+  type MeResponse,
+} from "@/lib/auth/destination";
 import type { AuthSession } from "@/lib/auth/types";
 
 type Role = "admin" | "consultant" | "client";
@@ -128,6 +133,20 @@ export function SignInForm({ tenantSlug }: { tenantSlug?: string }) {
     if (!roleMatches) {
       await logout();
       setError(`This account isn't a ${roles.find((r) => r.id === role)?.title}.`);
+      return;
+    }
+
+    // Clients are platform-level — they have no home tenant to validate
+    // against (me.tenant is always null for CLIENT), and any registered
+    // client may sign in on any tenant's own subdomain. Their dashboard
+    // itself lives on the main domain (no slug), so signing in from a
+    // tenant's subdomain still needs a cross-origin handoff back to it.
+    if (me.role === "CLIENT") {
+      if (tenantSlug) {
+        window.location.href = rootHandoffUrl(session);
+      } else {
+        router.push(destinationFor(me));
+      }
       return;
     }
 

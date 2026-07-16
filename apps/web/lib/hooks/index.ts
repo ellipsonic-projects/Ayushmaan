@@ -33,3 +33,13 @@ export {
 // Tenants (platform console)
 export { useTenants, createTenant } from "./useTenants";
 export type { Tenant, TenantsQuery, CreateTenantInput } from "./useTenants";
+
+// Dashboard (platform console)
+export { usePlatformDashboardStats, useRecentGrievances } from "./usePlatformDashboard";
+export type {
+  PlatformDashboardStats,
+  PlatformGrievance,
+  GrievanceSeverity,
+  GrievanceStatus,
+  GrievanceCategory,
+} from "./usePlatformDashboard";

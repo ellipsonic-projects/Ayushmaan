@@ -6,7 +6,11 @@ import { requireRole } from "../middleware/require-role";
 import { requireTenantMatch } from "../middleware/require-tenant-match";
 import { AppError } from "../middleware/errorHandler";
 import { getOwnClientProfileId, getOwnConsultantProfileId } from "../lib/callerProfile";
-import { getCaseAuditedForSuperAdmin } from "../services/cases.service";
+import {
+  getCaseAuditedForSuperAdmin,
+  listCasesAuditedForSuperAdmin,
+} from "../services/cases.service";
+import { writeAuditLog } from "../services/audit.service";
 
 const caseDetailInclude = {
   client: {
@@ -21,7 +25,7 @@ const caseDetailInclude = {
     include: { consultant: { select: { id: true, fullName: true } } },
   },
   appointments: { orderBy: { scheduledStart: "desc" as const } },
-  interactions: { orderBy: { createdAt: "desc" as const } },
+  interactions: { where: { deletedAt: null }, orderBy: { createdAt: "desc" as const } },
   commitments: { orderBy: { createdAt: "desc" as const } },
   tasks: { orderBy: { createdAt: "desc" as const } },
   documents: { orderBy: { createdAt: "desc" as const } },
@@ -38,23 +42,30 @@ export const casesRouter: Router = Router({ mergeParams: true });
 casesRouter.use(requireTenantMatch);
 
 const listCasesQuerySchema = z.object({
-  status: z.enum(["ACTIVE", "ON_HOLD", "CLOSED"]).optional(),
+  status: z.enum(["PENDING_ASSIGNMENT", "ACTIVE", "ON_HOLD", "CLOSED"]).optional(),
   tag: z.string().optional(),
   search: z.string().optional(),
 });
 
 // GET /tenants/:tenantId/cases — CONSULTANT (own only), TENANT_ADMIN
-// (metadata only, not notes — this slice has no note content yet anyway).
+// (metadata only, not notes — this slice has no note content yet anyway),
+// SUPER_ADMIN (any tenant, audit-logged, same rationale as GET /:caseId).
 casesRouter.get(
   "/",
-  requireRole("CONSULTANT", "TENANT_ADMIN"),
+  requireRole("CONSULTANT", "TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
+    if (req.user!.role === "SUPER_ADMIN") {
+      const cases = await listCasesAuditedForSuperAdmin(req.params.tenantId, req.user!.id);
+      return res.json({ data: cases });
+    }
+
     const query = listCasesQuerySchema.parse(req.query);
 
     const cases = await withTenantContext(req.tenantContext!, async (tx) => {
       const where: Record<string, unknown> = {
         tenantId: req.params.tenantId,
         status: query.status,
+        deletedAt: null,
         ...(query.tag && { tags: { has: query.tag } }),
       };
 
@@ -96,25 +107,56 @@ const createCaseSchema = z
     clientId: z.string().uuid(),
     category: z.enum(["MEDICAL", "LEGAL", "IT", "PHYSIOTHERAPY", "HOMEOPATHY", "ASTROLOGY"]),
     matterKey: z.string().max(150).optional(),
+    requirements: z.string().max(2000).optional(),
+    // Only honored for TENANT_ADMIN callers — a Consultant can never create
+    // a case on another consultant's behalf, so this is ignored for them.
+    consultantId: z.string().uuid().optional(),
   })
   .strict();
 
-// POST /tenants/:tenantId/cases — CONSULTANT. consultantId is forced to the
-// caller's own profile id — a Consultant can never create a case on
-// another consultant's behalf.
+// POST /tenants/:tenantId/cases — CONSULTANT (consultantId forced to the
+// caller's own profile id), or TENANT_ADMIN/SUPER_ADMIN booking a client
+// against a consultant of their choosing (consultantId required in the body).
 casesRouter.post(
   "/",
-  requireRole("CONSULTANT"),
+  requireRole("CONSULTANT", "TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const body = createCaseSchema.parse(req.body);
 
     const created = await withTenantContext(req.tenantContext!, async (tx) => {
-      const consultantId = await getOwnConsultantProfileId(tx, req.user!.id);
-      if (!consultantId)
-        throw new AppError(403, "No consultant profile for this account", "NO_CONSULTANT_PROFILE");
+      let consultantId: string;
+      if (req.user!.role === "TENANT_ADMIN" || req.user!.role === "SUPER_ADMIN") {
+        if (!body.consultantId) {
+          throw new AppError(400, "consultantId is required", "CONSULTANT_ID_REQUIRED");
+        }
+        const consultant = await tx.consultantProfile.findUnique({
+          where: { id: body.consultantId },
+        });
+        if (!consultant || consultant.tenantId !== req.params.tenantId) {
+          throw new AppError(404, "Consultant not found", "CONSULTANT_NOT_FOUND");
+        }
+        consultantId = consultant.id;
+      } else {
+        const ownConsultantId = await getOwnConsultantProfileId(tx, req.user!.id);
+        if (!ownConsultantId)
+          throw new AppError(
+            403,
+            "No consultant profile for this account",
+            "NO_CONSULTANT_PROFILE"
+          );
+        consultantId = ownConsultantId;
+      }
 
-      const client = await tx.clientProfile.findUnique({ where: { id: body.clientId } });
-      if (!client || client.tenantId !== req.params.tenantId) {
+      // Clients are platform-level — no tenant check here, and this may be
+      // the client's first Case in this tenant at all, so client_profiles'
+      // "has a Case in this tenant" RLS clause can't apply yet. Look the
+      // client up with an elevated context (mirrors clients.router.ts's
+      // invite-reuse lookup) purely to confirm the id is real.
+      const client = await withTenantContext(
+        { tenantId: null, isSuperAdmin: true, userId: req.user!.id },
+        (superTx) => superTx.clientProfile.findUnique({ where: { id: body.clientId } })
+      );
+      if (!client) {
         throw new AppError(404, "Client not found", "CLIENT_NOT_FOUND");
       }
 
@@ -125,6 +167,7 @@ casesRouter.post(
           consultantId,
           category: body.category,
           matterKey: body.matterKey,
+          requirements: body.requirements,
         },
       });
 
@@ -141,6 +184,137 @@ casesRouter.post(
     });
 
     res.status(201).json({ data: created });
+  }
+);
+
+const requestCaseSchema = z
+  .object({
+    category: z.enum(["MEDICAL", "LEGAL", "IT", "PHYSIOTHERAPY", "HOMEOPATHY", "ASTROLOGY"]),
+    matterKey: z.string().max(150).optional(),
+    requirements: z.string().max(2000).optional(),
+    scheduledStart: z.string().datetime(),
+    scheduledEnd: z.string().datetime(),
+    meetingLink: z.string().url().optional(),
+  })
+  .strict();
+
+// POST /tenants/:tenantId/cases/request — CLIENT only. A client books
+// directly against an organization with no consultant chosen (clients never
+// browse individual consultants); this opens a PENDING_ASSIGNMENT shell Case
+// plus its first REQUESTED Appointment. A TENANT_ADMIN later assigns a
+// consultant via POST /:caseId/assign-consultant, which is what actually
+// approves the request.
+casesRouter.post(
+  "/request",
+  requireRole("CLIENT"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const body = requestCaseSchema.parse(req.body);
+
+    const created = await withTenantContext(req.tenantContext!, async (tx) => {
+      const clientId = await getOwnClientProfileId(tx, req.user!.id);
+      if (!clientId) {
+        throw new AppError(403, "No client profile for this account", "NO_CLIENT_PROFILE");
+      }
+
+      const newCase = await tx.case.create({
+        data: {
+          tenantId: req.params.tenantId,
+          clientId,
+          consultantId: null,
+          category: body.category,
+          matterKey: body.matterKey,
+          requirements: body.requirements,
+          status: "PENDING_ASSIGNMENT",
+        },
+      });
+
+      const appointment = await tx.appointment.create({
+        data: {
+          tenantId: req.params.tenantId,
+          caseId: newCase.id,
+          scheduledStart: new Date(body.scheduledStart),
+          scheduledEnd: new Date(body.scheduledEnd),
+          meetingLink: body.meetingLink,
+        },
+      });
+
+      return { case: newCase, appointment };
+    });
+
+    res.status(201).json({ data: created });
+  }
+);
+
+const assignConsultantSchema = z
+  .object({
+    consultantId: z.string().uuid(),
+  })
+  .strict();
+
+// POST /tenants/:tenantId/cases/:caseId/assign-consultant — TENANT_ADMIN,
+// SUPER_ADMIN only. This is how a TENANT_ADMIN approves a client's direct
+// booking request: assigning a consultant to a PENDING_ASSIGNMENT case also
+// moves its still-REQUESTED appointment(s) to ADMIN_APPROVED. Cases that
+// already have a consultant go through /reassign instead.
+casesRouter.post(
+  "/:caseId/assign-consultant",
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
+  async (req: TenantScopedRequest, res: Response) => {
+    const body = assignConsultantSchema.parse(req.body);
+
+    const updated = await withTenantContext(req.tenantContext!, async (tx) => {
+      const target = await tx.case.findUnique({ where: { id: req.params.caseId } });
+      if (!target || target.tenantId !== req.params.tenantId) {
+        throw new AppError(404, "Case not found", "CASE_NOT_FOUND");
+      }
+      if (target.status !== "PENDING_ASSIGNMENT" || target.consultantId) {
+        throw new AppError(
+          409,
+          "Case already has a consultant — use /reassign",
+          "CASE_ALREADY_ASSIGNED"
+        );
+      }
+
+      const consultant = await tx.consultantProfile.findUnique({
+        where: { id: body.consultantId },
+      });
+      if (!consultant || consultant.tenantId !== req.params.tenantId) {
+        throw new AppError(404, "Consultant not found", "CONSULTANT_NOT_FOUND");
+      }
+
+      const result = await tx.case.update({
+        where: { id: target.id },
+        data: { consultantId: body.consultantId, status: "ACTIVE" },
+        include: caseDetailInclude,
+      });
+
+      await tx.caseConsultantAssignment.create({
+        data: {
+          tenantId: req.params.tenantId,
+          caseId: target.id,
+          consultantId: body.consultantId,
+        },
+      });
+
+      await tx.appointment.updateMany({
+        where: { caseId: target.id, status: "REQUESTED" },
+        data: { status: "ADMIN_APPROVED" },
+      });
+
+      await writeAuditLog(tx, {
+        tenantId: req.params.tenantId,
+        actorUserId: req.user!.id,
+        actorRole: req.user!.role as "TENANT_ADMIN" | "SUPER_ADMIN",
+        isCrossTenantAccess: req.user!.role === "SUPER_ADMIN",
+        action: "ASSIGN_CONSULTANT",
+        entityType: "Case",
+        entityId: target.id,
+      });
+
+      return result;
+    });
+
+    res.json({ data: updated });
   }
 );
 
@@ -212,11 +386,12 @@ const updateRequirementsSchema = z
   })
   .strict();
 
-// PATCH /tenants/:tenantId/cases/:caseId — CONSULTANT (own case). Currently
-// only supports updating the free-text requirements brief.
+// PATCH /tenants/:tenantId/cases/:caseId — CONSULTANT (own case),
+// TENANT_ADMIN, SUPER_ADMIN. Currently only supports updating the free-text
+// requirements brief.
 casesRouter.patch(
   "/:caseId",
-  requireRole("CONSULTANT"),
+  requireRole("CONSULTANT", "TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const body = updateRequirementsSchema.parse(req.body);
 
@@ -225,9 +400,11 @@ casesRouter.patch(
       if (!target || target.tenantId !== req.params.tenantId) {
         throw new AppError(404, "Case not found", "CASE_NOT_FOUND");
       }
-      const consultantId = await getOwnConsultantProfileId(tx, req.user!.id);
-      if (consultantId !== target.consultantId) {
-        throw new AppError(403, "Forbidden", "NOT_OWN_CASE");
+      if (req.user!.role === "CONSULTANT") {
+        const consultantId = await getOwnConsultantProfileId(tx, req.user!.id);
+        if (consultantId !== target.consultantId) {
+          throw new AppError(403, "Forbidden", "NOT_OWN_CASE");
+        }
       }
 
       return tx.case.update({
@@ -237,6 +414,27 @@ casesRouter.patch(
     });
 
     res.json({ data: updated });
+  }
+);
+
+// DELETE /tenants/:tenantId/cases/:caseId — TENANT_ADMIN, SUPER_ADMIN.
+// Soft-deletes via deletedAt; case history (interactions, appointments,
+// documents) is never removed.
+casesRouter.delete(
+  "/:caseId",
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
+  async (req: TenantScopedRequest, res: Response) => {
+    await withTenantContext(req.tenantContext!, async (tx) => {
+      const target = await tx.case.findUnique({ where: { id: req.params.caseId } });
+      if (!target || target.tenantId !== req.params.tenantId) {
+        throw new AppError(404, "Case not found", "CASE_NOT_FOUND");
+      }
+      await tx.case.update({
+        where: { id: req.params.caseId },
+        data: { deletedAt: new Date() },
+      });
+    });
+    res.status(204).send();
   }
 );
 
@@ -260,6 +458,13 @@ casesRouter.post(
       const target = await tx.case.findUnique({ where: { id: req.params.caseId } });
       if (!target || target.tenantId !== req.params.tenantId) {
         throw new AppError(404, "Case not found", "CASE_NOT_FOUND");
+      }
+      if (!target.consultantId) {
+        throw new AppError(
+          409,
+          "Case has no consultant yet — use assign-consultant",
+          "CASE_PENDING_ASSIGNMENT"
+        );
       }
 
       if (req.user!.role === "CONSULTANT") {

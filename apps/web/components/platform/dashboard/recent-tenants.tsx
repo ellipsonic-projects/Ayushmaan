@@ -1,27 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, Download, Eye, Pencil } from "lucide-react";
+import { Download, Settings } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTenants, type Tenant } from "@/lib/hooks";
 
-const tenants = [
-  { name: "MedSync Inc.", plan: "Enterprise", status: "Active", created: "Oct 12, 2023" },
-  { name: "Wellness Labs", plan: "Pro", status: "Trial", created: "Nov 05, 2023" },
-  { name: "Riverside Clinic", plan: "Enterprise", status: "Suspended", created: "Aug 29, 2023" },
-  { name: "Nexus Health", plan: "Pro", status: "Active", created: "Dec 02, 2023" },
-];
-
-const statusStyles: Record<string, string> = {
-  Active: "bg-emerald-500",
-  Trial: "bg-amber-500",
-  Suspended: "bg-red-500",
+const statusDot: Record<Tenant["status"], string> = {
+  ACTIVE: "bg-emerald-500",
+  SUSPENDED: "bg-amber-500",
+  ARCHIVED: "bg-red-500",
 };
 
+const planVariant: Record<Tenant["planTier"], "default" | "secondary" | "outline"> = {
+  ENTERPRISE: "default",
+  PRO: "outline",
+  STANDARD: "secondary",
+};
+
+const RECENT_TENANTS_LIMIT = 5;
+
 export function RecentTenants() {
-  const [page] = useState(1);
+  const { tenants: allTenants, isLoading, error } = useTenants();
+  const tenants = allTenants.slice(0, RECENT_TENANTS_LIMIT);
 
   return (
     <Card className="h-full">
@@ -47,47 +49,60 @@ export function RecentTenants() {
               </tr>
             </thead>
             <tbody>
-              {tenants.map((tenant) => (
-                <tr key={tenant.name} className="border-b border-border last:border-0">
-                  <td className="py-3 pr-4 font-medium text-foreground">{tenant.name}</td>
-                  <td className="py-3 pr-4">
-                    <Badge variant={tenant.plan === "Enterprise" ? "default" : "secondary"}>
-                      {tenant.plan}
-                    </Badge>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <span className="flex items-center gap-2 text-muted-foreground">
-                      <span className={`h-2 w-2 rounded-full ${statusStyles[tenant.status]}`} />
-                      {tenant.status}
-                    </span>
-                  </td>
-                  <td className="py-3 pr-4 text-muted-foreground">{tenant.created}</td>
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon-sm">
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon-sm">
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+              {error ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-destructive">
+                    Failed to load tenants.
                   </td>
                 </tr>
-              ))}
+              ) : isLoading ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                    Loading tenants…
+                  </td>
+                </tr>
+              ) : tenants.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                    No tenants found.
+                  </td>
+                </tr>
+              ) : (
+                tenants.map((tenant) => (
+                  <tr key={tenant.id} className="border-b border-border last:border-0">
+                    <td className="py-3 pr-4 font-medium text-foreground">{tenant.displayName}</td>
+                    <td className="py-3 pr-4">
+                      <Badge variant={planVariant[tenant.planTier]}>{tenant.planTier}</Badge>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <span className={`h-2 w-2 rounded-full ${statusDot[tenant.status]}`} />
+                        {tenant.status}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-muted-foreground">
+                      {new Date(tenant.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <a href={`/superadmin/tenants/${tenant.id}`}>
+                          <Button variant="ghost" size="icon-sm">
+                            <Settings className="h-3.5 w-3.5" />
+                          </Button>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Showing {tenants.length} of 124 tenants</span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={page === 1}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="icon-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          <span>
+            Showing {tenants.length} of {allTenants.length} tenants
+          </span>
         </div>
       </CardContent>
     </Card>

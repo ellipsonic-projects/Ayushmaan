@@ -44,6 +44,13 @@ begin
     claims := jsonb_set(claims, '{tenant_id}', 'null'::jsonb);
     claims := jsonb_set(claims, '{is_super_admin}', 'true'::jsonb);
     claims := jsonb_set(claims, '{role}', to_jsonb(found_user.role));
+  elsif found_user.role = 'CLIENT' then
+    -- Clients are platform-level — never stamp a home tenant_id, even if
+    -- users.tenant_id happens to carry a stale value. Which tenant a client
+    -- is acting in is resolved per-request from the URL, not the token.
+    claims := jsonb_set(claims, '{tenant_id}', 'null'::jsonb);
+    claims := jsonb_set(claims, '{is_super_admin}', 'false'::jsonb);
+    claims := jsonb_set(claims, '{role}', to_jsonb(found_user.role));
   else
     claims := jsonb_set(claims, '{tenant_id}', to_jsonb(found_user.tenant_id));
     claims := jsonb_set(claims, '{is_super_admin}', 'false'::jsonb);

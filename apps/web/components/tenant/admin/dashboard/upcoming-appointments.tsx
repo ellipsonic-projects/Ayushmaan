@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getTenantAppointments, type AppointmentStatus } from "@/lib/api/appointments.server";
+import { getPlatformTenantAppointments } from "@/lib/api/platform-appointments.server";
 
 const statusVariant: Record<AppointmentStatus, "secondary" | "outline" | "destructive"> = {
   REQUESTED: "outline",
+  ADMIN_APPROVED: "outline",
   RESCHEDULE_PROPOSED: "outline",
   APPROVED: "secondary",
   COMPLETED: "secondary",
@@ -16,6 +18,7 @@ const statusVariant: Record<AppointmentStatus, "secondary" | "outline" | "destru
 
 const statusLabel: Record<AppointmentStatus, string> = {
   REQUESTED: "Pending",
+  ADMIN_APPROVED: "Pending Consultant",
   RESCHEDULE_PROPOSED: "Pending",
   APPROVED: "Confirmed",
   COMPLETED: "Completed",
@@ -35,11 +38,15 @@ function endOfToday() {
   return d;
 }
 
-export async function UpcomingAppointments() {
-  const appointments = await getTenantAppointments({
-    from: startOfToday().toISOString(),
-    to: endOfToday().toISOString(),
-  });
+export async function UpcomingAppointments({
+  platformTenant,
+}: {
+  platformTenant?: { tenantId: string; tenantSlug: string };
+} = {}) {
+  const query = { from: startOfToday().toISOString(), to: endOfToday().toISOString() };
+  const appointments = platformTenant
+    ? await getPlatformTenantAppointments(platformTenant.tenantId, platformTenant.tenantSlug, query)
+    : await getTenantAppointments(query);
 
   return (
     <Card className="h-full">
@@ -74,7 +81,7 @@ export async function UpcomingAppointments() {
                   </td>
                   <td className="py-3 pr-4 text-foreground">{appt.case.client.fullName}</td>
                   <td className="py-3 pr-4 text-muted-foreground">
-                    {appt.case.consultant.fullName}
+                    {appt.case.consultant?.fullName ?? "Unassigned"}
                   </td>
                   <td className="py-3 pr-4">
                     <span className="flex items-center gap-1.5 text-muted-foreground">

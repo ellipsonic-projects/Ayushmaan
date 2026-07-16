@@ -18,7 +18,8 @@ export function TenantProfileCard({
   adminName,
   adminEmail,
   joinedOn,
-  displayName: initialDisplayName,
+  displayName,
+  onDisplayNameChange,
   slug: initialSlug,
   customDomain: initialCustomDomain,
   status: initialStatus,
@@ -28,11 +29,11 @@ export function TenantProfileCard({
   adminEmail: string;
   joinedOn: string;
   displayName: string;
+  onDisplayNameChange: (value: string) => void;
   slug: string;
   customDomain: string;
   status: "active" | "suspended" | "archived";
 }) {
-  const [displayName, setDisplayName] = useState(initialDisplayName);
   const [slug, setSlug] = useState(initialSlug);
   const [customDomain, setCustomDomain] = useState(initialCustomDomain);
 
@@ -68,7 +69,7 @@ export function TenantProfileCard({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Display Name</Label>
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+            <Input value={displayName} onChange={(e) => onDisplayNameChange(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label className="text-xs font-medium text-muted-foreground">Slug (Subdomain)</Label>

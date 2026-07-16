@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getTenantAppointments } from "@/lib/api/appointments.server";
+import { getPlatformTenantAppointments } from "@/lib/api/platform-appointments.server";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -10,9 +11,17 @@ function startOfDaysAgo(daysAgo: number) {
   return d;
 }
 
-export async function RevenueOverview() {
+export async function RevenueOverview({
+  platformTenant,
+}: {
+  platformTenant?: { tenantId: string; tenantSlug: string };
+} = {}) {
   const from = startOfDaysAgo(6);
-  const appointments = await getTenantAppointments({ from: from.toISOString() });
+  const appointments = platformTenant
+    ? await getPlatformTenantAppointments(platformTenant.tenantId, platformTenant.tenantSlug, {
+        from: from.toISOString(),
+      })
+    : await getTenantAppointments({ from: from.toISOString() });
 
   const totalsByDay = new Map<string, number>();
   for (const appt of appointments) {

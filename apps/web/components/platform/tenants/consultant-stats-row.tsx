@@ -1,8 +1,15 @@
 import { Layers, Star, Users } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import type { ConsultantProfile } from "@/lib/api/consultants.server";
 
-export function ConsultantStatsRow() {
+export function ConsultantStatsRow({ consultants }: { consultants: ConsultantProfile[] }) {
+  const avgRating =
+    consultants.length > 0
+      ? consultants.reduce((sum, c) => sum + Number(c.ratingAvg), 0) / consultants.length
+      : 0;
+  const activeSpecializations = new Set(consultants.map((c) => c.category)).size;
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <Card size="sm">
@@ -14,7 +21,7 @@ export function ConsultantStatsRow() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Total Consultants
             </p>
-            <p className="text-xl font-bold tabular-nums text-foreground">124</p>
+            <p className="text-xl font-bold tabular-nums text-foreground">{consultants.length}</p>
           </div>
         </CardContent>
       </Card>
@@ -27,12 +34,7 @@ export function ConsultantStatsRow() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Avg Practice Rating
             </p>
-            <p className="text-xl font-bold tabular-nums text-foreground">
-              4.82{" "}
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-500">
-                +0.2
-              </span>
-            </p>
+            <p className="text-xl font-bold tabular-nums text-foreground">{avgRating.toFixed(2)}</p>
           </div>
         </CardContent>
       </Card>
@@ -45,7 +47,9 @@ export function ConsultantStatsRow() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Active Specializations
             </p>
-            <p className="text-xl font-bold tabular-nums text-foreground">18</p>
+            <p className="text-xl font-bold tabular-nums text-foreground">
+              {activeSpecializations}
+            </p>
           </div>
         </CardContent>
       </Card>

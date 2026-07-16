@@ -30,12 +30,59 @@ async function authedFetch(path: string, init: RequestInit) {
   return res.json();
 }
 
-export async function updateAppointmentStatus(
-  appointmentId: string,
-  status: "APPROVED" | "CANCELLED"
-) {
+export interface UpdateAppointmentBody {
+  status?:
+    "ADMIN_APPROVED" | "APPROVED" | "RESCHEDULE_PROPOSED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+  cancellationReason?: string;
+  scheduledStart?: string;
+  scheduledEnd?: string;
+}
+
+export async function updateAppointment(appointmentId: string, body: UpdateAppointmentBody) {
   await authedFetch(`/appointments/${appointmentId}`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(body),
   });
+}
+
+export async function createAppointmentForClient(
+  caseId: string,
+  body: { scheduledStart: string; scheduledEnd: string; meetingLink?: string }
+) {
+  return authedFetch(`/cases/${caseId}/appointments`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function createClient(body: { email: string; fullName: string; phone?: string }) {
+  const { data } = await authedFetch(`/clients`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return data as { id: string; clientProfile: { id: string; fullName: string } };
+}
+
+// POST /tenants/:tenantId/cases/:caseId/assign-consultant — how a
+// TENANT_ADMIN approves a client's direct booking request: assigns a
+// consultant to a PENDING_ASSIGNMENT case, which also moves its still-
+// REQUESTED appointment(s) to ADMIN_APPROVED.
+export async function assignConsultant(caseId: string, consultantId: string) {
+  await authedFetch(`/cases/${caseId}/assign-consultant`, {
+    method: "POST",
+    body: JSON.stringify({ consultantId }),
+  });
+}
+
+export async function createCase(body: {
+  clientId: string;
+  consultantId: string;
+  category: string;
+  requirements?: string;
+}) {
+  const { data } = await authedFetch(`/cases`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  return data as { id: string };
 }

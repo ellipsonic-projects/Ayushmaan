@@ -33,13 +33,18 @@ export default async function TenantAdminCalendarPage() {
     consultantMembers.map((member) => [member.id, member.colorClass!])
   );
 
-  const events = appointments.map((appointment) =>
-    appointmentToSessionEvent(
-      appointment,
-      colorByConsultantId.get(appointment.case.consultant.id) ?? "bg-secondary",
-      appointment.case.consultant.id
-    )
-  );
+  // Appointments awaiting a consultant assignment (pending case-requests)
+  // have nothing to attribute to a consultant column yet — they surface on
+  // the admin "pending approvals" queue instead, not this calendar.
+  const events = appointments
+    .filter((appointment) => appointment.case.consultant !== null)
+    .map((appointment) =>
+      appointmentToSessionEvent(
+        appointment,
+        colorByConsultantId.get(appointment.case.consultant!.id) ?? "bg-secondary",
+        appointment.case.consultant!.id
+      )
+    );
 
   return (
     <div className="h-[calc(100vh-3.5rem-2.5rem)]">

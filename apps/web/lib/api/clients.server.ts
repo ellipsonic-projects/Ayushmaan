@@ -9,6 +9,9 @@ export interface TenantClient {
   createdAt: string;
   user: { email: string; phone: string | null };
   cases: {
+    id: string;
+    category: string;
+    matterKey: string | null;
     tags: string[];
     status: string;
     consultant: { fullName: string };
@@ -44,6 +47,69 @@ export async function getTenantClients(): Promise<TenantClient[]> {
   if (!res.ok) return [];
   const { data } = await res.json();
   return data as TenantClient[];
+}
+
+export type ClientAppointmentStatus =
+  | "REQUESTED"
+  | "ADMIN_APPROVED"
+  | "APPROVED"
+  | "RESCHEDULE_PROPOSED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+export interface OwnClientProfile {
+  id: string;
+  fullName: string;
+  user: { email: string; phone: string | null };
+  cases: {
+    id: string;
+    status: string;
+    category: string;
+    matterKey: string | null;
+    tenantId: string;
+    tenant: { slug: string; displayName: string };
+    consultant: {
+      id: string;
+      fullName: string;
+      category: string;
+      consultationFee: string;
+      currency: string;
+    } | null;
+    appointments: {
+      id: string;
+      scheduledStart: string;
+      scheduledEnd: string;
+      status: ClientAppointmentStatus;
+      meetingLink: string | null;
+    }[];
+    _count: { documents: number };
+  }[];
+}
+
+// middleware.ts already guarantees the caller is a signed-in CLIENT before
+// this page renders. Clients are platform-level and hold Cases across
+// multiple tenants, so this hits the platform-level GET /clients/me route
+// (apps/api's platformClientsRouter) rather than a single tenant's
+// /clients/:clientId — the returned view aggregates every tenant
+// relationship (Cases/appointments) this client has, each case carrying its
+// own `tenant` since they're no longer all the same one.
+export async function getOwnClientProfile(): Promise<OwnClientProfile | null> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const authHeaders = { Authorization: `Bearer ${session.access_token}` };
+
+  const res = await fetch(`${API_BASE_URL}/api/clients/me`, {
+    headers: authHeaders,
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const { data } = await res.json();
+  return data as OwnClientProfile | null;
 }
 
 export type ClientDeadlineFilter = "overdue" | "due-this-week" | "upcoming-appointment";

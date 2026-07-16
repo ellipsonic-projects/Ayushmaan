@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  CalendarClock,
   Settings,
   Plus,
   type LucideIcon,
@@ -29,7 +28,6 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/cases", label: "My Cases", icon: LayoutDashboard },
   { href: "/calendar", label: "Calendar", icon: Calendar },
   { href: "/inbox", label: "Inbox", icon: Inbox },
-  { href: "/sessions", label: "Sessions", icon: CalendarClock },
   { href: "/clients", label: "Clients", icon: Users },
   { href: "/team", label: "Your Team", icon: UsersRound },
   { href: "/billing", label: "Billing", icon: Receipt },

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getTenantConsultants } from "@/lib/api/consultants.server";
+import { getPlatformTenantConsultants } from "@/lib/api/platform-consultants.server";
 
 function initials(name: string) {
   return name
@@ -9,8 +10,14 @@ function initials(name: string) {
     .join("");
 }
 
-export async function ConsultantStatus() {
-  const consultants = await getTenantConsultants();
+export async function ConsultantStatus({
+  platformTenant,
+}: {
+  platformTenant?: { tenantId: string; tenantSlug: string };
+} = {}) {
+  const consultants = platformTenant
+    ? await getPlatformTenantConsultants(platformTenant.tenantId, platformTenant.tenantSlug)
+    : await getTenantConsultants();
 
   return (
     <Card className="h-full">

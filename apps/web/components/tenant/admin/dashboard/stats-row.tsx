@@ -5,6 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getTenantConsultants } from "@/lib/api/consultants.server";
 import { getTenantAppointments } from "@/lib/api/appointments.server";
+import { getPlatformTenantConsultants } from "@/lib/api/platform-consultants.server";
+import { getPlatformTenantAppointments } from "@/lib/api/platform-appointments.server";
 
 function startOfDay(date: Date) {
   const d = new Date(date);
@@ -22,19 +24,37 @@ function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-export async function TenantStatsRow() {
+export async function TenantStatsRow({
+  platformTenant,
+}: {
+  platformTenant?: { tenantId: string; tenantSlug: string };
+} = {}) {
   const now = new Date();
 
-  const [consultants, todaysAppointments, monthlyAppointments, pendingAppointments] =
-    await Promise.all([
-      getTenantConsultants(),
-      getTenantAppointments({
-        from: startOfDay(now).toISOString(),
-        to: endOfDay(now).toISOString(),
-      }),
-      getTenantAppointments({ from: startOfMonth(now).toISOString(), to: now.toISOString() }),
-      getTenantAppointments({ status: "REQUESTED" }),
-    ]);
+  const [consultants, todaysAppointments, monthlyAppointments, pendingAppointments] = platformTenant
+    ? await Promise.all([
+        getPlatformTenantConsultants(platformTenant.tenantId, platformTenant.tenantSlug),
+        getPlatformTenantAppointments(platformTenant.tenantId, platformTenant.tenantSlug, {
+          from: startOfDay(now).toISOString(),
+          to: endOfDay(now).toISOString(),
+        }),
+        getPlatformTenantAppointments(platformTenant.tenantId, platformTenant.tenantSlug, {
+          from: startOfMonth(now).toISOString(),
+          to: now.toISOString(),
+        }),
+        getPlatformTenantAppointments(platformTenant.tenantId, platformTenant.tenantSlug, {
+          status: "REQUESTED",
+        }),
+      ])
+    : await Promise.all([
+        getTenantConsultants(),
+        getTenantAppointments({
+          from: startOfDay(now).toISOString(),
+          to: endOfDay(now).toISOString(),
+        }),
+        getTenantAppointments({ from: startOfMonth(now).toISOString(), to: now.toISOString() }),
+        getTenantAppointments({ status: "REQUESTED" }),
+      ]);
 
   const acceptingConsultants = consultants.filter((c) => c.isAcceptingNewClients).length;
 

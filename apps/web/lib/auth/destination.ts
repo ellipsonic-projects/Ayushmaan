@@ -7,11 +7,13 @@ const TENANT_ROOT_HOST = process.env.NEXT_PUBLIC_TENANT_ROOT_HOST || "localhost"
 
 // Where a session lands once its role is known (docs/sprints_v3.md Sprint 1.2
 // task 2). Shared between the signin form and the auth callback page so
-// role->route mapping lives in exactly one place. Dashboards now live on the
-// tenant's own subdomain (middleware.ts rewrites `{slug}.{root}/tenant/...`
-// to `/{slug}/tenant/...` internally), so these paths are relative and only
-// resolve correctly when already on that subdomain — a caller on the main
-// domain must cross-origin redirect via tenantOrigin() below instead.
+// role->route mapping lives in exactly one place. TENANT_ADMIN/CONSULTANT
+// dashboards live on the tenant's own subdomain (middleware.ts rewrites
+// `{slug}.{root}/tenant/...` to `/{slug}/tenant/...` internally), so those
+// paths are relative and only resolve correctly when already on that
+// subdomain — a caller on the main domain must cross-origin redirect via
+// tenantOrigin() below instead. CLIENT and SUPER_ADMIN are platform-level
+// (no tenant subdomain to be on) and always resolve directly.
 export function destinationFor(me: MeResponse): string {
   switch (me.role) {
     case "SUPER_ADMIN":
@@ -21,7 +23,7 @@ export function destinationFor(me: MeResponse): string {
     case "CONSULTANT":
       return me.tenant ? "/tenant/consultant/dashboard" : "/";
     case "CLIENT":
-      return me.tenant ? "/tenant/client/dashboard" : "/";
+      return "/client/dashboard";
     default:
       return "/";
   }
@@ -58,6 +60,19 @@ export function tenantHandoffUrl(
   next: string
 ): string {
   const target = tenantOrigin(slug, `/auth/callback?next=${encodeURIComponent(next)}`);
+  const hash = `access_token=${encodeURIComponent(session.accessToken)}&refresh_token=${encodeURIComponent(session.refreshToken)}`;
+  return `${target}#${hash}`;
+}
+
+// The reverse of tenantHandoffUrl: a CLIENT signing in from a tenant's own
+// /signin page (tenantSlug set — clients are platform-level, so any
+// tenant's scoped sign-in page accepts them) still needs to land on
+// /client/dashboard on the main domain, a different origin. Tokens go in
+// the hash to the main domain's app/auth/callback/page.tsx, which parses
+// them the same way it already does for magic-link/OTP redirects and then
+// resolves the destination itself via destinationFor — no `next` needed.
+export function rootHandoffUrl(session: { accessToken: string; refreshToken: string }): string {
+  const target = rootOrigin("/auth/callback");
   const hash = `access_token=${encodeURIComponent(session.accessToken)}&refresh_token=${encodeURIComponent(session.refreshToken)}`;
   return `${target}#${hash}`;
 }

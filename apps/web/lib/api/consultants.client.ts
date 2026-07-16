@@ -30,6 +30,20 @@ async function authedFetch(path: string, init: RequestInit) {
   return res.json();
 }
 
+export interface ConsultantListItem {
+  id: string;
+  fullName: string;
+  category: string;
+  isAcceptingNewClients: boolean;
+}
+
+// GET /tenants/:tenantId/consultants — used by the pending-approvals queue
+// to let a TENANT_ADMIN pick who to assign a consultant-less case-request to.
+export async function listConsultants(): Promise<ConsultantListItem[]> {
+  const { data } = await authedFetch(`/consultants`, { method: "GET" });
+  return data;
+}
+
 export async function setConsultantAcceptingClients(consultantId: string, value: boolean) {
   await authedFetch(`/consultants/${consultantId}`, {
     method: "PATCH",

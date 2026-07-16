@@ -32,10 +32,11 @@ begin
     return new;
   end if;
 
-  -- Never trust the metadata's tenant identity directly (a self-registering
-  -- caller controls their own signUp() payload) — re-derive the real tenant
-  -- by looking the slug up against the authoritative tenants table, and
-  -- only provision if it resolves to an ACTIVE tenant.
+  -- Clients are platform-level: tenant_slug only identifies which tenant's
+  -- /register page the signup came through, not a home tenant to store.
+  -- Still re-derive it against the authoritative tenants table (never trust
+  -- the metadata directly) purely to reject signups through an unknown or
+  -- inactive tenant's page.
   select id, status into v_tenant from public.tenants where slug = v_slug;
 
   if v_tenant.id is null or v_tenant.status <> 'ACTIVE' then
@@ -44,9 +45,10 @@ begin
 
   -- Role is always the hardcoded literal 'CLIENT' — never sourced from
   -- metadata — since this trigger only ever backs the public
-  -- self-registration page.
+  -- self-registration page. tenant_id is always null — see
+  -- client_profiles' tenancy note in schema.prisma.
   insert into public.users (supabase_auth_user_id, tenant_id, role, email, email_is_verified)
-  values (new.id, v_tenant.id, 'CLIENT', new.email, new.email_confirmed_at is not null)
+  values (new.id, null, 'CLIENT', new.email, new.email_confirmed_at is not null)
   on conflict (supabase_auth_user_id) do nothing;
 
   return new;

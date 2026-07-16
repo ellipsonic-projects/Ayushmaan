@@ -17,6 +17,7 @@ exports.consultantsRouter.use(require_tenant_match_1.requireTenantMatch);
 // currently accepting new clients (booking-relevant); TENANT_ADMIN,
 // SUPER_ADMIN and CONSULTANT see the full tenant roster.
 exports.consultantsRouter.get("/", (0, require_role_1.requireRole)("TENANT_ADMIN", "SUPER_ADMIN", "CONSULTANT", "CLIENT"), async (req, res) => {
+    const today = new Date();
     const consultants = await (0, rls_context_1.withTenantContext)(req.tenantContext, (tx) => tx.consultantProfile.findMany({
         where: {
             tenantId: req.params.tenantId,
@@ -25,6 +26,11 @@ exports.consultantsRouter.get("/", (0, require_role_1.requireRole)("TENANT_ADMIN
         include: {
             user: { select: { email: true, accountStatus: true } },
             _count: { select: { cases: true } },
+            outOfOfficePeriods: {
+                where: { startDate: { lte: today }, endDate: { gte: today } },
+                select: { id: true },
+                take: 1,
+            },
         },
     }));
     res.json({ data: consultants });
@@ -38,7 +44,7 @@ const createConsultantSchema = zod_1.z
     .strict();
 // POST /tenants/:tenantId/consultants — invites a Consultant: creates users
 // (role=CONSULTANT) + consultant_profiles. invitedBy is set server-side.
-exports.consultantsRouter.post("/", (0, require_role_1.requireRole)("TENANT_ADMIN"), async (req, res) => {
+exports.consultantsRouter.post("/", (0, require_role_1.requireRole)("TENANT_ADMIN", "SUPER_ADMIN"), async (req, res) => {
     const body = createConsultantSchema.parse(req.body);
     const { data: invited, error: inviteError } = await supabaseAdmin_1.supabaseAdmin.auth.admin.inviteUserByEmail(body.email);
     if (inviteError || !invited.user) {
@@ -99,6 +105,10 @@ exports.consultantsRouter.get("/:consultantId", (0, require_role_1.requireRole)(
 });
 const patchConsultantSchema = zod_1.z
     .object({
+    fullName: zod_1.z.string().min(1).max(200).optional(),
+    category: zod_1.z
+        .enum(["MEDICAL", "LEGAL", "IT", "PHYSIOTHERAPY", "HOMEOPATHY", "ASTROLOGY"])
+        .optional(),
     bio: zod_1.z.string().optional(),
     consultationFee: zod_1.z.number().min(0).optional(),
     currency: zod_1.z.string().length(3).optional(),
@@ -106,10 +116,11 @@ const patchConsultantSchema = zod_1.z
     subSpecialization: zod_1.z.string().max(150).optional(),
     isAcceptingNewClients: zod_1.z.boolean().optional(),
     autoApproveBookings: zod_1.z.boolean().optional(),
+    paymentTiming: zod_1.z.enum(["PAY_ON_BOOKING", "PAY_AFTER_SESSION"]).optional(),
 })
     .strict();
-// PATCH /tenants/:tenantId/consultants/:consultantId — self, TENANT_ADMIN.
-exports.consultantsRouter.patch("/:consultantId", (0, require_role_1.requireRole)("CONSULTANT", "TENANT_ADMIN"), async (req, res) => {
+// PATCH /tenants/:tenantId/consultants/:consultantId — self, TENANT_ADMIN, SUPER_ADMIN.
+exports.consultantsRouter.patch("/:consultantId", (0, require_role_1.requireRole)("CONSULTANT", "TENANT_ADMIN", "SUPER_ADMIN"), async (req, res) => {
     const updates = patchConsultantSchema.parse(req.body);
     const consultant = await (0, rls_context_1.withTenantContext)(req.tenantContext, async (tx) => {
         await findConsultant(tx, req.params.tenantId, req.params.consultantId);
@@ -124,7 +135,7 @@ exports.consultantsRouter.patch("/:consultantId", (0, require_role_1.requireRole
 // DELETE /tenants/:tenantId/consultants/:consultantId — deactivates only
 // (via the linked User's accountStatus; case history is never deleted —
 // consultant_profiles itself carries no status column).
-exports.consultantsRouter.delete("/:consultantId", (0, require_role_1.requireRole)("TENANT_ADMIN"), async (req, res) => {
+exports.consultantsRouter.delete("/:consultantId", (0, require_role_1.requireRole)("TENANT_ADMIN", "SUPER_ADMIN"), async (req, res) => {
     await (0, rls_context_1.withTenantContext)(req.tenantContext, async (tx) => {
         const consultant = await findConsultant(tx, req.params.tenantId, req.params.consultantId);
         await tx.user.update({

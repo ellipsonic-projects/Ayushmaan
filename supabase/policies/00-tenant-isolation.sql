@@ -9,6 +9,9 @@
 -- don't follow this generic shape); task_reminders, rag_citations,
 -- notification_preferences and push_subscriptions don't carry their own
 -- tenant_id column and are handled in 01-tenant-isolation-child-tables.sql.
+-- client_profiles, client_category_profiles and guardian_links are
+-- platform-level (no tenant_id column) and are handled, along with the
+-- CLIENT-role carve-out on `users`, in 05-client-platform-scope.sql.
 
 do $$
 declare
@@ -17,9 +20,6 @@ declare
     'tenant_settings',
     'tenant_billing',
     'users',
-    'client_profiles',
-    'client_category_profiles',
-    'guardian_links',
     'consultant_profiles',
     'consultant_verification_documents',
     'availability_slots',

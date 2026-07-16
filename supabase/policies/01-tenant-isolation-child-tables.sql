@@ -59,6 +59,13 @@ create policy tenant_isolation on public.rag_citations
     or current_setting('app.is_super_admin', true) = 'true'
   );
 
+-- Both tables below are always "my own" rows regardless of role, so the
+-- owning user can always reach their own row (`app.user_id`) — this is what
+-- keeps them reachable for CLIENT rows, whose users.tenant_id is now always
+-- null (clients are platform-level, see client_platform_scope in
+-- 05-client-platform-scope.sql) and would otherwise never match
+-- app.tenant_id for any tenant-scoped request.
+
 alter table public.notification_preferences enable row level security;
 drop policy if exists tenant_isolation on public.notification_preferences;
 create policy tenant_isolation on public.notification_preferences
@@ -69,6 +76,7 @@ create policy tenant_isolation on public.notification_preferences
        where users.id = notification_preferences.user_id
          and (
            users.tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+           or users.id = nullif(current_setting('app.user_id', true), '')::uuid
            or current_setting('app.is_super_admin', true) = 'true'
          )
     )
@@ -79,6 +87,7 @@ create policy tenant_isolation on public.notification_preferences
        where users.id = notification_preferences.user_id
          and (
            users.tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+           or users.id = nullif(current_setting('app.user_id', true), '')::uuid
            or current_setting('app.is_super_admin', true) = 'true'
          )
     )
@@ -94,6 +103,7 @@ create policy tenant_isolation on public.push_subscriptions
        where users.id = push_subscriptions.user_id
          and (
            users.tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+           or users.id = nullif(current_setting('app.user_id', true), '')::uuid
            or current_setting('app.is_super_admin', true) = 'true'
          )
     )
@@ -104,6 +114,7 @@ create policy tenant_isolation on public.push_subscriptions
        where users.id = push_subscriptions.user_id
          and (
            users.tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid
+           or users.id = nullif(current_setting('app.user_id', true), '')::uuid
            or current_setting('app.is_super_admin', true) = 'true'
          )
     )

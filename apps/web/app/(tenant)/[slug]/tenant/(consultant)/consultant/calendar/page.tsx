@@ -1,15 +1,22 @@
-import { Calendar } from "lucide-react";
+import { getTenantAppointments } from "@/lib/api/appointments.server";
+import { SessionCalendar } from "@/components/tenant/consultant/sessions/session-calendar";
+import { appointmentToSessionEvent } from "@/components/tenant/consultant/sessions/session-data";
 
-import { ComingSoon } from "@/components/ui/coming-soon";
+// CONSULTANT-authenticated calls to /appointments are already scoped
+// server-side to the caller's own cases (appointments.router.ts), so no
+// extra filtering is needed here — this never sees tenant-wide data.
+export default async function ConsultantCalendarPage() {
+  const appointments = await getTenantAppointments();
+  const events = appointments.map((appointment) =>
+    appointmentToSessionEvent(appointment, "bg-secondary", "you")
+  );
 
-export default function ConsultantCalendarPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <h2 className="text-2xl font-bold text-foreground">Calendar</h2>
-      <ComingSoon
-        icon={Calendar}
-        title="Full calendar view is on the way"
-        description="See every upcoming appointment across day, week, and month views in one place."
+    <div className="h-[calc(100vh-3.5rem-2.5rem)]">
+      <SessionCalendar
+        events={events}
+        members={[{ id: "you", label: "You" }]}
+        membersLabel="Consultant"
       />
     </div>
   );

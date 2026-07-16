@@ -1,81 +1,82 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Cog } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { AppointmentStatus, TenantAppointment } from "@/lib/api/appointments.server";
+import { updatePlatformTenantAppointment } from "@/lib/api/platform-appointments.client";
 
-type Session = {
-  id: string;
-  consultant: string;
-  isAutomated?: boolean;
-  client: string;
-  duration: string;
-  status: "Completed" | "Pending" | "Disputed";
-  reschedules: string;
-  rescheduled?: boolean;
-};
-
-const sessions: Session[] = [
-  {
-    id: "1",
-    consultant: "Dr. Jonathan Davis",
-    client: "Vanguard Tech Solutions",
-    duration: "51m 12s",
-    status: "Completed",
-    reschedules: "0/3",
-  },
-  {
-    id: "2",
-    consultant: "Sarah Mitchell",
-    client: "Global Logistics Corp",
-    duration: "24m 50s",
-    status: "Pending",
-    reschedules: "1/3",
-    rescheduled: true,
-  },
-  {
-    id: "3",
-    consultant: "Robert Blackstone",
-    client: "Pioneer Legal Partners",
-    duration: "1h 05m",
-    status: "Completed",
-    reschedules: "0/3",
-  },
-  {
-    id: "4",
-    consultant: "Elena Koziov",
-    client: "MedCore Systems",
-    duration: "15m 22s",
-    status: "Completed",
-    reschedules: "1/3",
-    rescheduled: true,
-  },
-  {
-    id: "5",
-    consultant: "System Process (Auto)",
-    isAutomated: true,
-    client: "Automated Health Check",
-    duration: "02m 90s",
-    status: "Disputed",
-    reschedules: "0/3",
-  },
-];
-
-const statusClass: Record<Session["status"], string> = {
-  Completed:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
-  Pending:
+const statusClass: Record<AppointmentStatus, string> = {
+  REQUESTED:
     "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
-  Disputed:
+  ADMIN_APPROVED:
+    "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400",
+  APPROVED:
+    "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-400",
+  RESCHEDULE_PROPOSED:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-400",
+  COMPLETED:
+    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400",
+  CANCELLED:
+    "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
+  NO_SHOW:
     "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400",
 };
 
-export function SessionsTable({ totalRecords }: { totalRecords: number }) {
-  const [page] = useState(1);
+const CANCELLABLE_STATUSES: AppointmentStatus[] = [
+  "REQUESTED",
+  "ADMIN_APPROVED",
+  "RESCHEDULE_PROPOSED",
+  "APPROVED",
+];
+
+export function SessionsTable({
+  appointments,
+  tenantId,
+  tenantSlug,
+}: {
+  appointments: TenantAppointment[];
+  tenantId: string;
+  tenantSlug: string;
+}) {
+  const router = useRouter();
+  const [cancelTarget, setCancelTarget] = useState<TenantAppointment | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+
+  function openCancelDialog(appointment: TenantAppointment) {
+    setCancellationReason("");
+    setCancelTarget(appointment);
+  }
+
+  async function confirmCancel() {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    try {
+      await updatePlatformTenantAppointment(tenantId, tenantSlug, cancelTarget.id, {
+        status: "CANCELLED",
+        cancellationReason: cancellationReason || undefined,
+      });
+      setCancelTarget(null);
+      router.refresh();
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <Card size="sm">
@@ -85,106 +86,88 @@ export function SessionsTable({ totalRecords }: { totalRecords: number }) {
             <thead className="sticky top-0 z-10 bg-card">
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-4 font-medium">Consultant</th>
-                <th className="py-2 pr-4 font-medium">Client Name</th>
-                <th className="py-2 pr-4 font-medium">Duration</th>
+                <th className="py-2 pr-4 font-medium">Client</th>
+                <th className="py-2 pr-4 font-medium">Scheduled</th>
                 <th className="py-2 pr-4 font-medium">Status</th>
-                <th className="py-2 pr-4 font-medium">Reschedules</th>
+                <th className="py-2 pr-4 font-medium" />
               </tr>
             </thead>
             <tbody>
-              {sessions.map((session) => (
-                <tr
-                  key={session.id}
-                  className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
-                >
-                  <td className="py-2.5 pr-4">
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={cn(
-                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                          session.isAutomated
-                            ? "bg-muted text-muted-foreground"
-                            : "bg-muted text-foreground"
-                        )}
-                      >
-                        {session.isAutomated ? (
-                          <Cog className="h-4 w-4" />
-                        ) : (
-                          session.consultant
-                            .split(" ")
-                            .filter((p) => p !== "Dr.")
-                            .slice(0, 2)
-                            .map((p) => p.charAt(0))
-                            .join("")
-                        )}
-                      </span>
-                      <p className="font-medium text-foreground">
-                        {session.consultant}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="py-2.5 pr-4 text-muted-foreground">
-                    {session.client}
-                  </td>
-                  <td className="py-2.5 pr-4 tabular-nums text-muted-foreground">
-                    {session.duration}
-                  </td>
-                  <td className="py-2.5 pr-4">
-                    <Badge
-                      variant="outline"
-                      className={statusClass[session.status]}
-                    >
-                      {session.status.toUpperCase()}
-                    </Badge>
-                  </td>
-                  <td className="py-2.5 pr-4">
-                    <span
-                      className={cn(
-                        "tabular-nums",
-                        session.rescheduled
-                          ? "text-amber-600 dark:text-amber-500"
-                          : "text-muted-foreground"
-                      )}
-                    >
-                      {session.reschedules}
-                      {session.rescheduled && (
-                        <span className="ml-1 text-xs">Rescheduled</span>
-                      )}
-                    </span>
+              {appointments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                    No appointments found.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                appointments.map((appointment) => (
+                  <tr
+                    key={appointment.id}
+                    className="border-b border-border transition-colors last:border-0 hover:bg-muted/40"
+                  >
+                    <td className="py-2.5 pr-4 font-medium text-foreground">
+                      {appointment.case.consultant?.fullName ?? "Unassigned"}
+                    </td>
+                    <td className="py-2.5 pr-4 text-muted-foreground">
+                      {appointment.case.client.fullName}
+                    </td>
+                    <td className="py-2.5 pr-4 tabular-nums text-muted-foreground">
+                      {new Date(appointment.scheduledStart).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-2.5 pr-4">
+                      <Badge
+                        variant="outline"
+                        className={cn("font-medium", statusClass[appointment.status])}
+                      >
+                        {appointment.status.replace(/_/g, " ")}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 pr-4 text-right">
+                      {CANCELLABLE_STATUSES.includes(appointment.status) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openCancelDialog(appointment)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-
-        <div className="mt-4 flex items-center justify-between px-4 text-xs text-muted-foreground">
-          <span>
-            Showing 1 to {sessions.length} of {totalRecords.toLocaleString()}
-          </span>
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" disabled={page === 1}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            {[1, 2, 3].map((n) => (
-              <Button
-                key={n}
-                variant={page === n ? "default" : "outline"}
-                size="icon-sm"
-              >
-                {n}
-              </Button>
-            ))}
-            <span className="px-1">...</span>
-            <Button variant="outline" size="icon-sm">
-              125
-            </Button>
-            <Button variant="outline" size="icon-sm">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
       </CardContent>
+
+      <Dialog open={cancelTarget !== null} onOpenChange={(open) => !open && setCancelTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this appointment?</DialogTitle>
+            <DialogDescription>
+              {cancelTarget &&
+                `The appointment between ${cancelTarget.case.client.fullName} and ${cancelTarget.case.consultant?.fullName ?? "an unassigned consultant"} will be cancelled. This cannot be undone.`}
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            placeholder="Reason for cancellation (optional)"
+            value={cancellationReason}
+            onChange={(e) => setCancellationReason(e.target.value)}
+          />
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Keep Appointment</DialogClose>
+            <Button variant="destructive" onClick={confirmCancel} disabled={cancelling}>
+              {cancelling ? "Cancelling..." : "Cancel Appointment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

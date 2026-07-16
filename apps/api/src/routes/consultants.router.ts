@@ -55,7 +55,7 @@ const createConsultantSchema = z
 // (role=CONSULTANT) + consultant_profiles. invitedBy is set server-side.
 consultantsRouter.post(
   "/",
-  requireRole("TENANT_ADMIN"),
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const body = createConsultantSchema.parse(req.body);
 
@@ -158,10 +158,10 @@ const patchConsultantSchema = z
   })
   .strict();
 
-// PATCH /tenants/:tenantId/consultants/:consultantId — self, TENANT_ADMIN.
+// PATCH /tenants/:tenantId/consultants/:consultantId — self, TENANT_ADMIN, SUPER_ADMIN.
 consultantsRouter.patch(
   "/:consultantId",
-  requireRole("CONSULTANT", "TENANT_ADMIN"),
+  requireRole("CONSULTANT", "TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     const updates = patchConsultantSchema.parse(req.body);
 
@@ -183,7 +183,7 @@ consultantsRouter.patch(
 // consultant_profiles itself carries no status column).
 consultantsRouter.delete(
   "/:consultantId",
-  requireRole("TENANT_ADMIN"),
+  requireRole("TENANT_ADMIN", "SUPER_ADMIN"),
   async (req: TenantScopedRequest, res: Response) => {
     await withTenantContext(req.tenantContext!, async (tx) => {
       const consultant = await findConsultant(tx, req.params.tenantId, req.params.consultantId);

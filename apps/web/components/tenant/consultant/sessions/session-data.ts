@@ -47,6 +47,7 @@ export const APPOINTMENT_STATUS_LABEL: Record<
   SessionEvent["appointmentStatus"]
 > = {
   REQUESTED: "Pending",
+  ADMIN_APPROVED: "Pending",
   APPROVED: "Confirmed",
   RESCHEDULE_PROPOSED: "Reschedule Proposed",
   COMPLETED: "Completed",
@@ -75,21 +76,27 @@ export function appointmentToSessionEvent(
   const appointmentStatus = APPOINTMENT_STATUS_LABEL[status];
   const isPaid = appointment.payments.some((payment) => payment.status === "SUCCEEDED");
 
+  const consultantName = caseRow.consultant?.fullName ?? "Unassigned";
+
   return {
     id: appointment.id,
-    title: `${caseRow.consultant.fullName} · ${caseRow.client.fullName} - ${appointmentStatus}`,
+    title: `${consultantName} · ${caseRow.client.fullName} - ${appointmentStatus}`,
     start: new Date(appointment.scheduledStart),
     end: new Date(appointment.scheduledEnd),
     memberId,
-    consultantName: caseRow.consultant.fullName,
+    consultantName,
     clientName: caseRow.client.fullName,
     clientCode: caseRow.client.id.slice(0, 6).toUpperCase(),
     clientStatus: caseRow.status === "ACTIVE" ? "Active" : "Closed",
     appointmentStatus,
     paymentStatus: isPaid ? "Paid" : "Unpaid",
-    serviceName: `${caseRow.consultant.category} Consultation`,
+    serviceName: caseRow.consultant
+      ? `${caseRow.consultant.category} Consultation`
+      : "Consultation",
     serviceDuration: formatDuration(appointment.scheduledStart, appointment.scheduledEnd),
-    servicePrice: formatPrice(caseRow.consultant.consultationFee, caseRow.consultant.currency),
+    servicePrice: caseRow.consultant
+      ? formatPrice(caseRow.consultant.consultationFee, caseRow.consultant.currency)
+      : "—",
     description: `${appointmentStatus} appointment with ${caseRow.client.fullName}`,
     colorClass,
   };

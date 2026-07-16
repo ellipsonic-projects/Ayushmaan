@@ -3,7 +3,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export type AppointmentStatus =
-  "REQUESTED" | "APPROVED" | "RESCHEDULE_PROPOSED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+  | "REQUESTED"
+  | "ADMIN_APPROVED"
+  | "APPROVED"
+  | "RESCHEDULE_PROPOSED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
 
 export interface TenantAppointment {
   id: string;
@@ -12,7 +18,9 @@ export interface TenantAppointment {
   status: AppointmentStatus;
   meetingLink: string | null;
   case: {
-    status: "ACTIVE" | "CLOSED";
+    id: string;
+    status: "PENDING_ASSIGNMENT" | "ACTIVE" | "ON_HOLD" | "CLOSED";
+    category: string;
     client: { id: string; fullName: string };
     consultant: {
       id: string;
@@ -20,7 +28,7 @@ export interface TenantAppointment {
       category: string;
       consultationFee: string;
       currency: string;
-    };
+    } | null;
   };
   payments: { amount: string; status: string; createdAt: string }[];
 }

@@ -1,10 +1,17 @@
 import "dotenv/config";
+// Must be imported before any router files: it patches Express's
+// Router/Route prototype methods so a rejected promise from an `async`
+// route handler is forwarded to errorHandler instead of becoming an
+// unhandled rejection that crashes the whole process.
+import "express-async-errors";
 import express from "express";
 import cors from "cors";
 import { meRouter } from "./routes/me";
 import { platformTenantsRouter, tenantSettingsRouter } from "./routes/tenants.router";
+import { platformDashboardRouter } from "./routes/platform-dashboard.router";
+import { platformGrievancesRouter } from "./routes/platform-grievances.router";
 import { usersRouter } from "./routes/users.router";
-import { clientsRouter, guardianLinksRouter } from "./routes/clients.router";
+import { clientsRouter, guardianLinksRouter, platformClientsRouter } from "./routes/clients.router";
 import {
   consultantsRouter,
   availabilitySlotsRouter,
@@ -55,7 +62,13 @@ app.use(authMiddleware);
 // to — so it's mounted ahead of tenantContextMiddleware. It doesn't read
 // req.tenant/req.tenantContext, only req.user.
 app.use("/api/auth", meRouter);
+// Same reasoning as GET /auth/me above — a CLIENT has no home tenant to
+// resolve, so their own cross-tenant profile route must precede
+// tenantContextMiddleware too (see clients.router.ts's platformClientsRouter).
+app.use("/api/clients", platformClientsRouter);
 app.use(tenantContextMiddleware);
+app.use("/api/platform/dashboard", platformDashboardRouter);
+app.use("/api/platform/grievances", platformGrievancesRouter);
 app.use("/api/platform/tenants", platformTenantsRouter);
 app.use("/api/tenants/:tenantId", tenantSettingsRouter);
 app.use("/api/tenants/:tenantId/users", usersRouter);

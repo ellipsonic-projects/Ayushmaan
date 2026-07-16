@@ -15,6 +15,7 @@ describe("RLS tenant isolation", () => {
   let tenantAId: string;
   let tenantBId: string;
   let userAId: string;
+  let clientUserId: string;
   let caseAId: string;
 
   const superAdminUserId = randomUUID();
@@ -81,19 +82,23 @@ describe("RLS tenant isolation", () => {
         },
       })
     );
-    const clientUser = await withTenantContext(tenantAContext, (tx) =>
+    // Clients are platform-level (no tenant_id) — client_platform_scope RLS
+    // only grants insert to self/super-admin/an-existing-Case-in-tenant, none
+    // of which apply yet for a brand-new client, so this has to run under an
+    // elevated context, same as apps/api's own invite/case-creation flows.
+    const clientUser = await withTenantContext(superAdmin, (tx) =>
       tx.user.create({
         data: {
           supabaseAuthUserId: randomUUID(),
-          tenantId: tenantAId,
           role: "CLIENT",
           email: `rls-test-a-client-${suffix}@example.com`,
         },
       })
     );
-    const clientProfile = await withTenantContext(tenantAContext, (tx) =>
+    clientUserId = clientUser.id;
+    const clientProfile = await withTenantContext(superAdmin, (tx) =>
       tx.clientProfile.create({
-        data: { tenantId: tenantAId, userId: clientUser.id, fullName: "RLS Test Client" },
+        data: { userId: clientUser.id, fullName: "RLS Test Client" },
       })
     );
     const caseA = await withTenantContext(tenantAContext, (tx) =>
@@ -114,6 +119,10 @@ describe("RLS tenant isolation", () => {
     await withTenantContext(superAdmin, async (tx) => {
       await tx.auditLog.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } });
       await tx.case.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } });
+      // The client user is platform-level (no tenant_id) so it isn't covered
+      // by the tenantId filter below — delete it explicitly. Cascades to its
+      // client_profiles row.
+      if (clientUserId) await tx.user.deleteMany({ where: { id: clientUserId } });
       await tx.user.deleteMany({ where: { tenantId: { in: [tenantAId, tenantBId] } } });
       await tx.tenant.deleteMany({ where: { id: { in: [tenantAId, tenantBId] } } });
     });
