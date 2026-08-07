@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "outputs": [".next/**", "dist/**"],
+      "dependsOn": ["^build"]
+    },
+    "lint": {
+      "outputs": []
+    },
+    "type-check": {
+      "outputs": []
+    },
+    "test": {
+      "outputs": ["coverage/**"],
+      "cache": false
+    }
+  },
+  "globalDependencies": ["**/.env", "**/.env.local"],
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "MIGRATE_DATABASE_URL",
+    "JWT_SECRET",
+    "PORT",
+    "TENANT_ROOT_HOST",
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPER_ADMIN_EMAIL",
+    "SUPER_ADMIN_PASSWORD",
+    "SUPER_ADMIN_PHONE",
+    "WEB_APP_URL",
+    "NEXT_PUBLIC_API_URL",
+    "NEXT_PUBLIC_TENANT_ROOT_HOST",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+  ]
+}

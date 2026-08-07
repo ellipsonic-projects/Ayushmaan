@@ -1,0 +1,679 @@
+diff --git a/apps/api/src/routes/cases.router.ts b/apps/api/src/routes/cases.router.ts
+index 7df373d..b0da634 100644
+--- a/apps/api/src/routes/cases.router.ts
++++ b/apps/api/src/routes/cases.router.ts
+@@ -230,17 +230,23 @@ const requestCaseSchema = z
+     // client that was just created) — ignored for CLIENT, who always books
+     // for themselves or a dependent via onBehalfOfClientId above.
+     clientId: z.string().uuid().optional(),
++    // The consultant the client picked directly from GET /clients/consultants
++    // (CLIENT-only; ignored for TENANT_ADMIN/SUPER_ADMIN). When given, the
++    // Case is created already assigned to that consultant instead of an
++    // unclaimed PENDING_ASSIGNMENT shell — see below.
++    consultantId: z.string().uuid().optional(),
+   })
+   .strict();
+ 
+ // POST /tenants/:tenantId/cases/request — CLIENT booking against an
+-// organization with no consultant chosen (clients never browse individual
+-// consultants), or a TENANT_ADMIN/SUPER_ADMIN entering a request for a client
+-// who called in (also no manual consultant matching — see
+-// assign-consultant below). Either way this opens a PENDING_ASSIGNMENT shell
+-// Case plus its first REQUESTED Appointment; a TENANT_ADMIN approves the
+-// request itself via PATCH /appointments/:id, and any consultant serving
+-// that field then claims it via POST /:caseId/assign-consultant.
++// organization with a consultant they picked from the directory
++// (GET /clients/consultants), or a TENANT_ADMIN/SUPER_ADMIN entering a
++// request for a client who called in. When `consultantId` is given, the Case
++// is created directly ACTIVE and assigned to that consultant; otherwise it
++// opens an unclaimed PENDING_ASSIGNMENT shell Case (plus its first REQUESTED
++// Appointment either way) that a TENANT_ADMIN approves via PATCH
++// /appointments/:id, and any consultant serving that field can then claim via
++// POST /:caseId/assign-consultant.
+ casesRouter.post(
+   "/request",
+   requireRole("CLIENT", "TENANT_ADMIN", "SUPER_ADMIN"),
+@@ -282,19 +288,47 @@ casesRouter.post(
+         }
+       }
+ 
++      let consultantId: string | null = null;
++      if (req.user!.role === "CLIENT" && body.consultantId) {
++        const consultant = await tx.consultantProfile.findUnique({
++          where: { id: body.consultantId },
++        });
++        if (!consultant || consultant.tenantId !== req.params.tenantId) {
++          throw new AppError(404, "Consultant not found", "CONSULTANT_NOT_FOUND");
++        }
++        if (consultant.category !== body.category) {
++          throw new AppError(
++            409,
++            "Consultant does not serve this case's field",
++            "CATEGORY_MISMATCH"
++          );
++        }
++        consultantId = consultant.id;
++      }
++
+       const newCase = await tx.case.create({
+         data: {
+           tenantId: req.params.tenantId,
+           clientId,
+-          consultantId: null,
++          consultantId,
+           category: body.category,
+           matterKey: body.matterKey,
+           requirementsSubject: body.requirementsSubject,
+           requirements: body.requirements,
+-          status: "PENDING_ASSIGNMENT",
++          status: consultantId ? "ACTIVE" : "PENDING_ASSIGNMENT",
+         },
+       });
+ 
++      if (consultantId) {
++        await tx.caseConsultantAssignment.create({
++          data: {
++            tenantId: req.params.tenantId,
++            caseId: newCase.id,
++            consultantId,
++          },
++        });
++      }
++
+       const appointment = await tx.appointment.create({
+         data: {
+           tenantId: req.params.tenantId,
+@@ -334,12 +368,13 @@ const assignConsultantSchema = z
+ 
+ // POST /tenants/:tenantId/cases/:caseId/assign-consultant — TENANT_ADMIN,
+ // SUPER_ADMIN (support override), or CONSULTANT claiming an unassigned
+-// booking request for themselves ("Take" in the consultant's queue). No one
+-// manually matches a client to a specific consultant anymore — the org is
+-// auto-matched at booking time (GET /clients/tenants) and a TENANT_ADMIN only
+-// approves the request itself; any consultant serving that field/tenant can
+-// then claim it. Cases that already have a consultant go through /reassign
+-// instead.
++// booking request for themselves ("Take" in the consultant's queue). This is
++// only reached for requests where the client didn't pick a consultant
++// upfront (POST /cases/request without `consultantId` — e.g. a TENANT_ADMIN
++// entering a call-in booking) and so still sit PENDING_ASSIGNMENT; a client
++// who picked a consultant directly from GET /clients/consultants is already
++// ACTIVE and assigned by the time this route would apply. Cases that already
++// have a consultant go through /reassign instead.
+ casesRouter.post(
+   "/:caseId/assign-consultant",
+   requireRole("TENANT_ADMIN", "SUPER_ADMIN", "CONSULTANT"),
+diff --git a/apps/api/src/routes/clients.router.ts b/apps/api/src/routes/clients.router.ts
+index 479a543..371b23d 100644
+--- a/apps/api/src/routes/clients.router.ts
++++ b/apps/api/src/routes/clients.router.ts
+@@ -401,8 +401,9 @@ const searchTenantsQuerySchema = z.object({
+ // (no Prisma relation back to Tenant), so this is a two-step lookup rather
+ // than a single relational `some` filter. When `category` is given, results
+ // are ordered by each tenant's best-matching consultant (fewest active cases,
+-// then highest rating) so the booking flow can auto-pick tenants[0] instead
+-// of the client manually choosing an organization.
++// then highest rating) — retained for other tenant-directory callers, though
++// the booking flow itself now has the client pick a specific consultant
++// directly via GET /clients/consultants below.
+ platformClientsRouter.get(
+   "/tenants",
+   requireRole("CLIENT"),
+@@ -469,6 +470,71 @@ platformClientsRouter.get(
+   }
+ );
+ 
++const searchConsultantsQuerySchema = z.object({
++  category: categoryEnum,
++});
++
++// GET /clients/consultants — platform-wide consultant directory for a given
++// field, so a CLIENT can browse every consultant serving that category
++// (across every tenant) and pick one directly, rather than the flow
++// auto-matching a single organization. Cross-tenant read is permitted by the
++// same RLS policy the org-directory search above relies on
++// (consultant_directory_read, 10-consultant-directory-read.sql), which is
++// already scoped to isAcceptingNewClients. ConsultantProfile.tenantId is a
++// bare scalar (no Prisma relation back to Tenant), so the tenant snapshot is
++// a second batched lookup, same two-step shape as /tenants above.
++platformClientsRouter.get(
++  "/consultants",
++  requireRole("CLIENT"),
++  async (req: AuthenticatedRequest, res: Response) => {
++    const query = searchConsultantsQuerySchema.parse(req.query);
++
++    const consultants = await withTenantContext(
++      { tenantId: null, isSuperAdmin: false, userId: req.user!.id },
++      async (tx) => {
++        const found = await tx.consultantProfile.findMany({
++          where: { category: query.category, isAcceptingNewClients: true },
++          select: {
++            id: true,
++            tenantId: true,
++            fullName: true,
++            bio: true,
++            category: true,
++            subSpecialization: true,
++            consultationFee: true,
++            currency: true,
++            languagesSpoken: true,
++            ratingAvg: true,
++            ratingCount: true,
++          },
++          orderBy: [{ ratingAvg: "desc" }, { ratingCount: "desc" }],
++        });
++
++        const tenants = await tx.tenant.findMany({
++          where: { id: { in: [...new Set(found.map((c) => c.tenantId))] }, status: "ACTIVE" },
++          select: { id: true, slug: true, displayName: true },
++        });
++        const tenantById = new Map(tenants.map((t) => [t.id, t]));
++
++        return found.flatMap((c) => {
++          const tenant = tenantById.get(c.tenantId);
++          if (!tenant) return [];
++          return [
++            {
++              ...c,
++              tenantId: tenant.id,
++              tenantSlug: tenant.slug,
++              tenantDisplayName: tenant.displayName,
++            },
++          ];
++        });
++      }
++    );
++
++    res.json({ data: consultants });
++  }
++);
++
+ const patchClientSchema = z
+   .object({
+     fullName: z.string().min(1).max(200).optional(),
+diff --git a/apps/web/components/tenant/client/appointments/book-appointment-flow.tsx b/apps/web/components/tenant/client/appointments/book-appointment-flow.tsx
+index 706ab01..22cc91c 100644
+--- a/apps/web/components/tenant/client/appointments/book-appointment-flow.tsx
++++ b/apps/web/components/tenant/client/appointments/book-appointment-flow.tsx
+@@ -33,12 +33,12 @@ import { Calendar } from "@/components/ui/calendar";
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+ import { cn } from "@/lib/utils";
+ import {
+-  searchTenants,
++  searchConsultants,
+   createAppointmentForCase,
+   createAppointmentSeriesForCase,
+   requestAppointmentWithTenant,
+   getConsultantAvailability,
+-  type TenantSearchResult,
++  type ConsultantSearchResult,
+   type OpenAvailabilitySlot,
+   type AppointmentSeriesOccurrence,
+ } from "@/lib/api/organizations.client";
+@@ -54,24 +54,9 @@ import { CATEGORY_OPTIONS } from "@/lib/categories";
+ const APPOINTMENT_DURATION_MINUTES = 45;
+ const BOOKING_FEE = 500;
+ 
+-// Fallback slots for the blind-request path (no consultant assigned yet, so
+-// there's no real availability_slots row to read from).
+-const timeSlots = [
+-  "09:00 AM",
+-  "09:30 AM",
+-  "10:00 AM",
+-  "10:30 AM",
+-  "11:30 AM",
+-  "01:00 PM",
+-  "02:30 PM",
+-  "03:00 PM",
+-  "04:00 PM",
+-  "04:30 PM",
+-];
+-
+ const steps = [
+   { id: 1, label: "Field" },
+-  { id: 2, label: "Organization" },
++  { id: 2, label: "Consultant" },
+   { id: 3, label: "Requirements" },
+   { id: 4, label: "Select a Slot" },
+   { id: 5, label: "Confirm" },
+@@ -121,9 +106,10 @@ export function BookAppointmentFlow({
+     : "";
+   const [step, setStep] = useState(validInitialCategory ? 2 : 1);
+ 
+-  const [selectedOrg, setSelectedOrg] = useState<TenantSearchResult | null>(null);
+-  const [matching, setMatching] = useState(false);
+-  const [matchError, setMatchError] = useState<string | null>(null);
++  const [consultants, setConsultants] = useState<ConsultantSearchResult[]>([]);
++  const [consultantsLoading, setConsultantsLoading] = useState(false);
++  const [consultantsError, setConsultantsError] = useState<string | null>(null);
++  const [selectedConsultantId, setSelectedConsultantId] = useState("");
+ 
+   const [paying, setPaying] = useState(false);
+   const [paid, setPaid] = useState(false);
+@@ -183,98 +169,106 @@ export function BookAppointmentFlow({
+     [bookingFor]
+   );
+ 
+-  // No manual organization picking — a client only ever chooses a field.
+-  // If they already have an active case in that field, stick with that
+-  // known org/consultant (fast path); otherwise auto-match the org whose
+-  // consultant in this field is the best match (fewest active cases, then
+-  // highest rating — GET /clients/tenants orders results that way when a
+-  // category is given), and take the top result.
++  // The client picks a specific consultant directly (across every tenant
++  // serving this field) rather than the flow auto-matching an organization —
++  // that pick doubles as the organization pick, since a consultant belongs to
++  // exactly one tenant.
+   useEffect(() => {
+     if (!category) {
+-      setSelectedOrg(null);
+-      setMatchError(null);
++      setConsultants([]);
++      setConsultantsError(null);
+       return;
+     }
+-
+-    // Case.category is a snapshot taken when the case was created — re-check
+-    // against the consultant's current category so a case whose consultant
+-    // was later recategorized can't hijack the org match for a field they
+-    // no longer practice in.
+-    const existingMatch = activeCases.find(
+-      (c) => c.category === category && c.consultant.category === category
+-    );
+-    if (existingMatch) {
+-      setSelectedOrg({
+-        id: existingMatch.tenantId,
+-        slug: existingMatch.tenant.slug,
+-        displayName: existingMatch.tenant.displayName,
+-        logoUrl: null,
+-      });
+-      setMatchError(null);
+-      return;
+-    }
+-
+     let cancelled = false;
+-    setMatching(true);
+-    setMatchError(null);
+-    searchTenants("", category)
++    setConsultantsLoading(true);
++    setConsultantsError(null);
++    searchConsultants(category)
+       .then((results) => {
+         if (cancelled) return;
++        setConsultants(results);
+         if (results.length === 0) {
+-          setSelectedOrg(null);
+-          setMatchError("No consultants are currently available in this field.");
+-        } else {
+-          setSelectedOrg(results[0]);
++          setConsultantsError("No consultants are currently available in this field.");
+         }
+       })
+       .catch(() => {
+-        if (!cancelled) {
+-          setSelectedOrg(null);
+-          setMatchError("Failed to match an organization. Please try again.");
+-        }
++        if (!cancelled) setConsultantsError("Failed to load consultants. Please try again.");
+       })
+       .finally(() => {
+-        if (!cancelled) setMatching(false);
++        if (!cancelled) setConsultantsLoading(false);
+       });
+     return () => {
+       cancelled = true;
+     };
+-  }, [category, activeCases]);
++  }, [category]);
++
++  const selectedConsultant = useMemo(
++    () => consultants.find((c) => c.id === selectedConsultantId) ?? null,
++    [consultants, selectedConsultantId]
++  );
++  const selectedOrg = useMemo(
++    () =>
++      selectedConsultant
++        ? {
++            id: selectedConsultant.tenantId,
++            slug: selectedConsultant.tenantSlug,
++            displayName: selectedConsultant.tenantDisplayName,
++            logoUrl: null as string | null,
++          }
++        : null,
++    [selectedConsultant]
++  );
+ 
+-  // Clients never browse individual consultants — if they already have an
+-  // active case in the chosen field with the selected org, follow up with a
+-  // known consultant (fast path); otherwise this becomes a blind request the
+-  // org's TENANT_ADMIN assigns a consultant to.
++  function handleSelectConsultant(id: string) {
++    setSelectedConsultantId(id);
++    setCaseId("");
++  }
++
++  // Case.category is a snapshot taken when the case was created — re-check
++  // against the consultant's current category so a case whose consultant
++  // was later recategorized can't hijack this match for a field they no
++  // longer practice in. Scoped to the specific consultant the client picked
++  // above — a client can still have more than one ACTIVE case with the same
++  // consultant via distinct matterKeys (schema §3.11), hence a filter rather
++  // than a single find.
+   const casesForOrg = useMemo(
+     () =>
+-      selectedOrg
++      selectedConsultant
+         ? activeCases.filter(
+             (c) =>
+-              c.tenantId === selectedOrg.id &&
++              c.consultant.id === selectedConsultant.id &&
+               c.category === category &&
+               c.consultant.category === category
+           )
+         : [],
+-    [activeCases, selectedOrg, category]
++    [activeCases, selectedConsultant, category]
+   );
+   const hasExistingCase = casesForOrg.length > 0;
+ 
++  // Only one matching case — no need to make the client click it in step 3.
++  useEffect(() => {
++    // eslint-disable-next-line react-hooks/set-state-in-effect
++    if (casesForOrg.length === 1) setCaseId(casesForOrg[0].id);
++  }, [casesForOrg]);
++
+   const selectedCase = useMemo(
+     () => casesForOrg.find((c) => c.id === caseId) ?? null,
+     [casesForOrg, caseId]
+   );
+ 
+-  // Real availability_slots for the known consultant, once the client has
+-  // picked which existing case/consultant they're booking with (step 3) —
+-  // fetched here rather than eagerly so a blind-request booking never issues
+-  // this call. Resets time whenever the consultant changes underneath it.
++  // Real availability_slots for the picked consultant — the consultant is
++  // always known upfront now (step 2), so this always runs by the time the
++  // client reaches step 4. Resets time whenever the consultant changes.
+   useEffect(() => {
+-    if (!selectedOrg || !selectedCase) return;
++    if (!selectedConsultant) return;
+     let cancelled = false;
+     // eslint-disable-next-line react-hooks/set-state-in-effect
+     setSlotsLoading(true);
+     setTime(null);
+-    getConsultantAvailability(selectedOrg.id, selectedOrg.slug, selectedCase.consultant.id)
++    getConsultantAvailability(
++      selectedConsultant.tenantId,
++      selectedConsultant.tenantSlug,
++      selectedConsultant.id
++    )
+       .then((data) => {
+         if (!cancelled) setSlots(data);
+       })
+@@ -288,13 +282,12 @@ export function BookAppointmentFlow({
+       cancelled = true;
+       setSlots([]);
+     };
+-  }, [selectedOrg, selectedCase]);
++  }, [selectedConsultant]);
+ 
+   // Slot templates matching the calendar date picked in step 4: a one-off
+   // `specificDate` override takes precedence over the recurring weekly
+   // `dayOfWeek` template for that same weekday.
+   const availableTimesForDate = useMemo(() => {
+-    if (!hasExistingCase) return timeSlots;
+     if (!date) return [];
+     const dateKey = date.toISOString().slice(0, 10);
+     const weekday = date.getDay();
+@@ -305,11 +298,11 @@ export function BookAppointmentFlow({
+       (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+     );
+     return [...new Set(sorted.map((slot) => formatSlotTime(slot.startTime)))];
+-  }, [hasExistingCase, slots, date]);
++  }, [slots, date]);
+ 
+   const canContinue =
+     (step === 1 && !!category) ||
+-    (step === 2 && !!selectedOrg) ||
++    (step === 2 && !!selectedConsultantId) ||
+     (step === 3 && (hasExistingCase ? !!caseId : true)) ||
+     (step === 4 && !!date && !!time);
+ 
+@@ -387,6 +380,7 @@ export function BookAppointmentFlow({
+       } else {
+         const result = await requestAppointmentWithTenant(selectedOrg.id, selectedOrg.slug, {
+           category,
++          consultantId: selectedConsultantId,
+           requirementsSubject: requirementsSubject || undefined,
+           requirements: requirements || undefined,
+           scheduledStart: scheduledStart.toISOString(),
+@@ -605,40 +599,81 @@ export function BookAppointmentFlow({
+       {step === 2 && (
+         <Card>
+           <CardHeader>
+-            <CardTitle>Matching you with an organization</CardTitle>
++            <CardTitle>Choose a consultant</CardTitle>
+             <CardDescription>
+-              We automatically match you with a consultant in{" "}
+-              {CATEGORY_OPTIONS.find((opt) => opt.value === category)?.label ?? "this field"} — no
+-              need to pick one yourself
++              Every consultant available for{" "}
++              {CATEGORY_OPTIONS.find((opt) => opt.value === category)?.label ?? "this field"},
++              across all organizations
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="flex flex-col gap-4">
+-            {matching && (
++            {consultantsLoading && (
+               <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                 <Loader2 className="h-4 w-4 animate-spin" />
+-                Finding the best match…
++                Loading consultants…
+               </div>
+             )}
+ 
+-            {!matching && matchError && <p className="text-sm text-destructive">{matchError}</p>}
+-
+-            {!matching && selectedOrg && (
+-              <Card className="border-primary ring-1 ring-primary">
+-                <CardContent className="flex items-center gap-3">
+-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+-                    <Building2 className="h-5 w-5" />
+-                  </span>
+-                  <div className="min-w-0 leading-tight">
+-                    <p className="truncate text-sm font-semibold text-foreground">
+-                      {selectedOrg.displayName}
+-                    </p>
+-                    <p className="mt-0.5 text-xs text-muted-foreground">
+-                      {hasExistingCase ? "Your organization" : "Matched organization"}
+-                    </p>
+-                  </div>
+-                  <CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-primary" />
+-                </CardContent>
+-              </Card>
++            {!consultantsLoading && consultantsError && (
++              <p className="text-sm text-destructive">{consultantsError}</p>
++            )}
++
++            {!consultantsLoading && consultants.length > 0 && (
++              <div className="grid gap-3 sm:grid-cols-2">
++                {consultants.map((c) => {
++                  const selected = selectedConsultantId === c.id;
++                  const hasCaseWithThem = activeCases.some(
++                    (ac) => ac.consultant.id === c.id && ac.category === category
++                  );
++                  return (
++                    <Card
++                      key={c.id}
++                      onClick={() => handleSelectConsultant(c.id)}
++                      className={cn(
++                        "cursor-pointer transition-colors hover:border-primary/50",
++                        selected && "border-primary ring-1 ring-primary"
++                      )}
++                    >
++                      <CardContent className="flex flex-col gap-2">
++                        <div className="flex items-center justify-between gap-2">
++                          <div className="min-w-0 leading-tight">
++                            <p className="truncate text-sm font-semibold text-foreground">
++                              {c.fullName}
++                            </p>
++                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
++                              {c.tenantDisplayName}
++                            </p>
++                          </div>
++                          {selected && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
++                        </div>
++                        <p className="text-xs text-muted-foreground">
++                          {c.category}
++                          {c.subSpecialization ? ` · ${c.subSpecialization}` : ""}
++                        </p>
++                        {c.bio && (
++                          <p className="line-clamp-2 text-xs text-muted-foreground">{c.bio}</p>
++                        )}
++                        <div className="flex flex-wrap items-center gap-1.5">
++                          <Badge variant="outline" className="w-fit">
++                            {c.currency} {c.consultationFee}
++                          </Badge>
++                          {hasCaseWithThem && (
++                            <Badge variant="outline" className="w-fit">
++                              Active case with them
++                            </Badge>
++                          )}
++                          {c.ratingCount > 0 && (
++                            <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
++                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
++                              {Number(c.ratingAvg).toFixed(1)} ({c.ratingCount})
++                            </span>
++                          )}
++                        </div>
++                      </CardContent>
++                    </Card>
++                  );
++                })}
++              </div>
+             )}
+           </CardContent>
+         </Card>
+@@ -650,14 +685,14 @@ export function BookAppointmentFlow({
+             <CardTitle>Requirements</CardTitle>
+             <CardDescription>
+               {hasExistingCase
+-                ? "Choose which consultant and case this session is for"
++                ? "Confirm which case this session is for"
+                 : "Tell the organization what you need help with"}
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="flex flex-col gap-5">
+             {hasExistingCase ? (
+               <div className="flex flex-col gap-1.5">
+-                <Label>Consultant &amp; case</Label>
++                <Label>Case</Label>
+                 <div className="grid gap-3 sm:grid-cols-2">
+                   {casesForOrg.map((c) => {
+                     const selected = caseId === c.id;
+@@ -792,7 +827,7 @@ export function BookAppointmentFlow({
+             />
+             <div className="flex-1">
+               <p className="mb-2 text-sm font-medium text-foreground">Available slots</p>
+-              {hasExistingCase && slotsLoading ? (
++              {slotsLoading ? (
+                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                   Loading availability…
+@@ -868,14 +903,11 @@ export function BookAppointmentFlow({
+               </span>
+               <div className="min-w-0 leading-tight">
+                 <p className="truncate text-sm font-semibold text-foreground">
+-                  {hasExistingCase && selectedCase
+-                    ? selectedCase.consultant.fullName
+-                    : selectedOrg.displayName}
++                  {selectedConsultant?.fullName ?? selectedOrg.displayName}
+                 </p>
+                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
+-                  {hasExistingCase && selectedCase
+-                    ? `${selectedCase.consultant.category} · ${selectedOrg.displayName}`
+-                    : "A consultant will be assigned by the organization"}
++                  {selectedConsultant ? `${selectedConsultant.category} · ` : ""}
++                  {selectedOrg.displayName}
+                 </p>
+               </div>
+             </div>
+diff --git a/apps/web/lib/api/organizations.client.ts b/apps/web/lib/api/organizations.client.ts
+index 9599150..3533b33 100644
+--- a/apps/web/lib/api/organizations.client.ts
++++ b/apps/web/lib/api/organizations.client.ts
+@@ -4,13 +4,6 @@ import { supabase } from "@/lib/supabase/client";
+ 
+ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+ 
+-export interface TenantSearchResult {
+-  id: string;
+-  slug: string;
+-  displayName: string;
+-  logoUrl: string | null;
+-}
+-
+ async function authHeaders() {
+   const {
+     data: { session },
+@@ -19,25 +12,37 @@ async function authHeaders() {
+   return { Authorization: `Bearer ${session.access_token}` };
+ }
+ 
+-// GET /api/clients/tenants — platform-wide organization search. Unlike
+-// appointments.client.ts's authedFetch, this never resolves a tenant via
+-// /api/auth/me, since a CLIENT account's user.tenantId is always null.
+-// `category` narrows to tenants with at least one consultant serving that
+-// field (clients.router.ts's /tenants), matching the book-appointment flow's
+-// field-first step order.
+-export async function searchTenants(
+-  query: string,
+-  category?: string
+-): Promise<TenantSearchResult[]> {
++export interface ConsultantSearchResult {
++  id: string;
++  tenantId: string;
++  tenantSlug: string;
++  tenantDisplayName: string;
++  fullName: string;
++  bio: string | null;
++  category: string;
++  subSpecialization: string | null;
++  consultationFee: string;
++  currency: string;
++  languagesSpoken: string[];
++  ratingAvg: string;
++  ratingCount: number;
++}
++
++// GET /api/clients/consultants — platform-wide consultant directory for a
++// field, so the client picks a specific consultant directly (this doubles as
++// their organization pick) instead of the flow auto-matching one. Like
++// searchTenants used to, this never resolves a tenant via /api/auth/me, since
++// a CLIENT account's user.tenantId is always null.
++export async function searchConsultants(category: string): Promise<ConsultantSearchResult[]> {
+   const headers = await authHeaders();
+-  const params = new URLSearchParams();
+-  if (query.trim()) params.set("search", query.trim());
+-  if (category) params.set("category", category);
++  const params = new URLSearchParams({ category });
+ 
+-  const res = await fetch(`${API_BASE_URL}/api/clients/tenants?${params.toString()}`, { headers });
++  const res = await fetch(`${API_BASE_URL}/api/clients/consultants?${params.toString()}`, {
++    headers,
++  });
+   if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+   const { data } = await res.json();
+-  return data as TenantSearchResult[];
++  return data as ConsultantSearchResult[];
+ }
+ 
+ // Tenant-explicit fetch for a CLIENT calling into a specific organization
+@@ -161,6 +166,7 @@ export async function requestAppointmentWithTenant(
+     scheduledEnd: string;
+     meetingLink?: string;
+     onBehalfOfClientId?: string;
++    consultantId?: string;
+   }
+ ): Promise<RequestAppointmentResult> {
+   const { data } = await authedFetchForTenant(tenantId, tenantSlug, `/cases/request`, {

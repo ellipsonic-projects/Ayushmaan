@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+env:
+  # Dummy values — CI never talks to a real database or Supabase project.
+  # `prisma generate` only needs DATABASE_URL to be a well-formed connection
+  # string, and apps/web's Supabase client only needs these to be non-empty
+  # at build time (build-time module init, no network call).
+  DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+  NEXT_PUBLIC_SUPABASE_URL: "https://ci.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-anon-key"
+  SUPABASE_URL: "https://ci.supabase.co"
+  SUPABASE_ANON_KEY: "ci-anon-key"
+  SUPABASE_SERVICE_ROLE_KEY: "ci-service-role-key"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @ayushman/db exec prisma generate
+
+      - name: Lint
+        run: pnpm turbo lint
+
+      - name: Type-check
+        run: pnpm turbo type-check
+
+      - name: Build
+        run: pnpm turbo build

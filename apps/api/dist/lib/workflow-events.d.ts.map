@@ -1,0 +1,1 @@
+{"version":3,"file":"workflow-events.d.ts","sourceRoot":"","sources":["../../src/lib/workflow-events.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,cAAc,CAAC;AAoB3C,wBAAsB,oBAAoB,CACxC,EAAE,EAAE,MAAM,CAAC,iBAAiB,EAC5B,QAAQ,EAAE,MAAM,EAChB,SAAS,EAAE,MAAM,EACjB,OAAO,EAAE,MAAM,CAAC,MAAM,EAAE,OAAO,CAAC,EAChC,mBAAmB,CAAC,EAAE,MAAM,GAC3B,OAAO,CAAC,IAAI,CAAC,CA+Cf"}

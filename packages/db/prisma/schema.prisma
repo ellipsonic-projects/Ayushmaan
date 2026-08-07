@@ -1,0 +1,1524 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [citext, pgcrypto] // citext: case-insensitive slug/email lookups; pgcrypto: gen_random_uuid()
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum TenantStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+  REJECTED
+  ARCHIVED
+
+  @@map("tenant_status")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+
+  @@map("subscription_status")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  TENANT_ADMIN
+  CONSULTANT
+  CLIENT
+
+  @@map("user_role")
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+
+  @@map("account_status")
+}
+
+enum ConsultantCategory {
+  MEDICAL
+  LEGAL
+  IT
+  PHYSIOTHERAPY
+  HOMEOPATHY
+  ASTROLOGY
+
+  @@map("consultant_category")
+}
+
+enum VerificationDocType {
+  MEDICAL_LICENSE
+  BAR_REGISTRATION
+  DEGREE_CERTIFICATE
+  GOVERNMENT_ID
+  PROFESSIONAL_CERTIFICATE
+  OTHER
+
+  @@map("verification_doc_type")
+}
+
+enum ConsultantApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("consultant_application_status")
+}
+
+enum ConsultantInviteCodeStatus {
+  ACTIVE
+  USED
+  REVOKED
+
+  @@map("consultant_invite_code_status")
+}
+
+enum SlotStatus {
+  OPEN
+  BOOKED
+  BLOCKED
+
+  @@map("slot_status")
+}
+
+enum CaseStatus {
+  PENDING_ASSIGNMENT
+  ACTIVE
+  ON_HOLD
+  CLOSED
+
+  @@map("case_status")
+}
+
+enum SeriesStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+
+  @@map("series_status")
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  ADMIN_APPROVED
+  APPROVED
+  RESCHEDULE_PROPOSED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+
+  @@map("appointment_status")
+}
+
+enum InteractionType {
+  SESSION_NOTE
+  AD_HOC_NOTE
+  CALL_LOG
+  MESSAGE_LOG
+
+  @@map("interaction_type")
+}
+
+enum TranscriptionStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+
+  @@map("transcription_status")
+}
+
+enum CommitmentStatus {
+  ACTIVE
+  COMPLETED
+  DISCONTINUED
+
+  @@map("commitment_status")
+}
+
+enum TaskAssignee {
+  CLIENT
+  CONSULTANT
+
+  @@map("task_assignee")
+}
+
+enum TaskStatus {
+  OPEN
+  COMPLETED
+  OVERDUE
+
+  @@map("task_status")
+}
+
+// The concrete deliverable a CLIENT-assigned task requires — a checkbox
+// alone is never enough proof of completion. Null for CONSULTANT self-tasks,
+// which have no client-facing deliverable.
+enum TaskType {
+  UPLOAD_DOCUMENT
+  FILL_FORM
+  WRITE_RESPONSE
+
+  @@map("task_type")
+}
+
+enum ChatSender {
+  CLIENT
+  CONSULTANT
+  AI
+
+  @@map("chat_sender")
+}
+
+enum CitationParentType {
+  CHAT_MESSAGE
+  AI_SUMMARY
+
+  @@map("citation_parent_type")
+}
+
+enum CitationSourceType {
+  INTERACTION
+  DOCUMENT
+
+  @@map("citation_source_type")
+}
+
+enum GrievanceSubject {
+  CONSULTANT
+  TENANT_ADMIN
+  BILLING
+  PLATFORM
+  OTHER
+
+  @@map("grievance_subject")
+}
+
+enum GrievanceCategory {
+  SERVICE_QUALITY
+  MISCONDUCT
+  BILLING_DISPUTE
+  DATA_PRIVACY
+  OTHER
+
+  @@map("grievance_category")
+}
+
+enum GrievanceSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("grievance_severity")
+}
+
+enum GrievanceStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+
+  @@map("grievance_status")
+}
+
+enum RewardType {
+  DISCOUNT_CODE
+  CREDIT
+  NONE
+
+  @@map("reward_type")
+}
+
+enum RewardStatus {
+  PENDING
+  GRANTED
+
+  @@map("reward_status")
+}
+
+enum ReferralStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+
+  @@map("referral_status")
+}
+
+enum NotificationType {
+  APPOINTMENT_ADMIN_APPROVED
+  APPOINTMENT_REMINDER
+  TASK_DUE
+  TASK_REMINDER
+  GRIEVANCE_SUBMITTED
+  GRIEVANCE_STATUS_CHANGED
+  SESSION_JOINING_SOON
+  SESSION_REMINDER
+  COMMITMENT_REMINDER
+  CONSULTANT_ONBOARDED
+  OUT_OF_OFFICE_NOTICE
+  CASE_REFERRAL_RECEIVED
+  CASE_REFERRAL_ACCEPTED
+  CASE_REFERRAL_DECLINED
+  TENANT_SIGNUP_PENDING
+  TENANT_SIGNUP_APPROVED
+  TENANT_SIGNUP_REJECTED
+  PLATFORM_BROADCAST
+
+  @@map("notification_type")
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+
+  @@map("notification_channel")
+}
+
+// Stripe's own PaymentIntent status vocabulary — mirrored here so a webhook
+// handler can write the value straight through without translating it.
+enum PaymentStatus {
+  REQUIRES_PAYMENT_METHOD
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+
+  @@map("payment_status")
+}
+
+enum PaymentTiming {
+  PAY_ON_BOOKING
+  PAY_AFTER_SESSION
+
+  @@map("payment_timing")
+}
+
+enum PlanTier {
+  STANDARD
+  PRO
+  ENTERPRISE
+}
+
+enum PayoutCycle {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+
+  @@map("payout_cycle")
+}
+
+enum TemplateScope {
+  PERSONAL
+  TENANT
+  COMMUNITY
+
+  @@map("template_scope")
+}
+
+enum TemplateChannel {
+  EMAIL
+
+  @@map("template_channel")
+}
+
+// Sprint 5.5.5 item 5 — the COMMUNITY-scope moderation question, resolved as
+// "yes, moderate": a COMMUNITY row is only cross-tenant-visible once a Super
+// Admin approves it (supabase/policies/11-workflow-templates.sql's
+// workflow_templates_scope_policy). PERSONAL/TENANT rows ignore this column
+// entirely — it only gates COMMUNITY visibility.
+enum TemplateModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("template_moderation_status")
+}
+
+enum WorkflowStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+
+  @@map("workflow_status")
+}
+
+enum WorkflowTriggerType {
+  SCHEDULE
+  EVENT
+  MANUAL
+
+  @@map("workflow_trigger_type")
+}
+
+enum WorkflowRunStatus {
+  RUNNING
+  WAITING
+  // Parked by a SEND_INTAKE_FORM node — resumes only when
+  // form-submissions.router.ts's POST .../submit handler re-enqueues this
+  // exact run (via FormSubmission.workflowRunId), never on a timer, so
+  // workflow-triggers.ts's sweepWaitingRuns (which only matches `WAITING`)
+  // must never pick these up.
+  WAITING_ON_FORM
+  COMPLETED
+  FAILED
+
+  @@map("workflow_run_status")
+}
+
+enum FormFieldType {
+  TEXT
+  EMAIL
+  PHONE
+  DATE
+
+  @@map("form_field_type")
+}
+
+enum FormSubmissionStatus {
+  PENDING
+  SUBMITTED
+  EXPIRED
+
+  @@map("form_submission_status")
+}
+
+// -----------------------------------------------------------------------------
+// Tenancy
+// -----------------------------------------------------------------------------
+
+model Tenant {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String       @unique @db.Citext
+  customDomain    String?      @unique @map("custom_domain") @db.Citext
+  displayName     String       @map("display_name") @db.VarChar(200)
+  phone           String?      @db.VarChar(20) // organization contact number — shown on the consultant's template header (template-header.ts)
+  address         String?      @db.VarChar(500) // organization mailing address — shown on the consultant's template header (template-header.ts)
+  logoUrl         String?      @map("logo_url")
+  themeConfig     Json         @default("{}") @map("theme_config")
+  status          TenantStatus @default(ACTIVE)
+  planTier        String       @default("STANDARD") @map("plan_tier") @db.VarChar(50)
+  provisionedBy   String?      @map("provisioned_by") @db.Uuid
+  reviewedBy      String?      @map("reviewed_by") @db.Uuid
+  reviewedAt      DateTime?    @map("reviewed_at") @db.Timestamptz(6)
+  rejectionReason String?      @map("rejection_reason")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  settings               TenantSettings?
+  billing                TenantBilling?
+  users                  User[]
+  consultantApplications ConsultantApplication[]
+  consultantInviteCodes  ConsultantInviteCode[]
+  availabilityDefaults   TenantAvailabilityDefault[]
+
+  @@index([status])
+  @@map("tenants")
+}
+
+model TenantSettings {
+  tenantId            String      @id @map("tenant_id") @db.Uuid
+  defaultCurrency     String      @default("INR") @map("default_currency") @db.Char(3)
+  payoutCycle         PayoutCycle @default(WEEKLY) @map("payout_cycle")
+  bookingCutoffHours  Int         @default(2) @map("booking_cutoff_hours") @db.SmallInt
+  requestExpiryHours  Int         @default(24) @map("request_expiry_hours") @db.SmallInt
+  autoApproveBookings Boolean     @default(false) @map("auto_approve_bookings")
+  supportedLanguages  String[]    @default(["en"]) @map("supported_languages")
+  updatedAt           DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_settings")
+}
+
+model TenantBilling {
+  tenantId              String             @id @map("tenant_id") @db.Uuid
+  planName              String             @map("plan_name") @db.VarChar(100)
+  status                SubscriptionStatus @default(TRIALING)
+  platformCommissionPct Decimal            @default(0) @map("platform_commission_pct") @db.Decimal(5, 2)
+  updatedAt             DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_billing")
+}
+
+// -----------------------------------------------------------------------------
+// Identity
+// -----------------------------------------------------------------------------
+
+// The only bridge to Supabase Auth is `supabaseAuthUserId`. Everything else on
+// this model is business data the app actually queries/joins — no auth state.
+model User {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  supabaseAuthUserId String        @unique @map("supabase_auth_user_id") @db.Uuid
+  tenantId           String?       @map("tenant_id") @db.Uuid // always null for role=CLIENT — clients are platform-level
+  role               UserRole
+  email              String        @db.Citext
+  emailIsVerified    Boolean       @default(false) @map("email_is_verified")
+  phone              String        @db.VarChar(20)
+  phoneIsVerified    Boolean       @default(false) @map("phone_is_verified")
+  accountStatus      AccountStatus @default(ACTIVE) @map("account_status")
+  lastLoginAt        DateTime?     @map("last_login_at") @db.Timestamptz(6)
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant                 Tenant?                 @relation(fields: [tenantId], references: [id])
+  clientProfile          ClientProfile?
+  consultantProfile      ConsultantProfile?
+  consultantApplications ConsultantApplication[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Client
+// -----------------------------------------------------------------------------
+
+// Clients are platform-level: one profile per person, not scoped to a tenant.
+// Their relationship to a given tenant is expressed through Case.tenantId
+// (the consultant's tenant) rather than a column here.
+model ClientProfile {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                String    @unique @map("user_id") @db.Uuid
+  fullName              String    @map("full_name") @db.VarChar(200)
+  dob                   DateTime? @db.Date
+  preferredLanguage     String    @default("en") @map("preferred_language") @db.VarChar(50)
+  timezone              String    @default("Asia/Kolkata") @db.VarChar(50)
+  emergencyContactName  String?   @map("emergency_contact_name") @db.VarChar(200)
+  emergencyContactPhone String?   @map("emergency_contact_phone") @db.VarChar(20)
+  referralCode          String?   @unique @map("referral_code") @db.VarChar(20)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryProfiles ClientCategoryProfile[]
+  guardianLinks    GuardianLink[]
+  cases            Case[]
+
+  @@map("client_profiles")
+}
+
+// `dob` on ClientProfile determines "is minor" at read time (age math belongs
+// in a query/view, not a stored generated column duplicated per Prisma version).
+model ClientCategoryProfile {
+  id       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clientId String             @map("client_id") @db.Uuid
+  category ConsultantCategory
+  data     Json               @default("{}") // category-owned intake shape — new categories never need a migration
+
+  client ClientProfile @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, category])
+  @@map("client_category_profiles")
+}
+
+model GuardianLink {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  minorClientId  String    @map("minor_client_id") @db.Uuid
+  guardianUserId String    @map("guardian_user_id") @db.Uuid
+  relationship   String    @db.VarChar(50)
+  consentGivenAt DateTime? @map("consent_given_at") @db.Timestamptz(6) // bookings blocked until this is set
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  minorClient ClientProfile @relation(fields: [minorClientId], references: [id], onDelete: Cascade)
+
+  @@unique([minorClientId, guardianUserId])
+  @@map("guardian_links")
+}
+
+// -----------------------------------------------------------------------------
+// Consultant
+// -----------------------------------------------------------------------------
+
+model ConsultantProfile {
+  id                    String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String             @map("tenant_id") @db.Uuid
+  userId                String             @unique @map("user_id") @db.Uuid
+  invitedBy             String?            @map("invited_by") @db.Uuid
+  fullName              String             @map("full_name") @db.VarChar(200)
+  category              ConsultantCategory
+  subSpecialization     String?            @map("sub_specialization") @db.VarChar(150)
+  bio                   String?
+  consultationFee       Decimal            @default(0) @map("consultation_fee") @db.Decimal(10, 2)
+  currency              String             @default("INR") @db.Char(3)
+  timezone              String             @default("Asia/Kolkata") @db.VarChar(50) // consultant-local IANA zone; availability_slots.startTime/endTime are evaluated against this at read time (schema §3.9 note)
+  languagesSpoken       String[]           @default(["en"]) @map("languages_spoken")
+  isAcceptingNewClients Boolean            @default(true) @map("is_accepting_new_clients")
+  autoApproveBookings   Boolean            @default(false) @map("auto_approve_bookings")
+  paymentTiming         PaymentTiming      @default(PAY_ON_BOOKING) @map("payment_timing")
+  ratingAvg             Decimal            @default(0) @map("rating_avg") @db.Decimal(3, 2) // cached; recomputed by a DB trigger on Review insert
+  ratingCount           Int                @default(0) @map("rating_count")
+  onboardingCompletedAt DateTime?          @map("onboarding_completed_at") @db.Timestamptz(6) // NULL until the consultant submits /complete-profile's post-elevation step (timezone/bio/etc); gates that one-time redirect
+  createdAt             DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user                  User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verificationDocuments ConsultantVerificationDocument[]
+  availabilitySlots     AvailabilitySlot[]
+  outOfOfficePeriods    OutOfOfficePeriod[]
+  cases                 Case[]
+  commitmentTemplates   CommitmentTemplate[]
+  caseAssignments       CaseConsultantAssignment[]
+  workflowTemplates     WorkflowTemplate[]
+  workflows             Workflow[]
+  formTemplates         FormTemplate[]
+  workflowOptOuts       WorkflowOptOut[]
+
+  @@index([tenantId])
+  @@index([tenantId, category, isAcceptingNewClients, ratingAvg])
+  @@map("consultant_profiles")
+}
+
+// Deliberately the last model migrated (packages/db/prisma/migrations —
+// nothing else in this schema depends on a row existing here; a consultant is
+// fully bookable without ever uploading a document).
+model ConsultantVerificationDocument {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String              @map("tenant_id") @db.Uuid
+  consultantId     String              @map("consultant_id") @db.Uuid
+  documentType     VerificationDocType @map("document_type")
+  fileUrl          String              @map("file_url")
+  issuingAuthority String?             @map("issuing_authority") @db.VarChar(255)
+  expiryDate       DateTime?           @map("expiry_date") @db.Date
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+  @@map("consultant_verification_documents")
+}
+
+// A CLIENT's self-serve request to become a CONSULTANT under a given tenant.
+// Approval (consultant-applications.router.ts) converts the applicant's User
+// row in place: role -> CONSULTANT, tenantId set, ConsultantProfile created
+// from the fields captured here — the same mechanics as the existing
+// admin-invite flow (consultants.router.ts), just self-initiated and
+// approval-gated instead of admin-initiated.
+model ConsultantApplication {
+  id                String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String                      @map("tenant_id") @db.Uuid
+  userId            String                      @map("user_id") @db.Uuid
+  inviteCodeId      String                      @unique @map("invite_code_id") @db.Uuid
+  category          ConsultantCategory
+  subSpecialization String?                     @map("sub_specialization") @db.VarChar(150)
+  bio               String?
+  consultationFee   Decimal                     @default(0) @map("consultation_fee") @db.Decimal(10, 2)
+  currency          String                      @default("INR") @db.Char(3)
+  languagesSpoken   String[]                    @default(["en"]) @map("languages_spoken")
+  message           String? // applicant's note to the tenant admin
+  status            ConsultantApplicationStatus @default(PENDING)
+  reviewedBy        String?                     @map("reviewed_by") @db.Uuid
+  reviewedAt        DateTime?                   @map("reviewed_at") @db.Timestamptz(6)
+  rejectionReason   String?                     @map("rejection_reason")
+  createdAt         DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                    @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant     Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inviteCode ConsultantInviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@index([userId])
+  @@map("consultant_applications")
+}
+
+// A TENANT_ADMIN-issued 10-character alphanumeric code, communicated to a prospective
+// consultant out-of-band (phone call, WhatsApp, etc.) so the self-serve
+// "become a consultant" request (ConsultantApplication, above) can only be
+// submitted by someone the admin actually invited — closes the open
+// "anyone can apply to any tenant" gap the old org-search flow had.
+model ConsultantInviteCode {
+  id        String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String                     @map("tenant_id") @db.Uuid
+  code      String                     @unique @db.Char(10)
+  status    ConsultantInviteCodeStatus @default(ACTIVE)
+  createdBy String                     @map("created_by") @db.Uuid
+  usedBy    String?                    @map("used_by") @db.Uuid
+  usedAt    DateTime?                  @map("used_at") @db.Timestamptz(6)
+  expiresAt DateTime                   @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  application ConsultantApplication?
+
+  @@index([tenantId, status])
+  @@map("consultant_invite_codes")
+}
+
+model AvailabilitySlot {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  consultantId     String     @map("consultant_id") @db.Uuid
+  dayOfWeek        Int?       @map("day_of_week") @db.SmallInt // 0=Sunday..6=Saturday; null if specificDate set
+  specificDate     DateTime?  @map("specific_date") @db.Date // one-off override; null if dayOfWeek set
+  startTime        DateTime   @map("start_time") @db.Time
+  endTime          DateTime   @map("end_time") @db.Time
+  slotDurationMins Int        @default(30) @map("slot_duration_mins") @db.SmallInt
+  status           SlotStatus @default(OPEN)
+  version          Int        @default(1) // optimistic lock — prevents double-booking races
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId, status])
+  @@index([specificDate])
+  @@map("availability_slots")
+}
+
+model TenantAvailabilityDefault {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  dayOfWeek        Int      @map("day_of_week") @db.SmallInt
+  startTime        DateTime @map("start_time") @db.Time
+  endTime          DateTime @map("end_time") @db.Time
+  slotDurationMins Int      @default(30) @map("slot_duration_mins") @db.SmallInt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("tenant_availability_defaults")
+}
+
+model OutOfOfficePeriod {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  consultantId      String   @map("consultant_id") @db.Uuid
+  startDate         DateTime @map("start_date") @db.Date
+  endDate           DateTime @map("end_date") @db.Date
+  autoReplyMessage  String?  @map("auto_reply_message")
+  pausesNewBookings Boolean  @default(true) @map("pauses_new_bookings")
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId, startDate, endDate])
+  @@map("out_of_office_periods")
+}
+
+// -----------------------------------------------------------------------------
+// Cases & Bookings
+// -----------------------------------------------------------------------------
+
+model Case {
+  id                  String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String             @map("tenant_id") @db.Uuid
+  clientId            String             @map("client_id") @db.Uuid
+  consultantId        String?            @map("consultant_id") @db.Uuid
+  category            ConsultantCategory
+  matterKey           String?            @map("matter_key") @db.VarChar(150) // disambiguates 2 concurrent cases for the same pair
+  tags                String[]           @default([]) // consultant's own CRM segmentation; per-consultant, never tenant-shared
+  status              CaseStatus         @default(ACTIVE)
+  requirementsSubject String?            @map("requirements_subject") @db.VarChar(200) // short summary line captured at booking time
+  requirements        String? // consultant-authored brief describing what the client needs
+  deletedAt           DateTime?          @map("deleted_at") @db.Timestamptz(6) // soft-delete
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime           @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  client          ClientProfile              @relation(fields: [clientId], references: [id])
+  consultant      ConsultantProfile?         @relation(fields: [consultantId], references: [id])
+  series          AppointmentSeries[]
+  appointments    Appointment[]
+  interactions    Interaction[]
+  commitments     Commitment[]
+  tasks           Task[]
+  documents       Document[]
+  assignments     CaseConsultantAssignment[]
+  formSubmissions FormSubmission[]
+  sharedTemplates SharedTemplate[]
+
+  @@index([tenantId])
+  @@index([consultantId, status])
+  @@index([clientId])
+  @@index([tags], type: Gin)
+  @@map("cases")
+}
+
+// History of which consultant has owned a case over time. The current row
+// has endedAt = null; reassigning closes it (endedAt/endReason) and opens a
+// new one. Case.consultantId always mirrors the current row's consultantId.
+model CaseConsultantAssignment {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  caseId       String    @map("case_id") @db.Uuid
+  consultantId String    @map("consultant_id") @db.Uuid
+  role         String    @default("Primary Consultant") @map("role") @db.VarChar(100)
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt      DateTime? @map("ended_at") @db.Timestamptz(6)
+  endReason    String?   @map("end_reason")
+
+  case       Case              @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id])
+
+  @@index([caseId, startedAt(sort: Desc)])
+  @@map("case_consultant_assignments")
+}
+
+// The rule (this model) is separate from its occurrences (Appointment) so a
+// whole series can be approved/cancelled together while one occurrence stays
+// independently reschedulable.
+model AppointmentSeries {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  caseId         String       @map("case_id") @db.Uuid
+  recurrenceRule Json         @map("recurrence_rule") // {dayOfWeek, time, startDate, endDate | occurrenceCount}
+  status         SeriesStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case         Case          @relation(fields: [caseId], references: [id])
+  appointments Appointment[]
+
+  @@index([caseId])
+  @@map("appointment_series")
+}
+
+model Appointment {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String            @map("tenant_id") @db.Uuid
+  caseId             String            @map("case_id") @db.Uuid
+  seriesId           String?           @map("series_id") @db.Uuid // null for a one-off booking
+  scheduledStart     DateTime          @map("scheduled_start") @db.Timestamptz(6)
+  scheduledEnd       DateTime          @map("scheduled_end") @db.Timestamptz(6)
+  status             AppointmentStatus @default(REQUESTED)
+  meetingLink        String?           @map("meeting_link") // external Zoom/Meet link; surfaced in the join-soon reminder
+  cancellationReason String?           @map("cancellation_reason")
+  requestExpiresAt   DateTime?         @map("request_expires_at") @db.Timestamptz(6) // drives the auto-expire cron
+  createdAt          DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  case         Case               @relation(fields: [caseId], references: [id])
+  series       AppointmentSeries? @relation(fields: [seriesId], references: [id])
+  interactions Interaction[]
+  commitments  Commitment[]
+  tasks        Task[]
+  documents    Document[]
+  reviews      Review[]
+  payments     Payment[]
+
+  @@index([caseId])
+  @@index([seriesId])
+  @@index([scheduledStart])
+  @@index([status, requestExpiresAt])
+  @@map("appointments")
+}
+
+// -----------------------------------------------------------------------------
+// Session Logging
+// -----------------------------------------------------------------------------
+
+model Interaction {
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String               @map("tenant_id") @db.Uuid
+  caseId              String               @map("case_id") @db.Uuid
+  appointmentId       String?              @map("appointment_id") @db.Uuid // null for an ad-hoc note between sessions
+  type                InteractionType      @map("type")
+  notes               String?
+  audioStoragePath    String?              @map("audio_storage_path") // Supabase Storage path when a session recording was captured
+  transcriptionStatus TranscriptionStatus? @map("transcription_status") // null unless audio was recorded
+  isClientVisible     Boolean              @default(false) @map("is_client_visible")
+  deletedAt           DateTime?            @map("deleted_at") @db.Timestamptz(6) // soft-delete; hard-deleted 30 days later
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case        Case         @relation(fields: [caseId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+  commitments Commitment[]
+  tasks       Task[]
+  documents   Document[]
+
+  @@index([caseId, createdAt(sort: Desc)])
+  @@map("interactions")
+}
+
+// -----------------------------------------------------------------------------
+// Commitments & Tasks
+// -----------------------------------------------------------------------------
+
+model CommitmentTemplate {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  consultantId String             @map("consultant_id") @db.Uuid // per-consultant library — each professional's protocol differs
+  category     ConsultantCategory
+  title        String             @db.VarChar(200)
+  description  String?
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@index([consultantId])
+  @@map("commitment_templates")
+}
+
+model Commitment {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String           @map("tenant_id") @db.Uuid
+  caseId        String           @map("case_id") @db.Uuid
+  interactionId String?          @map("interaction_id") @db.Uuid // the session this was created during, if any
+  appointmentId String?          @map("appointment_id") @db.Uuid // the appointment this is scoped to, if any
+  title         String           @db.VarChar(200)
+  description   String?
+  dueAt         DateTime?        @map("due_at") @db.Timestamptz(6)
+  status        CommitmentStatus @default(ACTIVE)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case        Case         @relation(fields: [caseId], references: [id])
+  interaction Interaction? @relation(fields: [interactionId], references: [id])
+  appointment Appointment? @relation(fields: [appointmentId], references: [id])
+
+  @@index([caseId])
+  @@map("commitments")
+}
+
+model Task {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  caseId         String       @map("case_id") @db.Uuid
+  interactionId  String?      @map("interaction_id") @db.Uuid
+  appointmentId  String?      @map("appointment_id") @db.Uuid // the appointment this is scoped to, if any
+  assignedTo     TaskAssignee @map("assigned_to") // who's expected to act — drives which dashboard it surfaces on
+  title          String       @db.VarChar(200)
+  // Required (enforced in code) when assignedTo = CLIENT — declares what the
+  // client must actually submit for the task to count as done.
+  type           TaskType?
+  formTemplateId String?      @map("form_template_id") @db.Uuid // set when type = FILL_FORM: the form sent to the client
+  responseText   String?      @map("response_text") // the client's typed answer, set when type = WRITE_RESPONSE
+  dueAt          DateTime?    @map("due_at") @db.Timestamptz(6)
+  status         TaskStatus   @default(OPEN)
+  completedAt    DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case            Case             @relation(fields: [caseId], references: [id])
+  interaction     Interaction?     @relation(fields: [interactionId], references: [id])
+  appointment     Appointment?     @relation(fields: [appointmentId], references: [id])
+  formTemplate    FormTemplate?    @relation(fields: [formTemplateId], references: [id])
+  reminders       TaskReminder[]
+  documents       Document[]
+  formSubmissions FormSubmission[]
+
+  @@index([caseId])
+  @@index([dueAt], map: "idx_tasks_due_open") // cron sweep filters this to status = OPEN in the query itself
+  @@index([formTemplateId])
+  @@map("tasks")
+}
+
+model TaskReminder {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId       String    @map("task_id") @db.Uuid
+  leadTimeMins Int       @map("lead_time_mins") // how long before dueAt to fire
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz(6) // null until sent; prevents duplicate sends on cron retry
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_reminders")
+}
+
+// -----------------------------------------------------------------------------
+// Documents
+// -----------------------------------------------------------------------------
+
+// Append-only versioning via self-reference — a superseded version is never
+// overwritten, just chained.
+model Document {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String    @map("tenant_id") @db.Uuid
+  caseId            String    @map("case_id") @db.Uuid
+  interactionId     String?   @map("interaction_id") @db.Uuid
+  appointmentId     String?   @map("appointment_id") @db.Uuid // the appointment this is scoped to, if any
+  taskId            String?   @map("task_id") @db.Uuid // set when this upload fulfills a Task of type UPLOAD_DOCUMENT
+  previousVersionId String?   @unique @map("previous_version_id") @db.Uuid
+  storagePath       String    @map("storage_path") // {tenantId}/{caseId}/... prefix, matches the Storage isolation rule
+  fileName          String    @map("file_name") @db.VarChar(255)
+  isClientVisible   Boolean   @default(false) @map("is_client_visible")
+  // Who uploaded this file — lets a CLIENT delete only their own uploads,
+  // leaving consultant-uploaded case files under consultant control.
+  // Backfilled to CONSULTANT for pre-existing rows.
+  uploadedByRole    UserRole  @default(CONSULTANT) @map("uploaded_by_role")
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case            Case         @relation(fields: [caseId], references: [id])
+  interaction     Interaction? @relation(fields: [interactionId], references: [id])
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
+  task            Task?        @relation(fields: [taskId], references: [id])
+  previousVersion Document?    @relation("DocumentVersions", fields: [previousVersionId], references: [id])
+  nextVersion     Document?    @relation("DocumentVersions")
+
+  @@index([caseId])
+  @@index([taskId])
+  @@map("documents")
+}
+
+
+// -----------------------------------------------------------------------------
+// Reviews & Grievances
+// -----------------------------------------------------------------------------
+
+model Review {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  appointmentId String   @unique @map("appointment_id") @db.Uuid // one review per appointment; the case is reachable via appointment.case, so it isn't duplicated here
+  rating        Int      @db.SmallInt // 1-5, mandatory
+  npsScore      Int?     @map("nps_score") @db.SmallInt // 0-10, optional richer signal
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([tenantId])
+  @@map("reviews")
+}
+
+// A platform-level channel that bypasses the tenant entirely — tenantId is
+// stored for the Super Admin's own filtering, never for granting the Tenant
+// Admin visibility (PRD §4.2). Originally Client-only; extended so every
+// role (CLIENT/CONSULTANT/TENANT_ADMIN/SUPER_ADMIN) can raise one straight to
+// the Super Admin — submitterUserId/submitterRole is the universal ownership
+// column RLS checks against, while clientId stays populated only when the
+// submitter is a CLIENT (kept for the existing client-scoped queries/index).
+// tenantId is nullable for a SUPER_ADMIN's own tenant-less submission, or a
+// CLIENT one not tied to any particular case.
+model Grievance {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId               String?           @map("tenant_id") @db.Uuid
+  clientId               String?           @map("client_id") @db.Uuid
+  submitterUserId        String            @map("submitter_user_id") @db.Uuid
+  submitterRole          UserRole          @map("submitter_role")
+  subjectType            GrievanceSubject  @map("subject_type")
+  subjectConsultantId    String?           @map("subject_consultant_id") @db.Uuid
+  caseId                 String?           @map("case_id") @db.Uuid
+  category               GrievanceCategory
+  description            String
+  attachmentUrls         String[]          @default([]) @map("attachment_urls")
+  severity               GrievanceSeverity @default(LOW)
+  status                 GrievanceStatus   @default(OPEN)
+  assignedToSuperAdminId String?           @map("assigned_to_super_admin_id") @db.Uuid
+  resolutionNotes        String?           @map("resolution_notes")
+  resolvedAt             DateTime?         @map("resolved_at") @db.Timestamptz(6)
+  createdAt              DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([clientId])
+  @@index([submitterUserId])
+  @@index([status, severity])
+  @@map("grievances")
+}
+
+// -----------------------------------------------------------------------------
+// Growth & Analytics
+// -----------------------------------------------------------------------------
+
+// Precomputed daily aggregate so the burnout indicator and analytics page
+// never scan raw appointment/task history live.
+model ConsultantAnalyticsSnapshot {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  consultantId      String   @map("consultant_id") @db.Uuid
+  snapshotDate      DateTime @map("snapshot_date") @db.Date
+  bookedHours       Decimal  @default(0) @map("booked_hours") @db.Decimal(6, 2)
+  overdueItemCount  Int      @default(0) @map("overdue_item_count") // overdue commitments + tasks combined
+  cancellationRate  Decimal  @default(0) @map("cancellation_rate") @db.Decimal(4, 3) // feeds smart slot suggestions
+  repeatBookingRate Decimal  @default(0) @map("repeat_booking_rate") @db.Decimal(4, 3)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([consultantId, snapshotDate])
+  @@index([consultantId, snapshotDate(sort: Desc)])
+  @@map("consultant_analytics_snapshot")
+}
+
+model Referral {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String       @map("tenant_id") @db.Uuid
+  consultantId      String       @map("consultant_id") @db.Uuid // which practice the reward is scoped to
+  referringClientId String       @map("referring_client_id") @db.Uuid
+  referredClientId  String?      @map("referred_client_id") @db.Uuid // null until the invitee signs up
+  rewardType        RewardType   @default(NONE) @map("reward_type")
+  rewardStatus      RewardStatus @default(PENDING) @map("reward_status")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([referringClientId])
+  @@map("referrals")
+}
+
+model ConsultantReferral {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String         @map("tenant_id") @db.Uuid
+  fromConsultantId String         @map("from_consultant_id") @db.Uuid
+  toConsultantId   String         @map("to_consultant_id") @db.Uuid
+  clientId         String         @map("client_id") @db.Uuid
+  sourceCaseId     String         @map("source_case_id") @db.Uuid
+  contextNote      String?        @map("context_note") // carried-over summary only, never raw private notes unless explicitly shared
+  status           ReferralStatus @default(PENDING)
+  declineReason    String?        @map("decline_reason") // required by the API on decline, never set otherwise
+  newCaseId        String?        @map("new_case_id") @db.Uuid // set on accept — the Case created for toConsultant, seeded from the source case
+  respondedAt      DateTime?      @map("responded_at") @db.Timestamptz(6)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([toConsultantId, status])
+  @@map("consultant_referrals")
+}
+
+// -----------------------------------------------------------------------------
+// Notifications, Audit, Push
+// -----------------------------------------------------------------------------
+
+model Notification {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  type      NotificationType
+  channel   NotificationChannel
+  payload   Json                @default("{}") // rendering data (appointment time, video link, etc.) — shape varies per type
+  sentAt    DateTime?           @map("sent_at") @db.Timestamptz(6)
+  readAt    DateTime?           @map("read_at") @db.Timestamptz(6)
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_notifications_user_unread") // query filters read_at IS NULL
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String              @map("user_id") @db.Uuid
+  type         NotificationType
+  channel      NotificationChannel
+  leadTimeMins Int?                @map("lead_time_mins")
+  enabled      Boolean             @default(true)
+
+  @@unique([userId, type, channel])
+  @@map("notification_preferences")
+}
+
+enum BroadcastUrgency {
+  INFO
+  WARNING
+  CRITICAL
+
+  @@map("broadcast_urgency")
+}
+
+enum BroadcastScope {
+  GLOBAL
+  TARGETED_CLIENT
+
+  @@map("broadcast_scope")
+}
+
+enum BroadcastStatus {
+  DRAFT
+  SENT
+
+  @@map("broadcast_status")
+}
+
+// A Super Admin-authored platform announcement. Sending fans out one
+// `Notification` (type=PLATFORM_BROADCAST) per resolved recipient per
+// selected channel — this row is the append-only record of what was sent
+// and to how many, not itself the delivery mechanism.
+model Broadcast {
+  id                       String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdBySuperAdminId    String                @map("created_by_super_admin_id") @db.Uuid
+  title                    String                @db.VarChar(255)
+  body                     String
+  urgency                  BroadcastUrgency      @default(INFO)
+  scope                    BroadcastScope        @default(GLOBAL)
+  targetClientId           String?               @map("target_client_id") @db.Uuid // set only when scope = TARGETED_CLIENT
+  targetTenantIds          String[]              @default([]) @map("target_tenant_ids") @db.Uuid // GLOBAL only; empty = every active tenant
+  targetConsultantCategory ConsultantCategory?   @map("target_consultant_category") // GLOBAL only; null = all categories
+  targetClientSegment      String?               @map("target_client_segment") @db.VarChar(20) // GLOBAL only; "ACTIVE" | "ON_HOLD" | null (= all)
+  channels                 NotificationChannel[]
+  status                   BroadcastStatus       @default(DRAFT)
+  recipientCount           Int                   @default(0) @map("recipient_count")
+  sentAt                   DateTime?             @map("sent_at") @db.Timestamptz(6)
+  createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([status, sentAt(sort: Desc)])
+  @@map("broadcasts")
+}
+
+// Every escalated or cross-tenant read, per PRD §1.2 — "unrestricted ≠ invisible."
+model AuditLog {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId            String   @map("tenant_id") @db.Uuid // the tenant whose data was accessed
+  actorUserId         String   @map("actor_user_id") @db.Uuid
+  actorRole           UserRole @map("actor_role")
+  isCrossTenantAccess Boolean  @default(false) @map("is_cross_tenant_access")
+  action              String   @db.VarChar(100)
+  entityType          String   @map("entity_type") @db.VarChar(100)
+  entityId            String?  @map("entity_id") @db.Uuid
+  reason              String? // mandatory (enforced at the API layer) for anything beyond the tenant list/billing dashboard
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([isCrossTenantAccess])
+  @@map("audit_logs")
+}
+
+model PushSubscription {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  keys      Json // {p256dh, auth} per the Web Push spec — opaque to the app
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// -----------------------------------------------------------------------------
+// Payments (Stripe)
+// -----------------------------------------------------------------------------
+
+// One row per PaymentIntent. Refunds are tracked by re-reading the same
+// PaymentIntent's status from Stripe rather than a separate refund table —
+// Stripe is already the source of truth for that history.
+model Payment {
+  id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId              String        @map("tenant_id") @db.Uuid
+  appointmentId         String        @map("appointment_id") @db.Uuid
+  clientId              String        @map("client_id") @db.Uuid
+  stripePaymentIntentId String        @unique @map("stripe_payment_intent_id") @db.VarChar(100)
+  stripeCustomerId      String?       @map("stripe_customer_id") @db.VarChar(100)
+  amount                Decimal       @db.Decimal(10, 2)
+  currency              String        @default("INR") @db.Char(3)
+  status                PaymentStatus @default(REQUIRES_PAYMENT_METHOD)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime      @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@index([appointmentId])
+  @@index([status])
+  @@map("payments")
+}
+
+// -----------------------------------------------------------------------------
+// Templates & Workflows (schema §3.26–3.28)
+// -----------------------------------------------------------------------------
+
+// The one other exception to the standard tenant-isolation policy, alongside
+// `grievances` — visibility is gated by `scope`, not tenant_id alone, so it
+// gets its own custom RLS policy set (supabase/policies/11-workflow-templates.sql)
+// rather than the generic §4.1 policy. consultantId is the owning
+// consultant, checked against the new app.consultant_id session var
+// (packages/db/src/rls-context.ts's withTenantContext) rather than the usual
+// app.tenant_id/app.user_id pair.
+model WorkflowTemplate {
+  id              String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Null only for a SUPER_ADMIN-authored COMMUNITY template, which belongs
+  // to no single tenant.
+  tenantId        String?                  @map("tenant_id") @db.Uuid
+  // Null for a SUPER_ADMIN-authored COMMUNITY template — a SUPER_ADMIN
+  // carries no ConsultantProfile to attach. createdByUserId below is the
+  // real owner reference for both cases, mirroring Workflow.consultantId /
+  // Workflow.createdByUserId.
+  consultantId    String?                  @map("consultant_id") @db.Uuid
+  // Advisory owner reference (no Prisma relation) — only set (and only
+  // consulted for ownership) when consultantId is null, i.e. a
+  // SUPER_ADMIN-authored row. A CONSULTANT row's owner is always
+  // consultantId, same as before this column existed.
+  createdByUserId String?                  @map("created_by_user_id") @db.Uuid
+  scope           TemplateScope            @default(PERSONAL)
+  // Only meaningful for scope=COMMUNITY (Sprint 5.5.5 item 5) — a PERSONAL
+  // or TENANT row's status is never read by RLS or the UI. Resets to
+  // PENDING whenever scope is (re)set to COMMUNITY (workflow-templates.router.ts).
+  status          TemplateModerationStatus @default(PENDING)
+  channel         TemplateChannel
+  name            String                   @db.VarChar(200)
+  subject         String?                  @db.VarChar(255) // EMAIL only
+  content         Json                     @default("{}") // Tiptap JSON document; template-render.service.ts resolves `mention` nodes against workflow_runs.context
+  deletedAt       DateTime?                @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  consultant      ConsultantProfile? @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  sharedTemplates SharedTemplate[]
+
+  @@index([tenantId, scope])
+  @@index([consultantId])
+  @@map("workflow_templates")
+}
+
+// Custom scope-gated RLS policy (supabase/policies/13-workflows.sql), same
+// shape as WorkflowTemplate above — needed because tenantId is null for a
+// SUPER_ADMIN-authored COMMUNITY row, which must still be visible/usable
+// from every tenant, not just the generic tenant_isolation policy's own-
+// tenant-only match.
+model Workflow {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Null only for a SUPER_ADMIN-authored COMMUNITY workflow, which belongs
+  // to no single tenant — a CONSULTANT's PERSONAL and a TENANT_ADMIN's
+  // TENANT row always carry a real tenantId.
+  tenantId        String?             @map("tenant_id") @db.Uuid
+  // Null for a TENANT_ADMIN-created (organization-scoped) workflow — a
+  // TENANT_ADMIN carries no ConsultantProfile to attach. createdByUserId
+  // below is the real owner reference for both cases; this stays around for
+  // "which consultant is this workflow associated with" when there is one.
+  consultantId    String?             @map("consultant_id") @db.Uuid
+  // Advisory owner reference (like consultant_invite_codes.created_by, no
+  // Prisma relation) — used by requireOwnWorkflowOrSuperAdmin instead of
+  // consultantId so both a CONSULTANT's and a TENANT_ADMIN's own workflows
+  // resolve the same way.
+  createdByUserId String              @map("created_by_user_id") @db.Uuid
+  name            String              @db.VarChar(200)
+  status          WorkflowStatus      @default(DRAFT)
+  // Reuses template_scope (PERSONAL/TENANT/COMMUNITY) — unlike
+  // WorkflowTemplate, visibility isn't gated by this (workflows.router.ts's
+  // GET already returns every workflow in the tenant); it only governs who
+  // may pause/resume/archive/delete it (workflows.router.ts's
+  // requireOwnWorkflowOrSuperAdmin + the PERSONAL-only delete check). A
+  // TENANT_ADMIN may only create TENANT-scoped (organization) workflows.
+  scope           TemplateScope       @default(PERSONAL)
+  triggerType     WorkflowTriggerType @map("trigger_type")
+  graph           Json                @default("{}") // WorkflowGraph shape (packages/types/src/workflow.ts) — nodes/edges serialized from the xyflow canvas (Sprint 5.5.3)
+  deletedAt       DateTime?           @map("deleted_at") @db.Timestamptz(6)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  consultant ConsultantProfile? @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  runs       WorkflowRun[]
+  optOuts    WorkflowOptOut[]
+
+  @@index([tenantId])
+  @@index([consultantId])
+  @@map("workflows")
+}
+
+// Lets a CONSULTANT disable a TENANT/COMMUNITY scoped workflow for just their
+// own cases without touching workflows.status (which pauses it for every
+// consultant in the tenant/community). Checked by workflow-events.ts's
+// enqueueEventTriggers against the triggering case's consultant before
+// starting a run — a PERSONAL workflow has no other consultant to opt out
+// for, so this only ever applies to TENANT/COMMUNITY scope.
+model WorkflowOptOut {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  workflowId   String   @map("workflow_id") @db.Uuid
+  consultantId String   @map("consultant_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workflow   Workflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  consultant ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, consultantId])
+  @@index([tenantId])
+  @@map("workflow_opt_outs")
+}
+
+model WorkflowRun {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String            @map("tenant_id") @db.Uuid
+  workflowId    String            @map("workflow_id") @db.Uuid
+  status        WorkflowRunStatus @default(RUNNING)
+  currentNodeId String?           @map("current_node_id") @db.VarChar(100) // xyflow node id; null once COMPLETED or before the trigger node has run
+  context       Json              @default("{}") // merge-field data (client.*, appointment.*, consultant.*) resolved by template-render.service.ts
+  resumeAt      DateTime?         @map("resume_at") @db.Timestamptz(6) // set by a WAIT node; workflow-triggers.ts cron re-enqueues once past
+  failureReason String?           @map("failure_reason")
+  deletedAt     DateTime?         @map("deleted_at") @db.Timestamptz(6)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  workflow        Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  formSubmissions FormSubmission[]
+
+  @@index([workflowId])
+  @@index([status, resumeAt])
+  @@map("workflow_runs")
+}
+
+// Same RLS shape as WorkflowTemplate above (custom scope-gated policy, not
+// the standard tenant_isolation policy) — an intake form is authored and
+// shared the same way a message template is.
+model FormTemplate {
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String                   @map("tenant_id") @db.Uuid
+  consultantId String                   @map("consultant_id") @db.Uuid
+  scope        TemplateScope            @default(PERSONAL)
+  status       TemplateModerationStatus @default(PENDING)
+  name         String                   @db.VarChar(200)
+  // JSON Schema (Draft-07) describing the form's fields — built field-by-field
+  // in the palette builder (form-template-editor.tsx), rendered by
+  // react-jsonschema-form both in the builder preview and the public
+  // [token]/page.tsx fill page. Conditional visibility ("show Q5 only if
+  // Q3=Yes") is expressed as `allOf: [{ if, then }]` entries whose `then`
+  // branch is the only place the conditional field's property is declared.
+  jsonSchema   Json                     @default("{\"type\":\"object\",\"properties\":{}}") @map("json_schema")
+  // rjsf UiSchema — widget selection (textarea/select/checkboxes/file/...),
+  // `ui:order`, and any per-field UI options. Kept as a sibling column
+  // rather than folded into jsonSchema since it's presentation, not shape.
+  uiSchema     Json                     @default("{}") @map("ui_schema")
+  deletedAt    DateTime?                @map("deleted_at") @db.Timestamptz(6)
+  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                 @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  consultant      ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  submissions     FormSubmission[]
+  sharedTemplates SharedTemplate[]
+  tasks           Task[]
+
+  @@index([tenantId, scope])
+  @@index([consultantId])
+  @@map("form_templates")
+}
+
+// One row per intake-form send. Standard tenant_isolation policy applies
+// (00-tenant-isolation.sql) — unlike FormTemplate, visibility here is a
+// plain tenant/case boundary, not a scope-gated one. The public fill link
+// (GET/POST by accessToken) looks this row up outside of RLS the same way
+// auth-register.router.ts does for pre-account state — the unguessable
+// token is the actual security boundary for that one endpoint, not a role
+// or tenant claim.
+model FormSubmission {
+  id             String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String               @map("tenant_id") @db.Uuid
+  caseId         String               @map("case_id") @db.Uuid
+  formTemplateId String               @map("form_template_id") @db.Uuid
+  // Set only when this submission was sent by a SEND_INTAKE_FORM workflow
+  // node (form-submission.service.ts) — lets the POST .../submit handler
+  // resume the exact WorkflowRun that's parked WAITING_ON_FORM on this
+  // submission, rather than only firing a fresh FORM_SUBMITTED trigger.
+  workflowRunId  String?              @map("workflow_run_id") @db.Uuid
+  // Set when this send fulfills a Task of type FILL_FORM — lets the public
+  // submit handler (form-submissions.router.ts) complete that task the same
+  // way it resumes a WAITING_ON_FORM workflow run.
+  taskId         String?              @map("task_id") @db.Uuid
+  channel        TemplateChannel
+  accessToken    String               @unique @map("access_token") @db.VarChar(64)
+  status         FormSubmissionStatus @default(PENDING)
+  answers        Json                 @default("{}") // keyed by FormTemplate.jsonSchema's property names
+  expiresAt      DateTime             @map("expires_at") @db.Timestamptz(6)
+  submittedAt    DateTime?            @map("submitted_at") @db.Timestamptz(6)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime             @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  case         Case         @relation(fields: [caseId], references: [id])
+  formTemplate FormTemplate @relation(fields: [formTemplateId], references: [id])
+  workflowRun  WorkflowRun? @relation(fields: [workflowRunId], references: [id])
+  task         Task?        @relation(fields: [taskId], references: [id])
+
+  @@index([caseId])
+  @@index([tenantId])
+  @@index([workflowRunId])
+  @@index([taskId])
+  @@map("form_submissions")
+}
+
+// A read-only, point-in-time copy of a template's content shared into a
+// case's documentation — either pushed manually by the owning consultant
+// (workflow-node-handlers.ts's sendViaTemplate does the same for an
+// automated workflow send). templateName/renderedContent are snapshotted at
+// share time so an edited or deleted template never changes what the client
+// already saw. Standard tenant_isolation policy applies
+// (00-tenant-isolation.sql) — visibility is a plain case boundary, same as
+// documents/form_submissions, checked in shared-templates.router.ts.
+model SharedTemplate {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId           String           @map("tenant_id") @db.Uuid
+  caseId             String           @map("case_id") @db.Uuid
+  workflowTemplateId String?          @map("workflow_template_id") @db.Uuid
+  formTemplateId     String?          @map("form_template_id") @db.Uuid
+  templateName       String           @map("template_name") @db.VarChar(200)
+  channel            TemplateChannel?
+  // { subject?, html, text } for a workflow (message) template, or
+  // { fields } for a form template — see template-render.service.ts /
+  // shared-templates.router.ts.
+  renderedContent    Json             @default("{}") @map("rendered_content")
+  sharedByRole       UserRole         @default(CONSULTANT) @map("shared_by_role")
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  case             Case              @relation(fields: [caseId], references: [id])
+  workflowTemplate WorkflowTemplate? @relation(fields: [workflowTemplateId], references: [id])
+  formTemplate     FormTemplate?     @relation(fields: [formTemplateId], references: [id])
+
+  @@index([caseId])
+  @@index([tenantId])
+  @@map("shared_templates")
+}
+
+// -----------------------------------------------------------------------------
+// Contacts
+// -----------------------------------------------------------------------------
+
+enum ContactType {
+  REFERRAL_PARTNER
+  VENDOR
+  OTHER
+
+  @@map("contact_type")
+}
+
+// Shared tenant-wide directory of non-client contacts (referral partners,
+// vendors, etc). Not linked to a User — these are external parties who never
+// sign in.
+model Contact {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  fullName     String      @map("full_name") @db.VarChar(200)
+  type         ContactType @default(OTHER)
+  organization String?     @db.VarChar(200)
+  email        String?     @db.Citext
+  phone        String?     @db.VarChar(20)
+  notes        String?
+  createdBy    String?     @map("created_by") @db.Uuid
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([tenantId])
+  @@map("contacts")
+}
+
+// -----------------------------------------------------------------------------
+// Inbox
+// -----------------------------------------------------------------------------
+
+enum InboxProvider {
+  GOOGLE
+
+  @@map("inbox_provider")
+}
+
+enum InboxConnectionStatus {
+  ACTIVE
+  REVOKED
+  ERROR
+
+  @@map("inbox_connection_status")
+}
+
+// One connected mailbox per User — TENANT_ADMIN, CONSULTANT, and CLIENT
+// accounts each connect their own Gmail independently (not a shared tenant
+// inbox). tenantId is denormalized from User.tenantId for display/lookup
+// convenience only and is null for CLIENT, which is platform-level (see
+// User.tenantId's comment). accessTokenEnc/refreshTokenEnc are AES-256-GCM
+// ciphertext (see apps/api/src/lib/token-encryption.ts) — Gmail refresh
+// tokens are long-lived credentials, so they're never stored in plaintext.
+model InboxConnection {
+  id              String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String                @map("user_id") @db.Uuid
+  tenantId        String?               @map("tenant_id") @db.Uuid
+  provider        InboxProvider         @default(GOOGLE)
+  emailAddress    String                @map("email_address") @db.Citext
+  accessTokenEnc  String                @map("access_token_enc")
+  refreshTokenEnc String                @map("refresh_token_enc")
+  tokenExpiresAt  DateTime              @map("token_expires_at") @db.Timestamptz(6)
+  scope           String
+  status          InboxConnectionStatus @default(ACTIVE)
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime              @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([userId, provider])
+  @@map("inbox_connections")
+}

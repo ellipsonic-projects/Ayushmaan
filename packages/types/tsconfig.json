@@ -1,0 +1,12 @@
+{
+  "extends": "@ayushman/config/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020"],
+    "noEmit": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

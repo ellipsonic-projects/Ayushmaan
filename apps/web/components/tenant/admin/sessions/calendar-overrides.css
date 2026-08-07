@@ -1,0 +1,60 @@
+.session-calendar.rbc-calendar {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+}
+
+.session-calendar .rbc-time-view,
+.session-calendar .rbc-time-header,
+.session-calendar .rbc-time-content,
+.session-calendar .rbc-month-view {
+  border-color: var(--border);
+  background-color: var(--card);
+}
+
+.session-calendar .rbc-header {
+  border-color: var(--border);
+  padding: 0.5rem 0;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+.session-calendar .rbc-today {
+  background-color: color-mix(in oklab, var(--primary) 8%, transparent);
+}
+
+.session-calendar .rbc-time-slot,
+.session-calendar .rbc-timeslot-group,
+.session-calendar .rbc-day-bg + .rbc-day-bg,
+.session-calendar .rbc-time-content > * + * > * {
+  border-color: var(--border);
+}
+
+.session-calendar .rbc-time-gutter .rbc-timeslot-group {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.session-calendar .rbc-current-time-indicator {
+  background-color: var(--primary);
+  height: 2px;
+}
+
+.session-calendar .rbc-event {
+  border: none;
+  border-radius: 0.375rem;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+}
+
+.session-calendar .rbc-event:focus {
+  outline: 2px solid var(--ring);
+}
+
+.session-calendar .rbc-off-range-bg {
+  background-color: var(--muted);
+}
+
+.session-calendar .rbc-selected-cell {
+  background-color: color-mix(in oklab, var(--primary) 10%, transparent);
+}

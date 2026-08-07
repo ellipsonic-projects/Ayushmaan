@@ -1,0 +1,1 @@
+{"version":3,"file":"inbox-return-path.d.ts","sourceRoot":"","sources":["../../src/lib/inbox-return-path.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,MAAM,EAAE,MAAM,cAAc,CAAC;AAM3C,wBAAsB,sBAAsB,CAC1C,EAAE,EAAE,MAAM,CAAC,iBAAiB,EAC5B,IAAI,EAAE;IAAE,IAAI,EAAE,MAAM,CAAC;IAAC,QAAQ,EAAE,MAAM,GAAG,IAAI,CAAA;CAAE,GAC9C,OAAO,CAAC,MAAM,GAAG,IAAI,CAAC,CAaxB"}
