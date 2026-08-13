@@ -60,7 +60,7 @@ function PhoneInput({
     <RPNInput
       id={id}
       className={cn("flex items-center gap-1.5", className)}
-      international
+      international={false}
       defaultCountry={defaultCountry}
       countrySelectProps={{ className: inputClassName }}
       numberInputProps={{ className: inputClassName }}
